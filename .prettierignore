@@ -1,0 +1,10 @@
+docs
+dist
+js
+.next
+public
+.gitignore
+.editorconfig
+.prettierignore
+package.json
+package-lock.json

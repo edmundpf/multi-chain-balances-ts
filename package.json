@@ -1,0 +1,80 @@
+{
+  "name": "multi-chain-balances-ts",
+  "version": "1.0.0",
+  "description": "Get Balances from Ethereum, BSC, and Polygon Blockchains.",
+  "main": "./dist/index.js",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "compile": "tsc",
+    "check": "tsc --noEmit",
+    "watch": "tsc --watch",
+    "lint": "npx eslint .",
+    "lint-fix": "npx eslint --fix .",
+    "format": "npx prettier --write .",
+    "dev-checkout": "git checkout dev",
+    "commit": "npm run dev-checkout && tsc && npm run test && git add . && git commit -m",
+    "commit-no-verify": "npm run commit -- --no-verify",
+    "bump-patch": "npm run dev-checkout && npm version patch",
+    "bump-minor": "npm run dev-checkout && npm version minor",
+    "bump-major": "npm run dev-checkout && npm version major",
+    "release": "npm run dev-checkout && git push origin dev && git checkout master && git merge dev && git push origin master && git push --tags && git checkout dev",
+    "release-patch": "npm run bump-patch && npm run doc && npm run release",
+    "release-minor": "npm run bump-minor && npm run doc && npm run release",
+    "release-major": "npm run bump-major && npm run doc && npm run release",
+    "doc": "npx typedoc src/index.ts && git add . && git commit -m 'Updated Docs'",
+    "start": "if test -f dist/driver.js; then NODE_ENV=production node ./dist/driver.js; else echo 'dist/driver.js not found'; fi",
+    "test": "if test -d dist/tests; then npx mocha dist/tests; else echo 'dist/tests not found'; fi"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npx lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.@(js|ts|jsx|tsx)": [
+      "npm run lint"
+    ],
+    "*": [
+      "npm run format"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/edmundpf/multi-chain-balances-ts.git"
+  },
+  "keywords": [
+    "Ethereum",
+    "BSC",
+    "Polygon",
+    "Matic",
+    "Crypto",
+    "Typescript"
+  ],
+  "author": "Edmund Pfeil <edmundpf@buffalo.edu>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/edmundpf/multi-chain-balances-ts/issues"
+  },
+  "homepage": "https://github.com/edmundpf/multi-chain-balances-ts#readme",
+  "devDependencies": {
+    "@types/node": "*",
+    "@typescript-eslint/eslint-plugin": "*",
+    "@typescript-eslint/parser": "*",
+    "eslint": "*",
+    "eslint-config-prettier": "*",
+    "eslint-plugin-react": "*",
+    "husky": "*",
+    "lint-staged": "*",
+    "prettier": "*",
+    "typedoc": "*",
+    "typedoc-plugin-markdown": "*",
+    "typescript": "*"
+  },
+  "private": false,
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^10.0.0"
+  }
+}
