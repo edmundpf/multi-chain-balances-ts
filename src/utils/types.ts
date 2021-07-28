@@ -28,6 +28,21 @@ export type VaultData = TokenData & {
 	tokens: TokenData[]
 }
 
+// Asset Data Type
+
+type AssetData = {
+	value: number
+	apy: number
+	url: string
+	desc: string
+}
+
+// Assets Type
+
+export type Assets = {
+	[index: string]: AssetData
+}
+
 // Chain Type
 
 export type Chain = {

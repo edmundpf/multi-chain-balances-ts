@@ -256,7 +256,10 @@ class MultiChain {
         const assetIndexes = {};
         // Add Asset
         const addAsset = (record, chainName, useBeefyVaultName = false) => {
-            const { symbol, value, beefyVaultName } = record;
+            const { symbol, value } = record;
+            const apy = record.apy || 0;
+            const beefyVaultName = record.beefyVaultName || '';
+            const url = record.platformUrl || values_1.DEFAULT_URL;
             let symbolStr = useBeefyVaultName && beefyVaultName
                 ? beefyVaultName.toUpperCase()
                 : symbol;
@@ -270,7 +273,12 @@ class MultiChain {
                 }
             }
             symbolStr += ` (${chainName.toUpperCase()})`;
-            this.assets[symbolStr] = value;
+            this.assets[symbolStr] = {
+                desc: symbol,
+                value,
+                apy,
+                url,
+            };
         };
         // Add Token
         const addToken = (token) => {

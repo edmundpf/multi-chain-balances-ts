@@ -18,6 +18,15 @@ export declare type VaultData = TokenData & {
     beefyReceiptAmount?: number;
     tokens: TokenData[];
 };
+declare type AssetData = {
+    value: number;
+    apy: number;
+    url: string;
+    desc: string;
+};
+export declare type Assets = {
+    [index: string]: AssetData;
+};
 export declare type Chain = {
     totalValue: number;
     totalTokenValue: number;

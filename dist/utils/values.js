@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
+exports.DEFAULT_URL = exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
 // Init Chain
 const initChain = () => {
     return {
@@ -58,3 +58,5 @@ exports.exchangeAliases = {
     dino: ['dinoswap'],
     ape: ['banana'],
 };
+// Default URL
+exports.DEFAULT_URL = 'https://bscscan.com';

@@ -1,4 +1,4 @@
-import { Chains, NumDict, ApeBoardPositions } from './types';
+import { Chains, ApeBoardPositions, Assets } from './types';
 /**
  * MultiChain Class
  */
@@ -8,7 +8,7 @@ export default class MultiChain {
     totalTokenValue: number;
     totalVaultValue: number;
     chains: Chains;
-    assets: NumDict;
+    assets: Assets;
     chainNames: Array<keyof Chains>;
     tokenNames: string[];
     /**

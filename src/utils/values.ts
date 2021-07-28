@@ -74,3 +74,7 @@ export const exchangeAliases = {
 	dino: ['dinoswap'],
 	ape: ['banana'],
 }
+
+// Default URL
+
+export const DEFAULT_URL = 'https://bscscan.com'

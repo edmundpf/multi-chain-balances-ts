@@ -5,6 +5,7 @@ import {
 	APIS,
 	ENDPOINTS,
 	NATIVE_TOKENS,
+	DEFAULT_URL,
 	initChains,
 	apeBoardCredentials,
 	exchangeAliases,
@@ -20,6 +21,7 @@ import {
 	ApeBoardPosition,
 	ApeBoardPositions,
 	MainRequest,
+	Assets,
 } from './types'
 
 // Init
@@ -41,7 +43,7 @@ export default class MultiChain {
 	totalTokenValue = 0
 	totalVaultValue = 0
 	chains = initChains()
-	assets: NumDict = {}
+	assets: Assets = {}
 	chainNames: Array<keyof Chains>
 	tokenNames: string[] = []
 
@@ -328,7 +330,10 @@ export default class MultiChain {
 			chainName: keyof Chains,
 			useBeefyVaultName = false
 		) => {
-			const { symbol, value, beefyVaultName } = record as any
+			const { symbol, value } = record
+			const apy: number = (record as any).apy || 0
+			const beefyVaultName: string = (record as any).beefyVaultName || ''
+			const url: string = (record as any).platformUrl || DEFAULT_URL
 			let symbolStr = useBeefyVaultName && beefyVaultName
 				? beefyVaultName.toUpperCase()
 				: symbol
@@ -342,7 +347,12 @@ export default class MultiChain {
 				}
 			}
 			symbolStr += ` (${chainName.toUpperCase()})`
-			this.assets[symbolStr] = value
+			this.assets[symbolStr] = {
+				desc: symbol,
+				value,
+				apy,
+				url,
+			}
 		}
 
 		// Add Token

@@ -5,7 +5,7 @@ import MultiChain from './'
 const main = async () => {
 	const wallet = new MultiChain()
 	await wallet.driver()
-	console.log(wallet)
+	console.log(wallet.assets)
 }
 
 // Run
