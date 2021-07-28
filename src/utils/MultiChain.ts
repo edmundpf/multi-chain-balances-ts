@@ -1,26 +1,32 @@
 import dotenv from 'dotenv'
 import axios from 'axios'
-import CONFIG from './config.json'
+import { titleCase } from './misc'
 import {
 	APIS,
 	ENDPOINTS,
-	initChains,
 	NATIVE_TOKENS,
+	initChains,
+	apeBoardCredentials,
+	exchangeAliases,
 } from './values'
 import {
 	Token,
 	Protocol,
-	BeefyVaults,
 	Chains,
 	TokenData,
 	VaultData,
+	NumDict,
+	ApeBoardResponse,
+	ApeBoardPosition,
+	ApeBoardPositions,
+	MainRequest,
 } from './types'
-
 
 // Init
 
 dotenv.config()
 const ADDRESS = process.env.ADDRESS || ''
+const MIN_VALUE = Number(process.env.MIN_VALUE) || 0.05
 
 /**
  * MultiChain Class
@@ -35,7 +41,7 @@ export default class MultiChain {
 	totalTokenValue = 0
 	totalVaultValue = 0
 	chains = initChains()
-	assets: { [key: string]: number } = {}
+	assets: NumDict = {}
 	chainNames: Array<keyof Chains>
 	tokenNames: string[] = []
 
@@ -52,15 +58,21 @@ export default class MultiChain {
 	 */
 
 	async driver() {
-		const tokenData: Token[] = await this.getTokenList()
-		const protocolData: Protocol[] = await this.getProtocolList()
-		// const beefyApyData: BeefyVaults = await this.getBeefyApy()
+		const requests: Promise<MainRequest>[] = [
+			this.getTokenList(),
+			this.getProtocolList(),
+			this.getApeBoardPositions(),
+			this.getBeefyApy(),
+		]
+		const res: MainRequest[] = await Promise.all(requests)
+		const tokenData = res[0] as Token[]
+		const protocolData = res[1] as Protocol[]
+		const positionData = res[2] as ApeBoardPositions
+		const apyData = res[3] as NumDict
 		this.parseTokenData(tokenData)
 		this.parseProtocolData(protocolData)
-		// this.parseBeefyApyData(beefyApyData)
+		this.parseApyData(positionData, apyData)
 		this.parseChainData()
-		// console.log(this)
-		console.log(this)
 	}
 
 	/**
@@ -69,6 +81,7 @@ export default class MultiChain {
 
 	private parseTokenData(data: Token[]) {
 		for (const record of data) {
+			// Token Info
 			const {
 				chain,
 				symbol,
@@ -78,18 +91,31 @@ export default class MultiChain {
 			const price = recPrice || 0
 			const amount = recAmount || 0
 			const value = price * amount
-			if (value >= CONFIG.minimumValue && this.chainNames.includes(chain)) {
-				const chainInfo = this.chains[chain]
-				const tokenData: TokenData = {
-					symbol,
-					amount,
-					value,
+
+			// Check if chain exists
+			if (this.chainNames.includes(chain)) {
+
+				// Check for Beefy Receipt
+				if (symbol.startsWith('moo')) {
+					this.chains[chain].receipts[symbol] = amount
 				}
-				chainInfo.tokens.push(tokenData)
-				if (symbol == NATIVE_TOKENS[chain]) {
-					chainInfo.nativeToken = tokenData
+
+				// Check for minimum value
+				else if (value >= MIN_VALUE) {
+					const chainInfo = this.chains[chain]
+					const tokenData: TokenData = {
+						symbol,
+						amount,
+						value,
+					}
+
+					// Update token data
+					chainInfo.tokens.push(tokenData)
+					if (symbol == NATIVE_TOKENS[chain]) {
+						chainInfo.nativeToken = tokenData
+					}
+					chainInfo.totalTokenValue += value
 				}
-				chainInfo.totalTokenValue += value
 			}
 		}
 	}
@@ -100,7 +126,6 @@ export default class MultiChain {
 
 	private parseProtocolData(data: Protocol[]) {
 		for (const record of data) {
-
 			// Platform Info
 			const {
 				chain,
@@ -108,12 +133,17 @@ export default class MultiChain {
 				site_url: platformUrl,
 				portfolio_item_list: vaults
 			} = record
+
+			// Check if chain exists
 			if (this.chainNames.includes(chain)) {
 				const chainInfo = this.chains[chain]
+
 				// Vault Info
 				for (const vault of vaults) {
 					const value = vault?.stats?.net_usd_value || 0
-					if (value >= CONFIG.minimumValue) {
+
+					// Check for minimum value
+					if (value >= MIN_VALUE) {
 						let vaultSymbol = ''
 						const tokens = vault?.detail?.supply_token_list || []
 						const tokenData: TokenData[] = []
@@ -138,6 +168,8 @@ export default class MultiChain {
 								})
 							}
 						}
+
+						// Update vault data
 						if (vaultSymbol) vaultSymbol += '-Pool'
 						chainInfo.vaults.push({
 							symbol: vaultSymbol,
@@ -154,11 +186,132 @@ export default class MultiChain {
 	}
 
 	/**
-	 * Parse Beefy APY Data
+	 * Parse APY Data
 	 */
 
-	private parseBeefyApyData(data: BeefyVaults) {
-		return 0
+	private parseApyData(positionData: ApeBoardPositions, apyData: NumDict) {
+		for (const chainName in this.chains) {
+			const chain = this.chains[chainName as keyof Chains]
+
+			// Iterate positions
+			for (const position of positionData[chainName as keyof Chains]) {
+				const matches: NumDict = {}
+				const symbolsStr = titleCase(
+					position.tokens
+						.join(' ')
+						.toLowerCase()
+				)
+					.toLowerCase()
+				const symbols = symbolsStr.split(' ')
+
+				// Iterate Receipts
+				for (const receiptName in chain.receipts) {
+					const receiptAmount = chain.receipts[receiptName]
+					const isPair = receiptName.includes('-')
+					const receiptStr = titleCase(receiptName)
+						.toLowerCase()
+					const receiptStrNoSpaces = receiptStr.replace(/ /g, '')
+					const receiptWords = receiptStr.split(' ')
+					const isMatch = isPair
+						? symbols.every((sym: string) => (
+							receiptWords.slice(receiptWords.length - symbols.length).some(
+								(receiptSym: string) => sym.includes(receiptSym)
+							)
+						))
+						: receiptStr.includes(symbolsStr) ||
+							receiptStrNoSpaces.includes(symbolsStr)
+					if (isMatch) {
+						matches[receiptName] = Math.abs(position.amount - receiptAmount)
+					}
+				}
+
+				// Get Closest Match
+				let receiptMatch = ''
+				let currentDiff = 0
+				for (const receiptName in matches) {
+					const diff = matches[receiptName]
+					if (!receiptMatch || diff < currentDiff) {
+						receiptMatch = receiptName
+					}
+				}
+
+				// Get Matching APY
+				if (receiptMatch) {
+					const receiptStr = titleCase(receiptMatch.replace('V2', 'v2'))
+						.toLowerCase()
+					let receiptWords = receiptStr.split(' ').slice(1)
+
+					// Check if Symbol has version and format receipt words
+					const symbolHasVersion =
+						receiptWords.length == 2 &&
+						receiptWords[0].endsWith('v') &&
+						String(Number(receiptWords[1])) == receiptWords[1]
+					if (symbolHasVersion) receiptWords = [receiptWords.join('')]
+					const receiptWordsSet = [receiptWords]
+
+					// Get Aliases
+					for (const key in exchangeAliases) {
+						if (receiptStr.includes(key)) {
+							for (const alias of exchangeAliases[
+								key as keyof typeof exchangeAliases
+							]) {
+								receiptWordsSet.push(
+									receiptStr
+										.replace(key, alias)
+										.split(' ')
+										.slice(1)
+								)
+							}
+						}
+					}
+
+					// Find Matching Vault
+					for (const vaultName in apyData) {
+						let vaultMatch = ''
+						for (const wordSet of receiptWordsSet) {
+							const isMatch = wordSet.length == 1
+								? vaultName.endsWith(`-${wordSet[0]}`)
+								: wordSet.every((word: string) => (
+								word == 'swap' || vaultName.includes(word)
+							))
+							if (isMatch) {
+								vaultMatch = vaultName
+								break
+							}
+						}
+						if (vaultMatch) {
+							let currentDiff = -1
+							let vaultIndexMatch = 0
+
+							// Get Matching Vault
+							for (const vaultIndex in chain.vaults) {
+								const isMatch = position.tokens.every((token: string) => (
+									chain.vaults.some((vault: VaultData) => (
+										vault.symbol
+											.toLowerCase()
+											.includes(token.toLowerCase())
+									))
+								))
+								const vault = chain.vaults[vaultIndex]
+								const diff = Math.abs(vault.value - position.value)
+								if (isMatch && (currentDiff == -1 || diff < currentDiff)) {
+									vaultIndexMatch = Number(vaultIndex)
+									currentDiff = diff
+								}
+							}
+
+							// Set Vault Info
+							const vaultMatch = chain.vaults[vaultIndexMatch]
+							vaultMatch.apy = apyData[vaultName] * 100
+							vaultMatch.beefyVaultName = vaultName
+							vaultMatch.beefyReceiptName = receiptMatch
+							vaultMatch.beefyReceiptAmount = chain.receipts[receiptMatch]
+							break
+						}
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -166,22 +319,27 @@ export default class MultiChain {
 	 */
 
 	private parseChainData() {
-		const assetCounts: any = {}
-		const assetIndexes: any = {}
+		const assetCounts: NumDict = {}
+		const assetIndexes: NumDict = {}
 
 		// Add Asset
 		const addAsset = (
 			record: TokenData | VaultData,
-			chainName: keyof Chains
+			chainName: keyof Chains,
+			useBeefyVaultName = false
 		) => {
-			const { symbol, value } = record
-			let symbolStr = symbol
-			if (assetCounts[symbol] > 1) {
-				const symbolIndex = assetIndexes[symbol] != null
-					? assetIndexes[symbol] + 1
-					: 0
-				symbolStr += `-${symbolIndex}`
-				assetIndexes[symbol] = symbolIndex
+			const { symbol, value, beefyVaultName } = record as any
+			let symbolStr = useBeefyVaultName && beefyVaultName
+				? beefyVaultName.toUpperCase()
+				: symbol
+			if (!beefyVaultName || !useBeefyVaultName) {
+				if (assetCounts[symbol] > 1) {
+					const symbolIndex = assetIndexes[symbol] != null
+						? assetIndexes[symbol] + 1
+						: 0
+					symbolStr += `-${symbolIndex}`
+					assetIndexes[symbol] = symbolIndex
+				}
 			}
 			symbolStr += ` (${chainName.toUpperCase()})`
 			this.assets[symbolStr] = value
@@ -217,22 +375,22 @@ export default class MultiChain {
 		for (const chainName in this.chains) {
 			const chain = this.chains[chainName as keyof Chains]
 
-			// Get Total Value
+			// Update Chain Total Value
 			chain.totalValue = chain.totalTokenValue + chain.totalVaultValue
 
-			// Simplify Assets and Tokens
+			// Update simplified assets
 			for (const record of chain.tokens) {
 				addAsset(record, chainName as keyof Chains)
 				addToken(record)
 			}
 			for (const record of chain.vaults) {
-				addAsset(record, chainName as keyof Chains)
+				addAsset(record, chainName as keyof Chains, true)
 				for (const token of record.tokens) {
 					addToken(token)
 				}
 			}
 
-			// Get Totals between Chains
+			// Update Totals from all chains
 			this.totalTokenValue += chain.totalTokenValue
 			this.totalVaultValue += chain.totalVaultValue
 		}
@@ -264,21 +422,78 @@ export default class MultiChain {
 	}
 
 	/**
+	 * Get Ape Board Positions
+	 */
+
+	async getApeBoardPositions() {
+		const requests = [
+			this.getApeBoardEndpoint('beefyBsc'),
+			this.getApeBoardEndpoint('beefyPolygon')
+		]
+		const res: ApeBoardResponse[] = await Promise.all(requests)
+		const bscInfo = res[0]?.positions || []
+		const maticInfo = res[1]?.positions || []
+		const bscPositions: ApeBoardPosition[] = []
+		const maticPositions: ApeBoardPosition[] = []
+
+		// BSC Positions
+		for (const record of bscInfo) {
+			const tokens: string[] = []
+			let value = 0
+			for (const token of record.tokens) {
+				tokens.push(token.symbol)
+				value += Number(token.price) * token.balance
+			}
+			bscPositions.push({
+				amount: record.balance,
+				value,
+				tokens,
+			})
+		}
+
+		// Matic Positions
+		for (const record of maticInfo) {
+			const tokens: string[] = []
+			let value = 0
+			for (const token of record.tokens) {
+				tokens.push(token.symbol)
+				value += Number(token.price) * token.balance
+			}
+			maticPositions.push({
+				amount: record.balance,
+				value,
+				tokens,
+			})
+		}
+		return {
+			bsc: bscPositions,
+			eth: [],
+			matic: maticPositions
+		} as ApeBoardPositions
+	}
+
+	/**
 	 * Get Endpoint
 	 */
 
 	private async getEndpoint(
 		api: keyof typeof APIS,
 		endpoint: keyof typeof ENDPOINTS,
-		params?: any
+		params?: any,
+		headers?: any
 	) {
 		try {
 			const apiUrl = APIS[api]
-			const stub = ENDPOINTS[endpoint]
+			const stub = ENDPOINTS[endpoint] || endpoint
 			let paramStr = params ? new URLSearchParams(params).toString() : ''
 			if (paramStr) paramStr = '?' + paramStr
 			const fullUrl = `${apiUrl}/${stub}${paramStr}`
-			return (await axios.get(fullUrl))?.data || {}
+			return (
+				await axios.get(
+					fullUrl,
+					headers ? { headers } : undefined
+				)
+			)?.data || {}
 		} catch (err) {
 			return err?.response?.data || {}
 		}
@@ -302,5 +517,21 @@ export default class MultiChain {
 
 	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
 		return await this.getEndpoint('beefy', endpoint)
+	}
+
+	/**
+	 * Get Ape Board Endpoint
+	 */
+
+	private async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		return await this.getEndpoint(
+			'apeBoard',
+			`${endpoint}/${this.address}` as keyof typeof ENDPOINTS,
+			undefined,
+			{
+				passcode: apeBoardCredentials.passCode,
+				'ape-secret': apeBoardCredentials.secret,
+			}
+		)
 	}
 }

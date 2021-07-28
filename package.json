@@ -59,6 +59,8 @@
   },
   "homepage": "https://github.com/edmundpf/multi-chain-balances-ts#readme",
   "devDependencies": {
+    "@types/lodash.camelcase": "^4.3.6",
+    "@types/lodash.startcase": "^4.4.6",
     "@types/node": "*",
     "@typescript-eslint/eslint-plugin": "*",
     "@typescript-eslint/parser": "*",
@@ -75,6 +77,8 @@
   "private": false,
   "dependencies": {
     "axios": "^0.21.1",
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "lodash.camelcase": "^4.3.0",
+    "lodash.startcase": "^4.4.0"
   }
 }

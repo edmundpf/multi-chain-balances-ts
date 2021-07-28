@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
+exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
 // Init Chain
 const initChain = () => {
     return {
@@ -14,6 +14,7 @@ const initChain = () => {
         },
         tokens: [],
         vaults: [],
+        receipts: {}
     };
 };
 // Init Chains
@@ -29,16 +30,31 @@ exports.initChains = initChains;
 exports.APIS = {
     debank: 'https://openapi.debank.com/v1/user',
     beefy: 'https://api.beefy.finance',
+    apeBoard: 'https://api.apeboard.finance'
 };
 // Endpoints
 exports.ENDPOINTS = {
     tokenList: 'token_list',
     protocolList: 'complex_protocol_list',
-    beefyApy: 'apy/breakdown'
+    beefyApy: 'apy',
+    beefyBsc: 'beefyBsc',
+    beefyPolygon: 'beefyPolygon'
 };
 // Native Tokens
 exports.NATIVE_TOKENS = {
     bsc: 'BNB',
     eth: 'ETH',
     matic: 'MATIC',
+};
+// Ape Board Credentials
+exports.apeBoardCredentials = {
+    secret: ('U2FsdGVkX19COuJCyW6vO9L8HPHKzedxSbDyJwvCkp+PD3WLM1SbGH4v0gwBiH4xbINmxU67' +
+        'QUMSa4nBt0o4sc5xN2DD9mjQ+QjMVkJp568PKmsvfadUKb2Rgm56urKjF6WOY95TjUY/tgNr' +
+        '5BGwUw=='),
+    passCode: '5a102a34f60fa8ec9d643e8a0e72cab9'
+};
+// Aliases
+exports.exchangeAliases = {
+    dino: ['dinoswap'],
+    ape: ['banana'],
 };

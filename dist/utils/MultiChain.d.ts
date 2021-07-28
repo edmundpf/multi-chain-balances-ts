@@ -1,4 +1,4 @@
-import { Chains } from './types';
+import { Chains, NumDict, ApeBoardPositions } from './types';
 /**
  * MultiChain Class
  */
@@ -8,9 +8,7 @@ export default class MultiChain {
     totalTokenValue: number;
     totalVaultValue: number;
     chains: Chains;
-    assets: {
-        [key: string]: number;
-    };
+    assets: NumDict;
     chainNames: Array<keyof Chains>;
     tokenNames: string[];
     /**
@@ -30,9 +28,9 @@ export default class MultiChain {
      */
     private parseProtocolData;
     /**
-     * Parse Beefy APY Data
+     * Parse APY Data
      */
-    private parseBeefyApyData;
+    private parseApyData;
     /**
      * Parse Chain Data
      */
@@ -50,6 +48,10 @@ export default class MultiChain {
      */
     private getBeefyApy;
     /**
+     * Get Ape Board Positions
+     */
+    getApeBoardPositions(): Promise<ApeBoardPositions>;
+    /**
      * Get Endpoint
      */
     private getEndpoint;
@@ -61,4 +63,8 @@ export default class MultiChain {
      * Get Beefy Endpoint
      */
     private getBeefyEndpoint;
+    /**
+     * Get Ape Board Endpoint
+     */
+    private getApeBoardEndpoint;
 }
