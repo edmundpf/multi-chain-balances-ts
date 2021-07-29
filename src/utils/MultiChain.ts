@@ -288,11 +288,9 @@ export default class MultiChain {
 							// Get Matching Vault
 							for (const vaultIndex in chain.vaults) {
 								const isMatch = position.tokens.every((token: string) => (
-									chain.vaults.some((vault: VaultData) => (
-										vault.symbol
-											.toLowerCase()
-											.includes(token.toLowerCase())
-									))
+									chain.vaults[vaultIndex].symbol
+										.toLowerCase()
+										.includes(token.toLowerCase())
 								))
 								const vault = chain.vaults[vaultIndex]
 								const diff = Math.abs(vault.value - position.value)
@@ -303,11 +301,11 @@ export default class MultiChain {
 							}
 
 							// Set Vault Info
-							const vaultMatch = chain.vaults[vaultIndexMatch]
-							vaultMatch.apy = apyData[vaultName] * 100
-							vaultMatch.beefyVaultName = vaultName
-							vaultMatch.beefyReceiptName = receiptMatch
-							vaultMatch.beefyReceiptAmount = chain.receipts[receiptMatch]
+							const vaultInfo = chain.vaults[vaultIndexMatch]
+							vaultInfo.apy = apyData[vaultName] * 100
+							vaultInfo.beefyVaultName = vaultName
+							vaultInfo.beefyReceiptName = receiptMatch
+							vaultInfo.beefyReceiptAmount = chain.receipts[receiptMatch]
 							break
 						}
 					}
