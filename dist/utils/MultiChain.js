@@ -259,7 +259,7 @@ class MultiChain {
             const { symbol, value } = record;
             const apy = record.apy || 0;
             const beefyVaultName = record.beefyVaultName || '';
-            const url = record.platformUrl || values_1.DEFAULT_URL;
+            const url = record.platformUrl || values_1.DEFAULT_URLS[chainName];
             let symbolStr = useBeefyVaultName && beefyVaultName
                 ? beefyVaultName.toUpperCase()
                 : symbol;
@@ -316,7 +316,9 @@ class MultiChain {
                 addToken(record);
             }
             for (const record of chain.vaults) {
-                addAsset(record, chainName, true);
+                if (record.beefyReceiptName && record.beefyVaultName) {
+                    addAsset(record, chainName, true);
+                }
                 for (const token of record.tokens) {
                     addToken(token);
                 }

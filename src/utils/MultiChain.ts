@@ -5,7 +5,7 @@ import {
 	APIS,
 	ENDPOINTS,
 	NATIVE_TOKENS,
-	DEFAULT_URL,
+	DEFAULT_URLS,
 	initChains,
 	apeBoardCredentials,
 	exchangeAliases,
@@ -331,7 +331,7 @@ export default class MultiChain {
 			const { symbol, value } = record
 			const apy: number = (record as any).apy || 0
 			const beefyVaultName: string = (record as any).beefyVaultName || ''
-			const url: string = (record as any).platformUrl || DEFAULT_URL
+			const url: string = (record as any).platformUrl || DEFAULT_URLS[chainName]
 			let symbolStr = useBeefyVaultName && beefyVaultName
 				? beefyVaultName.toUpperCase()
 				: symbol
@@ -392,7 +392,9 @@ export default class MultiChain {
 				addToken(record)
 			}
 			for (const record of chain.vaults) {
-				addAsset(record, chainName as keyof Chains, true)
+				if (record.beefyReceiptName && record.beefyVaultName) {
+					addAsset(record, chainName as keyof Chains, true)
+				}
 				for (const token of record.tokens) {
 					addToken(token)
 				}

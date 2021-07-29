@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_URL = exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
+exports.DEFAULT_URLS = exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
 // Init Chain
 const initChain = () => {
     return {
@@ -58,5 +58,9 @@ exports.exchangeAliases = {
     dino: ['dinoswap'],
     ape: ['banana'],
 };
-// Default URL
-exports.DEFAULT_URL = 'https://bscscan.com';
+// Default URL's
+exports.DEFAULT_URLS = {
+    bsc: 'https://bscscan.com',
+    eth: 'https://etherscan.io',
+    matic: 'https://polygonscan.com',
+};

@@ -75,6 +75,10 @@ export const exchangeAliases = {
 	ape: ['banana'],
 }
 
-// Default URL
+// Default URL's
 
-export const DEFAULT_URL = 'https://bscscan.com'
+export const DEFAULT_URLS = {
+	bsc: 'https://bscscan.com',
+	eth: 'https://etherscan.io',
+	matic: 'https://polygonscan.com',
+}

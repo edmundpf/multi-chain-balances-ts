@@ -25,4 +25,8 @@ export declare const exchangeAliases: {
     dino: string[];
     ape: string[];
 };
-export declare const DEFAULT_URL = "https://bscscan.com";
+export declare const DEFAULT_URLS: {
+    bsc: string;
+    eth: string;
+    matic: string;
+};
