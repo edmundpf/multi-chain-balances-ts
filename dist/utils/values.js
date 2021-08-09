@@ -51,7 +51,7 @@ exports.apeBoardCredentials = {
     secret: ('U2FsdGVkX19COuJCyW6vO9L8HPHKzedxSbDyJwvCkp+PD3WLM1SbGH4v0gwBiH4xbINmxU67' +
         'QUMSa4nBt0o4sc5xN2DD9mjQ+QjMVkJp568PKmsvfadUKb2Rgm56urKjF6WOY95TjUY/tgNr' +
         '5BGwUw=='),
-    passCode: '5a102a34f60fa8ec9d643e8a0e72cab9'
+    passCode: '5a102a34f60fa7ec9d643a8a0e72cab9'
 };
 // Aliases
 exports.exchangeAliases = {

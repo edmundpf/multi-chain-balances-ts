@@ -164,8 +164,13 @@ class MultiChain {
                 for (const receiptName in chain.receipts) {
                     const receiptAmount = chain.receipts[receiptName];
                     const isPair = receiptName.includes('-');
-                    const receiptStr = misc_1.titleCase(receiptName)
-                        .toLowerCase();
+                    let receiptStr = receiptName;
+                    if (isPair) {
+                        const dashIndex = receiptStr.indexOf('-');
+                        receiptStr = receiptStr.substring(0, dashIndex + 1) +
+                            receiptStr.substring(dashIndex + 1).toUpperCase();
+                    }
+                    receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
                     const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
                     const receiptWords = receiptStr.split(' ');
                     const isMatch = isPair
