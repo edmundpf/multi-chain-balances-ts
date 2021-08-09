@@ -47,7 +47,7 @@ Constructor
 
 #### Defined in
 
-[utils/MultiChain.ts:54](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L54)
+[utils/MultiChain.ts:54](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L54)
 
 ## Properties
 
@@ -57,7 +57,7 @@ Constructor
 
 #### Defined in
 
-[utils/MultiChain.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L41)
+[utils/MultiChain.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L41)
 
 ___
 
@@ -67,7 +67,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L46)
+[utils/MultiChain.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L46)
 
 ___
 
@@ -77,7 +77,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L47)
+[utils/MultiChain.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L47)
 
 ___
 
@@ -87,7 +87,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:45](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L45)
+[utils/MultiChain.ts:45](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L45)
 
 ___
 
@@ -97,7 +97,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:48](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L48)
+[utils/MultiChain.ts:48](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L48)
 
 ___
 
@@ -107,7 +107,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L43)
+[utils/MultiChain.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L43)
 
 ___
 
@@ -117,7 +117,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L42)
+[utils/MultiChain.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L42)
 
 ___
 
@@ -127,7 +127,7 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L44)
+[utils/MultiChain.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L44)
 
 ## Methods
 
@@ -143,7 +143,7 @@ Driver
 
 #### Defined in
 
-[utils/MultiChain.ts:62](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L62)
+[utils/MultiChain.ts:62](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L62)
 
 ___
 
@@ -165,7 +165,7 @@ Get Ape Board Endpoint
 
 #### Defined in
 
-[utils/MultiChain.ts:536](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L536)
+[utils/MultiChain.ts:541](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L541)
 
 ___
 
@@ -181,7 +181,7 @@ Get Ape Board Positions
 
 #### Defined in
 
-[utils/MultiChain.ts:438](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L438)
+[utils/MultiChain.ts:443](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L443)
 
 ___
 
@@ -197,7 +197,7 @@ Get Beefy APY
 
 #### Defined in
 
-[utils/MultiChain.ts:430](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L430)
+[utils/MultiChain.ts:435](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L435)
 
 ___
 
@@ -219,7 +219,7 @@ Get Beefy Endpoint
 
 #### Defined in
 
-[utils/MultiChain.ts:528](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L528)
+[utils/MultiChain.ts:533](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L533)
 
 ___
 
@@ -241,7 +241,7 @@ Get Debank Endpoint
 
 #### Defined in
 
-[utils/MultiChain.ts:516](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L516)
+[utils/MultiChain.ts:521](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L521)
 
 ___
 
@@ -266,7 +266,7 @@ Get Endpoint
 
 #### Defined in
 
-[utils/MultiChain.ts:489](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L489)
+[utils/MultiChain.ts:494](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L494)
 
 ___
 
@@ -282,7 +282,7 @@ Get Protocol List
 
 #### Defined in
 
-[utils/MultiChain.ts:422](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L422)
+[utils/MultiChain.ts:427](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L427)
 
 ___
 
@@ -298,7 +298,7 @@ Get Token List
 
 #### Defined in
 
-[utils/MultiChain.ts:414](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L414)
+[utils/MultiChain.ts:419](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L419)
 
 ___
 
@@ -321,7 +321,7 @@ Parse APY Data
 
 #### Defined in
 
-[utils/MultiChain.ts:194](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L194)
+[utils/MultiChain.ts:194](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L194)
 
 ___
 
@@ -337,7 +337,7 @@ Parse Chain Data
 
 #### Defined in
 
-[utils/MultiChain.ts:321](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L321)
+[utils/MultiChain.ts:326](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L326)
 
 ___
 
@@ -359,7 +359,7 @@ Parse Protocol Data
 
 #### Defined in
 
-[utils/MultiChain.ts:129](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L129)
+[utils/MultiChain.ts:129](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L129)
 
 ___
 
@@ -381,4 +381,4 @@ Parse Token Data
 
 #### Defined in
 
-[utils/MultiChain.ts:84](https://github.com/edmundpf/multi-chain-balances-ts/blob/356f132/src/utils/MultiChain.ts#L84)
+[utils/MultiChain.ts:84](https://github.com/edmundpf/multi-chain-balances-ts/blob/364e45c/src/utils/MultiChain.ts#L84)
