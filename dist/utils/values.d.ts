@@ -1,9 +1,12 @@
-import { Chains } from './types';
+import { Chains, Transactions, TokenRecord, HistoryRecord } from './types';
 export declare const initChains: () => Chains;
+export declare const initTrans: () => Transactions;
+export declare const initTokenRecord: () => TokenRecord;
 export declare const APIS: {
     debank: string;
     beefy: string;
     apeBoard: string;
+    defiTaxes: string;
 };
 export declare const ENDPOINTS: {
     tokenList: string;
@@ -11,6 +14,7 @@ export declare const ENDPOINTS: {
     beefyApy: string;
     beefyBsc: string;
     beefyPolygon: string;
+    defiTaxesProcess: string;
 };
 export declare const NATIVE_TOKENS: {
     bsc: string;
@@ -30,3 +34,4 @@ export declare const DEFAULT_URLS: {
     eth: string;
     matic: string;
 };
+export declare const defaultHistoryRecord: HistoryRecord;

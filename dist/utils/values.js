@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_URLS = exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initChains = void 0;
+exports.defaultHistoryRecord = exports.DEFAULT_URLS = exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initTokenRecord = exports.initTrans = exports.initChains = void 0;
 // Init Chain
 const initChain = () => {
     return {
@@ -26,11 +26,30 @@ const initChains = () => {
     };
 };
 exports.initChains = initChains;
+// Init Trans
+const initTrans = () => {
+    return {
+        bsc: [],
+        eth: [],
+        matic: [],
+    };
+};
+exports.initTrans = initTrans;
+// Init Token Record
+const initTokenRecord = () => {
+    return {
+        amount: 0,
+        quantity: 0,
+        price: 0,
+    };
+};
+exports.initTokenRecord = initTokenRecord;
 // API Url's
 exports.APIS = {
     debank: 'https://openapi.debank.com/v1/user',
     beefy: 'https://api.beefy.finance',
-    apeBoard: 'https://api.apeboard.finance'
+    apeBoard: 'https://api.apeboard.finance',
+    defiTaxes: 'https://defitaxes.us',
 };
 // Endpoints
 exports.ENDPOINTS = {
@@ -38,7 +57,8 @@ exports.ENDPOINTS = {
     protocolList: 'complex_protocol_list',
     beefyApy: 'apy',
     beefyBsc: 'beefyBsc',
-    beefyPolygon: 'beefyPolygon'
+    beefyPolygon: 'beefyPolygon',
+    defiTaxesProcess: 'process',
 };
 // Native Tokens
 exports.NATIVE_TOKENS = {
@@ -63,4 +83,29 @@ exports.DEFAULT_URLS = {
     bsc: 'https://bscscan.com',
     eth: 'https://etherscan.io',
     matic: 'https://polygonscan.com',
+};
+// Default History Record
+exports.defaultHistoryRecord = {
+    id: '',
+    date: '',
+    ticker: '',
+    quote: '',
+    base: '',
+    type: '',
+    direction: '',
+    quantity: 0,
+    amount: 0,
+    price: 0,
+    baseQuantity: 0,
+    baseAmount: 0,
+    basePrice: 0,
+    fills: 0,
+    fees: 0,
+    feeQuantity: 0,
+    feePrice: 0,
+    feeToken: '',
+    chain: 'bsc',
+    fromAddress: '',
+    toAddress: '',
+    taxable: true,
 };

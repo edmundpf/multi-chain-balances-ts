@@ -8,6 +8,7 @@ export default class MultiChain {
     totalTokenValue: number;
     totalVaultValue: number;
     chains: Chains;
+    transactions: import("./types").Transactions;
     assets: Assets;
     chainNames: Array<keyof Chains>;
     tokenNames: string[];
@@ -52,6 +53,10 @@ export default class MultiChain {
      */
     getApeBoardPositions(): Promise<ApeBoardPositions>;
     /**
+     * Get All Transactions
+     */
+    getAllTransactions(): Promise<void>;
+    /**
      * Get Endpoint
      */
     private getEndpoint;
@@ -67,4 +72,12 @@ export default class MultiChain {
      * Get Ape Board Endpoint
      */
     private getApeBoardEndpoint;
+    /**
+     * Get Defi Taxes Endpoint
+     */
+    private getDefiTaxesEndpoint;
+    /**
+     * Round Number
+     */
+    private roundNumber;
 }

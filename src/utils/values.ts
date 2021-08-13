@@ -1,6 +1,9 @@
 import {
 	Chain,
 	Chains,
+	Transactions,
+	TokenRecord,
+	HistoryRecord,
 } from './types'
 
 // Init Chain
@@ -31,12 +34,33 @@ export const initChains = () => {
 	} as Chains
 }
 
+// Init Trans
+
+export const initTrans = () => {
+	return {
+		bsc: [],
+		eth: [],
+		matic: [],
+	} as Transactions
+}
+
+// Init Token Record
+
+export const initTokenRecord = () => {
+	return {
+		amount: 0,
+		quantity: 0,
+		price: 0,
+	} as TokenRecord
+}
+
 // API Url's
 
 export const APIS = {
 	debank: 'https://openapi.debank.com/v1/user',
 	beefy: 'https://api.beefy.finance',
-	apeBoard: 'https://api.apeboard.finance'
+	apeBoard: 'https://api.apeboard.finance',
+	defiTaxes: 'https://defitaxes.us',
 }
 
 // Endpoints
@@ -46,7 +70,8 @@ export const ENDPOINTS = {
 	protocolList: 'complex_protocol_list',
 	beefyApy: 'apy',
 	beefyBsc: 'beefyBsc',
-	beefyPolygon: 'beefyPolygon'
+	beefyPolygon: 'beefyPolygon',
+	defiTaxesProcess: 'process',
 }
 
 // Native Tokens
@@ -81,4 +106,31 @@ export const DEFAULT_URLS = {
 	bsc: 'https://bscscan.com',
 	eth: 'https://etherscan.io',
 	matic: 'https://polygonscan.com',
+}
+
+// Default History Record
+
+export const defaultHistoryRecord: HistoryRecord = {
+	id: '',
+	date: '',
+	ticker: '',
+	quote: '',
+	base: '',
+	type: '',
+	direction: '',
+	quantity: 0,
+	amount: 0,
+	price: 0,
+	baseQuantity: 0,
+	baseAmount: 0,
+	basePrice: 0,
+	fills: 0,
+	fees: 0,
+	feeQuantity: 0,
+	feePrice: 0,
+	feeToken: '',
+	chain: 'bsc',
+	fromAddress: '',
+	toAddress: '',
+	taxable: true,
 }

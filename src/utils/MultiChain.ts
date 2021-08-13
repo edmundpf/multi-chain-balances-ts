@@ -9,6 +9,9 @@ import {
 	initChains,
 	apeBoardCredentials,
 	exchangeAliases,
+	initTrans,
+	initTokenRecord,
+	defaultHistoryRecord,
 } from './values'
 import {
 	Token,
@@ -22,6 +25,11 @@ import {
 	ApeBoardPositions,
 	MainRequest,
 	Assets,
+	DefiTransaction,
+	HistoryRecord,
+	TokenRecord,
+	TokenRecords,
+	DefiRow,
 } from './types'
 
 // Init
@@ -43,6 +51,7 @@ export default class MultiChain {
 	totalTokenValue = 0
 	totalVaultValue = 0
 	chains = initChains()
+	transactions = initTrans()
 	assets: Assets = {}
 	chainNames: Array<keyof Chains>
 	tokenNames: string[] = []
@@ -65,6 +74,7 @@ export default class MultiChain {
 			this.getProtocolList(),
 			this.getApeBoardPositions(),
 			this.getBeefyApy(),
+			this.getAllTransactions(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
@@ -488,6 +498,236 @@ export default class MultiChain {
 	}
 
 	/**
+	 * Get All Transactions
+	 */
+
+	async getAllTransactions() {
+		const requests: Promise<any>[] = []
+
+		// Defi Taxes Request
+		const processRequest = this.getDefiTaxesEndpoint.bind(
+			this,
+			'defiTaxesProcess'
+		)
+
+		// Chain Aliases
+		const chainAliases = {
+			bsc: 'BSC',
+			eth: 'ETH',
+			matic: 'Polygon'
+		}
+
+		// Send Requests
+		for (const chainName of this.chainNames) {
+			requests.push(
+				processRequest(
+					{ chain: chainAliases[chainName] || chainName }
+				)
+			)
+		}
+
+		// Resolve Requests
+		const res: Array<DefiTransaction[]> = await Promise.all(requests)
+
+		// Is Beefy Receipt
+		const isBeefyReceipt = (row: DefiRow) =>
+			row.token_name && row.token_name.includes('moo')
+
+		// Is LP
+		const isLP = (row: DefiRow) =>
+			row.token_name && row.token_name.toUpperCase().includes('LP')
+
+		// Is Buy
+		const checkBuy = (row: DefiRow) => row.treatment == 'buy'
+
+		// Is Sell
+		const checkSell = (row: DefiRow) => row.treatment == 'sell'
+
+		// Check Fee
+		const checkFee = (row: DefiRow) => row.treatment == 'burn'
+
+		// Get Token Name
+		const getTokenName = (row: DefiRow) =>
+			row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '')
+
+		// Iterate Chains
+		for (const index in res) {
+			const result = res[index]
+			const chainName = this.chainNames[index]
+			for (const record of result) {
+				const {
+					hash,
+					rows,
+					type: transType,
+					ts: timeNum,
+				} = record
+				const date = new Date(Number(timeNum) * 1000).toISOString()
+				const type = transType || ''
+				const transRec: HistoryRecord = {
+					...defaultHistoryRecord,
+					id: hash,
+					date,
+					type,
+					chain: chainName,
+				}
+
+				let toAddress = ''
+				let fromAddress = ''
+				let hasBeefyReceipt = false
+				const tokens: TokenRecords = {}
+				const tokenTypes = {
+					buys: [] as string[],
+					sells: [] as string[],
+				}
+
+				// Before Checks
+				for (const row of rows) {
+					const tokenName = getTokenName(row)
+
+					// Check if has Beefy Receipt
+					if (isBeefyReceipt(row)) hasBeefyReceipt = true
+
+					// Get Buy Tokens
+					if (checkBuy(row) && !tokenTypes.buys.includes(tokenName)) {
+						tokenTypes.buys.push(tokenName)
+					}
+
+					// Get Sell Tokens
+					else if (checkSell(row) && !tokenTypes.sells.includes(tokenName)) {
+						tokenTypes.sells.push(tokenName)
+					}
+				}
+
+				// Iterate Rows
+				for (const row of rows) {
+					const {
+						to,
+						from,
+						value,
+						rate,
+					} = row
+					const token = getTokenName(row)
+					const isFee = checkFee(row)
+					const hasBuys = tokenTypes.buys.includes(token)
+					const hasSells = tokenTypes.sells.includes(token)
+					const quantity = value || 0
+					const price = rate || 0
+					const amount = quantity * price
+
+					// Swap
+					if (type == 'swap') {
+						transRec.type == 'swap'
+						transRec.direction == 'buy'
+						transRec.fills = 1
+
+						// Quote Token
+						if (!isFee && hasBuys && !hasSells) {
+							tokens[token] = {
+								quantity,
+								amount,
+								price,
+								fills: 1,
+								type: 'quote'
+							}
+						}
+
+						// Base Token
+						else if (!isFee && hasSells) {
+							const isBuy = checkBuy(row)
+							const adjQuantity = isBuy ? quantity * -1 : quantity
+							const adjAmount = adjQuantity * price
+							if (!isBuy) {
+								toAddress = to || ''
+								fromAddress = from || ''
+							}
+							if (!tokens[token]) {
+								tokens[token] = {
+									quantity: adjQuantity,
+									amount: adjAmount,
+									price,
+									fills: 1,
+									type: 'base'
+								}
+							} else {
+								const {
+									quantity: prevQuantity,
+									amount: prevAmount,
+									price: prevPrice,
+									fills: prevFills,
+								} = tokens[token]
+								const newFills = prevFills + 1
+								tokens[token].fills = newFills
+								tokens[token].quantity = adjQuantity + prevQuantity
+								tokens[token].amount = adjAmount + prevAmount
+								tokens[token].price =
+									((prevPrice * prevFills) + price) / newFills
+							}
+						}
+
+						// Fee Token
+						else if (isFee) {
+							transRec.feeToken = token
+							transRec.fees = amount
+							transRec.feeQuantity = quantity
+							transRec.feePrice = price
+						}
+					}
+				}
+
+				if (Object.keys(tokens).length > 0) {
+					for (const tokenName in tokens) {
+						const {
+							type,
+							quantity,
+							amount,
+							price,
+						} = tokens[tokenName]
+						if (type == 'quote') {
+							transRec.quote = tokenName
+							transRec.quantity = quantity
+							transRec.amount = amount
+							transRec.price = price
+						} else if (type == 'base') {
+							transRec.base = tokenName
+							transRec.baseQuantity = quantity
+							transRec.baseAmount = amount
+							transRec.basePrice = price
+						}
+					}
+					const ticker = transRec.quote && transRec.base
+						? `${transRec.quote}-${transRec.base}`
+						: (transRec.quote || '')
+					let curAmount = transRec.amount
+						? transRec.amount
+						: transRec.baseAmount
+					let baseAmount = transRec.baseAmount
+						? transRec.baseAmount
+						: transRec.amount
+					curAmount = curAmount > baseAmount ? baseAmount : curAmount
+					baseAmount = curAmount
+					const curPrice = transRec.price
+						? transRec.price
+						: curAmount / transRec.quantity
+					const basePrice = transRec.basePrice
+						? transRec.basePrice
+						: baseAmount / transRec.baseQuantity
+
+					// Update Transaction
+					transRec.ticker = ticker
+					transRec.fromAddress = fromAddress
+					transRec.toAddress = toAddress
+					transRec.amount = curAmount
+					transRec.price = curPrice
+					transRec.baseAmount = baseAmount
+					transRec.basePrice = basePrice
+					this.transactions[chainName].push(transRec)
+				}
+			}
+		}
+	}
+
+
+	/**
 	 * Get Endpoint
 	 */
 
@@ -548,5 +788,32 @@ export default class MultiChain {
 				'ape-secret': apeBoardCredentials.secret,
 			}
 		)
+	}
+
+	/**
+	 * Get Defi Taxes Endpoint
+	 */
+
+	private async getDefiTaxesEndpoint(
+		endpoint: keyof typeof ENDPOINTS,
+		args: any
+	) {
+		return await this.getEndpoint(
+			'defiTaxes',
+			endpoint,
+			{
+				address: this.address,
+				...args
+			}
+		)
+	}
+
+	/**
+	 * Round Number
+	 */
+
+	private roundNumber(val: number | string, places = 2) {
+		const res = Number(Number(val).toFixed(places))
+		return res == 0 ? Math.abs(res) : res
 	}
 }

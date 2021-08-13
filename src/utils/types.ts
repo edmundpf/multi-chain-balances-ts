@@ -43,6 +43,14 @@ export type Assets = {
 	[index: string]: AssetData
 }
 
+// Transactions Type
+
+export type Transactions = {
+	bsc: HistoryRecord[]
+	eth: HistoryRecord[]
+	matic: HistoryRecord[]
+}
+
 // Chain Type
 
 export type Chain = {
@@ -138,11 +146,82 @@ export type ApeBoardResponse = {
 }
 
 /**
+ * Defi Taxes Types
+ */
+
+export type DefiTransaction = {
+	hash: string
+	type?: string
+	ts: string
+	rate_inferred: string | false
+	rate_adjusted: number | false
+	classification_certainty: number
+	rows: DefiRow[]
+}
+
+export type DefiRow = {
+	to?: string
+	from: string
+	token_name: string
+	token_contract?: string
+	value: number
+	rate?: number
+	treatment: string
+	good_rate: number
+}
+
+/**
  * Misc
  */
+
+// Main Request
 
 export type MainRequest =
 	Token[] |
 	Protocol[] |
 	ApeBoardPositions |
-	NumDict
+	NumDict |
+	void
+
+// History Record
+
+export type HistoryRecord = {
+	id: string
+	date: string
+	ticker: string
+	quote: string
+	base: string
+	type: string
+	direction: string
+	amount: number
+	quantity: number
+	price: number
+	baseAmount: number
+	baseQuantity: number
+	basePrice: number
+	fills: number
+	fees: number
+	feeQuantity: number
+	feePrice: number
+	feeToken: string
+	chain: keyof Chains
+	fromAddress: string
+	toAddress: string
+	taxable: boolean
+}
+
+// Token Record
+
+export type TokenRecord = {
+	quantity: number
+	amount: number
+	price: number
+	fills: number
+	type: 'quote' | 'base'
+}
+
+// Token Records
+
+export type TokenRecords = {
+	[index: string]: TokenRecord
+}
