@@ -10,7 +10,6 @@ import {
 	apeBoardCredentials,
 	exchangeAliases,
 	initTrans,
-	initTokenRecord,
 	defaultHistoryRecord,
 } from './values'
 import {
@@ -27,7 +26,6 @@ import {
 	Assets,
 	DefiTransaction,
 	HistoryRecord,
-	TokenRecord,
 	TokenRecords,
 	DefiRow,
 } from './types'
@@ -202,18 +200,37 @@ export default class MultiChain {
 	 */
 
 	private parseApyData(positionData: ApeBoardPositions, apyData: NumDict) {
+
+		const hasNumber = (str: string) => /\d/.test(str)
+
 		for (const chainName in this.chains) {
 			const chain = this.chains[chainName as keyof Chains]
 
 			// Iterate positions
 			for (const position of positionData[chainName as keyof Chains]) {
 				const matches: NumDict = {}
-				const symbolsStr = titleCase(
+
+				// Symbol Formatting
+				let symbolsStr = titleCase(
 					position.tokens
 						.join(' ')
 						.toLowerCase()
 				)
 					.toLowerCase()
+				const numericSymbol = hasNumber(symbolsStr)
+
+				// Numeric Symbol Format
+				if (numericSymbol) {
+					let numIndex = 0
+					for (let i = 0; i < symbolsStr.length; i++) {
+						const curLetter = symbolsStr[i]
+						if (hasNumber(curLetter)) {
+							numIndex = i
+							break
+						}
+					}
+					symbolsStr = symbolsStr.substring(numIndex)
+				}
 				const symbols = symbolsStr.split(' ')
 
 				// Iterate Receipts
@@ -221,14 +238,20 @@ export default class MultiChain {
 					const receiptAmount = chain.receipts[receiptName]
 					const isPair = receiptName.includes('-')
 					let receiptStr = receiptName
+
+					// Pair Format
 					if (isPair) {
 						const dashIndex = receiptStr.indexOf('-')
 						receiptStr = receiptStr.substring(0, dashIndex + 1) +
 							receiptStr.substring(dashIndex + 1).toUpperCase()
 					}
+
+					// Receipt Formatting
 					receiptStr = titleCase(receiptStr).toLowerCase()
 					const receiptStrNoSpaces = receiptStr.replace(/ /g, '')
 					const receiptWords = receiptStr.split(' ')
+
+					// Check for Match
 					const isMatch = isPair
 						? symbols.every((sym: string) => (
 							receiptWords.slice(receiptWords.length - symbols.length).some(
@@ -237,6 +260,7 @@ export default class MultiChain {
 						))
 						: receiptStr.includes(symbolsStr) ||
 							receiptStrNoSpaces.includes(symbolsStr)
+
 					if (isMatch) {
 						matches[receiptName] = Math.abs(position.amount - receiptAmount)
 					}

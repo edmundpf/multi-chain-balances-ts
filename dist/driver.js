@@ -17,11 +17,7 @@ const _1 = __importDefault(require("./"));
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const wallet = new _1.default();
     yield wallet.driver();
-    // console.log(wallet.assets)
-    // console.log(wallet.transactions.bsc)
-    for (const record of wallet.transactions.bsc) {
-        console.log(record.quote, record.base, record.amount, record.baseAmount, record.fees);
-    }
+    console.log(wallet.assets);
     return true;
 });
 // Run

@@ -152,29 +152,47 @@ class MultiChain {
      * Parse APY Data
      */
     parseApyData(positionData, apyData) {
+        const hasNumber = (str) => /\d/.test(str);
         for (const chainName in this.chains) {
             const chain = this.chains[chainName];
             // Iterate positions
             for (const position of positionData[chainName]) {
                 const matches = {};
-                const symbolsStr = misc_1.titleCase(position.tokens
+                // Symbol Formatting
+                let symbolsStr = misc_1.titleCase(position.tokens
                     .join(' ')
                     .toLowerCase())
                     .toLowerCase();
+                const numericSymbol = hasNumber(symbolsStr);
+                // Numeric Symbol Format
+                if (numericSymbol) {
+                    let numIndex = 0;
+                    for (let i = 0; i < symbolsStr.length; i++) {
+                        const curLetter = symbolsStr[i];
+                        if (hasNumber(curLetter)) {
+                            numIndex = i;
+                            break;
+                        }
+                    }
+                    symbolsStr = symbolsStr.substring(numIndex);
+                }
                 const symbols = symbolsStr.split(' ');
                 // Iterate Receipts
                 for (const receiptName in chain.receipts) {
                     const receiptAmount = chain.receipts[receiptName];
                     const isPair = receiptName.includes('-');
                     let receiptStr = receiptName;
+                    // Pair Format
                     if (isPair) {
                         const dashIndex = receiptStr.indexOf('-');
                         receiptStr = receiptStr.substring(0, dashIndex + 1) +
                             receiptStr.substring(dashIndex + 1).toUpperCase();
                     }
+                    // Receipt Formatting
                     receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
                     const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
                     const receiptWords = receiptStr.split(' ');
+                    // Check for Match
                     const isMatch = isPair
                         ? symbols.every((sym) => (receiptWords.slice(receiptWords.length - symbols.length).some((receiptSym) => sym.includes(receiptSym))))
                         : receiptStr.includes(symbolsStr) ||
