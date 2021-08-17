@@ -17,7 +17,21 @@ const _1 = __importDefault(require("./"));
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const wallet = new _1.default();
     yield wallet.driver();
-    console.log(wallet.assets);
+    let total = 0;
+    for (const chainName in wallet.transactions) {
+        if (chainName == 'matic')
+            continue;
+        for (const record of wallet.transactions[chainName]) {
+            const { type, amount, fromAddress } = record;
+            if (type == 'deposit') {
+                if (chainName == 'bsc' && !fromAddress.startsWith('0X000'))
+                    continue;
+                console.log(record);
+                total += amount;
+            }
+        }
+    }
+    console.log(total);
     return true;
 });
 // Run

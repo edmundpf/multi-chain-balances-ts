@@ -21,3 +21,6 @@ node_modules
 
 # Data
 data/
+
+# Project Specific
+trans.json

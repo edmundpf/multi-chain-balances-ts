@@ -55,7 +55,7 @@ export default class MultiChain {
     /**
      * Get All Transactions
      */
-    getAllTransactions(): Promise<void>;
+    getAllTransactions(useReq?: boolean): Promise<void>;
     /**
      * Get Endpoint
      */

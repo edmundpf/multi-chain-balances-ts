@@ -1,6 +1,15 @@
 import dotenv from 'dotenv'
 import axios from 'axios'
 import { titleCase } from './misc'
+import { readFileSync } from 'fs'
+import {
+	checkBuy,
+	checkSell,
+	checkFee,
+	getTokenName,
+	getTicker,
+	setDeposit,
+} from './transactions'
 import {
 	APIS,
 	ENDPOINTS,
@@ -68,21 +77,21 @@ export default class MultiChain {
 
 	async driver() {
 		const requests: Promise<MainRequest>[] = [
-			this.getTokenList(),
-			this.getProtocolList(),
-			this.getApeBoardPositions(),
-			this.getBeefyApy(),
-			this.getAllTransactions(),
+			// this.getTokenList(),
+			// this.getProtocolList(),
+			// this.getApeBoardPositions(),
+			// this.getBeefyApy(),
+			this.getAllTransactions(false),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
-		const tokenData = res[0] as Token[]
-		const protocolData = res[1] as Protocol[]
-		const positionData = res[2] as ApeBoardPositions
-		const apyData = res[3] as NumDict
-		this.parseTokenData(tokenData)
-		this.parseProtocolData(protocolData)
-		this.parseApyData(positionData, apyData)
-		this.parseChainData()
+		// const tokenData = res[0] as Token[]
+		// const protocolData = res[1] as Protocol[]
+		// const positionData = res[2] as ApeBoardPositions
+		// const apyData = res[3] as NumDict
+		// this.parseTokenData(tokenData)
+		// this.parseProtocolData(protocolData)
+		// this.parseApyData(positionData, apyData)
+		// this.parseChainData()
 	}
 
 	/**
@@ -525,66 +534,53 @@ export default class MultiChain {
 	 * Get All Transactions
 	 */
 
-	async getAllTransactions() {
+	async getAllTransactions(useReq = true) {
 		const requests: Promise<any>[] = []
 
-		// Defi Taxes Request
-		const processRequest = this.getDefiTaxesEndpoint.bind(
-			this,
-			'defiTaxesProcess'
-		)
-
-		// Chain Aliases
-		const chainAliases = {
-			bsc: 'BSC',
-			eth: 'ETH',
-			matic: 'Polygon'
-		}
-
-		// Send Requests
-		for (const chainName of this.chainNames) {
-			requests.push(
-				processRequest(
-					{ chain: chainAliases[chainName] || chainName }
-				)
+		if (useReq) {
+			// Defi Taxes Request
+			const processRequest = this.getDefiTaxesEndpoint.bind(
+				this,
+				'defiTaxesProcess'
 			)
+
+			// Chain Aliases
+			const chainAliases = {
+				bsc: 'BSC',
+				eth: 'ETH',
+				matic: 'Polygon'
+			}
+
+			// Send Requests
+			for (const chainName of this.chainNames) {
+				requests.push(
+					processRequest(
+						{ chain: chainAliases[chainName] || chainName }
+					)
+				)
+			}
 		}
 
 		// Resolve Requests
-		const res: Array<DefiTransaction[]> = await Promise.all(requests)
-
-		// Is Beefy Receipt
-		const isBeefyReceipt = (row: DefiRow) =>
-			row.token_name && row.token_name.includes('moo')
-
-		// Is LP
-		const isLP = (row: DefiRow) =>
-			row.token_name && row.token_name.toUpperCase().includes('LP')
-
-		// Is Buy
-		const checkBuy = (row: DefiRow) => row.treatment == 'buy'
-
-		// Is Sell
-		const checkSell = (row: DefiRow) => row.treatment == 'sell'
-
-		// Check Fee
-		const checkFee = (row: DefiRow) => row.treatment == 'burn'
-
-		// Get Token Name
-		const getTokenName = (row: DefiRow) =>
-			row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '')
+		const res: Array<DefiTransaction[]> = useReq
+			? await Promise.all(requests)
+			: JSON.parse(readFileSync('./src/utils/trans.json', 'utf-8'))
 
 		// Iterate Chains
 		for (const index in res) {
 			const result = res[index]
 			const chainName = this.chainNames[index]
 			for (const record of result) {
+
+				// Transaction Details
 				const {
 					hash,
 					rows,
 					type: transType,
 					ts: timeNum,
 				} = record
+
+				// Transaction Properties
 				const date = new Date(Number(timeNum) * 1000).toISOString()
 				const type = transType || ''
 				const transRec: HistoryRecord = {
@@ -595,21 +591,20 @@ export default class MultiChain {
 					chain: chainName,
 				}
 
+				// Addresses
 				let toAddress = ''
 				let fromAddress = ''
-				let hasBeefyReceipt = false
+
+				// Token Info
 				const tokens: TokenRecords = {}
 				const tokenTypes = {
 					buys: [] as string[],
 					sells: [] as string[],
 				}
 
-				// Before Checks
+				// Token Checks
 				for (const row of rows) {
 					const tokenName = getTokenName(row)
-
-					// Check if has Beefy Receipt
-					if (isBeefyReceipt(row)) hasBeefyReceipt = true
 
 					// Get Buy Tokens
 					if (checkBuy(row) && !tokenTypes.buys.includes(tokenName)) {
@@ -624,12 +619,17 @@ export default class MultiChain {
 
 				// Iterate Rows
 				for (const row of rows) {
+
+					// Row Details
 					const {
 						to,
 						from,
 						value,
 						rate,
+						treatment
 					} = row
+
+					// Row Properties
 					const token = getTokenName(row)
 					const isFee = checkFee(row)
 					const hasBuys = tokenTypes.buys.includes(token)
@@ -696,8 +696,61 @@ export default class MultiChain {
 							transRec.feePrice = price
 						}
 					}
+
+					// Fees
+					else if (type == 'fee') {
+						transRec.type = 'fee'
+						transRec.direction = 'buy'
+						transRec.feeToken = token
+						transRec.fees = amount
+						transRec.feeQuantity = quantity
+						transRec.feePrice = price
+						transRec.fromAddress = from || ''
+						this.transactions[chainName].push(transRec)
+						break
+					}
+
+					// Unknown
+					else if (!type) {
+
+						// Receive
+						if (treatment == 'gift' && rows.length == 1) {
+							setDeposit(
+								transRec,
+								{
+									token,
+									quantity,
+									amount,
+									price,
+									from,
+									to
+								}
+							)
+							this.transactions[chainName].push(transRec)
+							break
+						}
+					}
+
+					// Deposits
+					else if (type.includes('deposit') && rows.length == 1) {
+						setDeposit(
+							transRec,
+							{
+								token,
+								quantity,
+								amount,
+								price,
+								from,
+								to
+							}
+						)
+						console.log('DEPOSIT')
+						this.transactions[chainName].push(transRec)
+						break
+					}
 				}
 
+				// Convert tokens to transaction
 				if (Object.keys(tokens).length > 0) {
 					for (const tokenName in tokens) {
 						const {
@@ -719,7 +772,7 @@ export default class MultiChain {
 						}
 					}
 					const ticker = transRec.quote && transRec.base
-						? `${transRec.quote}-${transRec.base}`
+						? getTicker(transRec.quote, transRec.base)
 						: (transRec.quote || '')
 					let curAmount = transRec.amount
 						? transRec.amount
@@ -749,7 +802,6 @@ export default class MultiChain {
 			}
 		}
 	}
-
 
 	/**
 	 * Get Endpoint

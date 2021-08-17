@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 const axios_1 = __importDefault(require("axios"));
 const misc_1 = require("./misc");
+const fs_1 = require("fs");
+const transactions_1 = require("./transactions");
 const values_1 = require("./values");
 // Init
 dotenv_1.default.config();
@@ -45,21 +47,21 @@ class MultiChain {
     driver() {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [
-                this.getTokenList(),
-                this.getProtocolList(),
-                this.getApeBoardPositions(),
-                this.getBeefyApy(),
-                this.getAllTransactions(),
+                // this.getTokenList(),
+                // this.getProtocolList(),
+                // this.getApeBoardPositions(),
+                // this.getBeefyApy(),
+                this.getAllTransactions(false),
             ];
             const res = yield Promise.all(requests);
-            const tokenData = res[0];
-            const protocolData = res[1];
-            const positionData = res[2];
-            const apyData = res[3];
-            this.parseTokenData(tokenData);
-            this.parseProtocolData(protocolData);
-            this.parseApyData(positionData, apyData);
-            this.parseChainData();
+            // const tokenData = res[0] as Token[]
+            // const protocolData = res[1] as Protocol[]
+            // const positionData = res[2] as ApeBoardPositions
+            // const apyData = res[3] as NumDict
+            // this.parseTokenData(tokenData)
+            // this.parseProtocolData(protocolData)
+            // this.parseApyData(positionData, apyData)
+            // this.parseChainData()
         });
     }
     /**
@@ -431,73 +433,67 @@ class MultiChain {
     /**
      * Get All Transactions
      */
-    getAllTransactions() {
+    getAllTransactions(useReq = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [];
-            // Defi Taxes Request
-            const processRequest = this.getDefiTaxesEndpoint.bind(this, 'defiTaxesProcess');
-            // Chain Aliases
-            const chainAliases = {
-                bsc: 'BSC',
-                eth: 'ETH',
-                matic: 'Polygon'
-            };
-            // Send Requests
-            for (const chainName of this.chainNames) {
-                requests.push(processRequest({ chain: chainAliases[chainName] || chainName }));
+            if (useReq) {
+                // Defi Taxes Request
+                const processRequest = this.getDefiTaxesEndpoint.bind(this, 'defiTaxesProcess');
+                // Chain Aliases
+                const chainAliases = {
+                    bsc: 'BSC',
+                    eth: 'ETH',
+                    matic: 'Polygon'
+                };
+                // Send Requests
+                for (const chainName of this.chainNames) {
+                    requests.push(processRequest({ chain: chainAliases[chainName] || chainName }));
+                }
             }
             // Resolve Requests
-            const res = yield Promise.all(requests);
-            // Is Beefy Receipt
-            const isBeefyReceipt = (row) => row.token_name && row.token_name.includes('moo');
-            // Is LP
-            const isLP = (row) => row.token_name && row.token_name.toUpperCase().includes('LP');
-            // Is Buy
-            const checkBuy = (row) => row.treatment == 'buy';
-            // Is Sell
-            const checkSell = (row) => row.treatment == 'sell';
-            // Check Fee
-            const checkFee = (row) => row.treatment == 'burn';
-            // Get Token Name
-            const getTokenName = (row) => row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '');
+            const res = useReq
+                ? yield Promise.all(requests)
+                : JSON.parse(fs_1.readFileSync('./src/utils/trans.json', 'utf-8'));
             // Iterate Chains
             for (const index in res) {
                 const result = res[index];
                 const chainName = this.chainNames[index];
                 for (const record of result) {
+                    // Transaction Details
                     const { hash, rows, type: transType, ts: timeNum, } = record;
+                    // Transaction Properties
                     const date = new Date(Number(timeNum) * 1000).toISOString();
                     const type = transType || '';
                     const transRec = Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, date,
                         type, chain: chainName });
+                    // Addresses
                     let toAddress = '';
                     let fromAddress = '';
-                    let hasBeefyReceipt = false;
+                    // Token Info
                     const tokens = {};
                     const tokenTypes = {
                         buys: [],
                         sells: [],
                     };
-                    // Before Checks
+                    // Token Checks
                     for (const row of rows) {
-                        const tokenName = getTokenName(row);
-                        // Check if has Beefy Receipt
-                        if (isBeefyReceipt(row))
-                            hasBeefyReceipt = true;
+                        const tokenName = transactions_1.getTokenName(row);
                         // Get Buy Tokens
-                        if (checkBuy(row) && !tokenTypes.buys.includes(tokenName)) {
+                        if (transactions_1.checkBuy(row) && !tokenTypes.buys.includes(tokenName)) {
                             tokenTypes.buys.push(tokenName);
                         }
                         // Get Sell Tokens
-                        else if (checkSell(row) && !tokenTypes.sells.includes(tokenName)) {
+                        else if (transactions_1.checkSell(row) && !tokenTypes.sells.includes(tokenName)) {
                             tokenTypes.sells.push(tokenName);
                         }
                     }
                     // Iterate Rows
                     for (const row of rows) {
-                        const { to, from, value, rate, } = row;
-                        const token = getTokenName(row);
-                        const isFee = checkFee(row);
+                        // Row Details
+                        const { to, from, value, rate, treatment } = row;
+                        // Row Properties
+                        const token = transactions_1.getTokenName(row);
+                        const isFee = transactions_1.checkFee(row);
                         const hasBuys = tokenTypes.buys.includes(token);
                         const hasSells = tokenTypes.sells.includes(token);
                         const quantity = value || 0;
@@ -520,7 +516,7 @@ class MultiChain {
                             }
                             // Base Token
                             else if (!isFee && hasSells) {
-                                const isBuy = checkBuy(row);
+                                const isBuy = transactions_1.checkBuy(row);
                                 const adjQuantity = isBuy ? quantity * -1 : quantity;
                                 const adjAmount = adjQuantity * price;
                                 if (!isBuy) {
@@ -554,7 +550,50 @@ class MultiChain {
                                 transRec.feePrice = price;
                             }
                         }
+                        // Fees
+                        else if (type == 'fee') {
+                            transRec.type = 'fee';
+                            transRec.direction = 'buy';
+                            transRec.feeToken = token;
+                            transRec.fees = amount;
+                            transRec.feeQuantity = quantity;
+                            transRec.feePrice = price;
+                            transRec.fromAddress = from || '';
+                            this.transactions[chainName].push(transRec);
+                            break;
+                        }
+                        // Unknown
+                        else if (!type) {
+                            // Receive
+                            if (treatment == 'gift' && rows.length == 1) {
+                                transactions_1.setDeposit(transRec, {
+                                    token,
+                                    quantity,
+                                    amount,
+                                    price,
+                                    from,
+                                    to
+                                });
+                                this.transactions[chainName].push(transRec);
+                                break;
+                            }
+                        }
+                        // Deposits
+                        else if (type.includes('deposit') && rows.length == 1) {
+                            transactions_1.setDeposit(transRec, {
+                                token,
+                                quantity,
+                                amount,
+                                price,
+                                from,
+                                to
+                            });
+                            console.log('DEPOSIT');
+                            this.transactions[chainName].push(transRec);
+                            break;
+                        }
                     }
+                    // Convert tokens to transaction
                     if (Object.keys(tokens).length > 0) {
                         for (const tokenName in tokens) {
                             const { type, quantity, amount, price, } = tokens[tokenName];
@@ -572,7 +611,7 @@ class MultiChain {
                             }
                         }
                         const ticker = transRec.quote && transRec.base
-                            ? `${transRec.quote}-${transRec.base}`
+                            ? transactions_1.getTicker(transRec.quote, transRec.base)
                             : (transRec.quote || '');
                         let curAmount = transRec.amount
                             ? transRec.amount
