@@ -202,7 +202,6 @@ class DefiBalances {
                 let currentDiff = 0;
                 for (const receiptName in matches) {
                     const diff = matches[receiptName];
-                    console.log(receiptName, matches[receiptName]);
                     if (!receiptMatch || diff < currentDiff) {
                         receiptMatch = receiptName;
                         currentDiff = diff;
