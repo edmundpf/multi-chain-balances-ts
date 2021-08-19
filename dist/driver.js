@@ -41,6 +41,7 @@ const transactions = (useReq = true) => __awaiter(void 0, void 0, void 0, functi
             }
         }
     }
+    console.log('Total', total);
 });
 // Run
 main(true, true);

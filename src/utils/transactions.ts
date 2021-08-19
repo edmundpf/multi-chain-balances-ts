@@ -37,7 +37,7 @@ export const checkFee = (row: DefiRow) => row.treatment == 'burn'
  */
 
 export const getTokenName = (row: DefiRow) =>
-	row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '')
+	row.token_name ? row.token_name.toUpperCase() : row.token_contract || ''
 
 /**
  * Get Ticker
@@ -60,14 +60,7 @@ export const setDeposit = (
 		to?: string
 	}
 ) => {
-	const {
-		token,
-		quantity,
-		amount,
-		price,
-		from,
-		to
-	} = info
+	const { token, quantity, amount, price, from, to } = info
 	transRec.type = 'deposit'
 	transRec.direction = 'buy'
 	transRec.quote = token

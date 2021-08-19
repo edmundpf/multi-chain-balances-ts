@@ -82,9 +82,9 @@ export type ApeBoardPosition = {
 // Ape Board Positions
 
 export type ApeBoardPositions = {
-	bsc: ApeBoardPosition[],
-	eth: ApeBoardPosition[],
-	matic: ApeBoardPosition[],
+	bsc: ApeBoardPosition[]
+	eth: ApeBoardPosition[]
+	matic: ApeBoardPosition[]
 }
 
 /**
@@ -177,11 +177,11 @@ export type DefiRow = {
 // Main Request
 
 export type MainRequest =
-	Token[] |
-	Protocol[] |
-	ApeBoardPositions |
-	NumDict |
-	void
+	| Token[]
+	| Protocol[]
+	| ApeBoardPositions
+	| NumDict
+	| void
 
 // History Record
 

@@ -29,7 +29,7 @@ exports.checkFee = checkFee;
 /**
  * Get Token Name
  */
-const getTokenName = (row) => row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '');
+const getTokenName = (row) => row.token_name ? row.token_name.toUpperCase() : row.token_contract || '';
 exports.getTokenName = getTokenName;
 /**
  * Get Ticker

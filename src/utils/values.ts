@@ -20,7 +20,7 @@ const initChain = () => {
 		},
 		tokens: [],
 		vaults: [],
-		receipts: {}
+		receipts: {},
 	} as Chain
 }
 
@@ -30,7 +30,7 @@ export const initChains = () => {
 	return {
 		bsc: initChain(),
 		eth: initChain(),
-		matic: initChain()
+		matic: initChain(),
 	} as Chains
 }
 
@@ -85,12 +85,11 @@ export const NATIVE_TOKENS = {
 // Ape Board Credentials
 
 export const apeBoardCredentials = {
-	secret: (
+	secret:
 		'U2FsdGVkX19COuJCyW6vO9L8HPHKzedxSbDyJwvCkp+PD3WLM1SbGH4v0gwBiH4xbINmxU67' +
 		'QUMSa4nBt0o4sc5xN2DD9mjQ+QjMVkJp568PKmsvfadUKb2Rgm56urKjF6WOY95TjUY/tgNr' +
-		'5BGwUw=='
-	),
-	passCode: '5a102a34f60fa7ec9d643a8a0e72cab9'
+		'5BGwUw==',
+	passCode: '5a102a34f60fa7ec9d643a8a0e72cab9',
 }
 
 // Aliases

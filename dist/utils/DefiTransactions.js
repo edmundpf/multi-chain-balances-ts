@@ -40,7 +40,7 @@ class DefiTransactions extends DefiBalances_1.default {
                 const chainAliases = {
                     bsc: 'BSC',
                     eth: 'ETH',
-                    matic: 'Polygon'
+                    matic: 'Polygon',
                 };
                 // Send Requests
                 for (const chainName of this.chainNames) {
@@ -57,7 +57,7 @@ class DefiTransactions extends DefiBalances_1.default {
                 const chainName = this.chainNames[index];
                 for (const record of result) {
                     // Transaction Details
-                    const { hash, rows, type: transType, ts: timeNum, } = record;
+                    const { hash, rows, type: transType, ts: timeNum } = record;
                     // Transaction Properties
                     const date = new Date(Number(timeNum) * 1000).toISOString();
                     const type = transType || '';
@@ -108,7 +108,7 @@ class DefiTransactions extends DefiBalances_1.default {
                                     amount,
                                     price,
                                     fills: 1,
-                                    type: 'quote'
+                                    type: 'quote',
                                 };
                             }
                             // Base Token
@@ -126,7 +126,7 @@ class DefiTransactions extends DefiBalances_1.default {
                                         amount: adjAmount,
                                         price,
                                         fills: 1,
-                                        type: 'base'
+                                        type: 'base',
                                     };
                                 }
                                 else {
@@ -135,8 +135,7 @@ class DefiTransactions extends DefiBalances_1.default {
                                     tokens[token].fills = newFills;
                                     tokens[token].quantity = adjQuantity + prevQuantity;
                                     tokens[token].amount = adjAmount + prevAmount;
-                                    tokens[token].price =
-                                        ((prevPrice * prevFills) + price) / newFills;
+                                    tokens[token].price = (prevPrice * prevFills + price) / newFills;
                                 }
                             }
                             // Fee Token
@@ -169,7 +168,7 @@ class DefiTransactions extends DefiBalances_1.default {
                                     amount,
                                     price,
                                     from,
-                                    to
+                                    to,
                                 });
                                 this.transactions[chainName].push(transRec);
                                 break;
@@ -183,7 +182,7 @@ class DefiTransactions extends DefiBalances_1.default {
                                 amount,
                                 price,
                                 from,
-                                to
+                                to,
                             });
                             console.log('DEPOSIT');
                             this.transactions[chainName].push(transRec);
@@ -193,7 +192,7 @@ class DefiTransactions extends DefiBalances_1.default {
                     // Convert tokens to transaction
                     if (Object.keys(tokens).length > 0) {
                         for (const tokenName in tokens) {
-                            const { type, quantity, amount, price, } = tokens[tokenName];
+                            const { type, quantity, amount, price } = tokens[tokenName];
                             if (type == 'quote') {
                                 transRec.quote = tokenName;
                                 transRec.quantity = quantity;
@@ -209,7 +208,7 @@ class DefiTransactions extends DefiBalances_1.default {
                         }
                         const ticker = transRec.quote && transRec.base
                             ? transactions_1.getTicker(transRec.quote, transRec.base)
-                            : (transRec.quote || '');
+                            : transRec.quote || '';
                         let curAmount = transRec.amount
                             ? transRec.amount
                             : transRec.baseAmount;

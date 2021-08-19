@@ -14,7 +14,7 @@ const initChain = () => {
         },
         tokens: [],
         vaults: [],
-        receipts: {}
+        receipts: {},
     };
 };
 // Init Chains
@@ -22,7 +22,7 @@ const initChains = () => {
     return {
         bsc: initChain(),
         eth: initChain(),
-        matic: initChain()
+        matic: initChain(),
     };
 };
 exports.initChains = initChains;
@@ -68,10 +68,10 @@ exports.NATIVE_TOKENS = {
 };
 // Ape Board Credentials
 exports.apeBoardCredentials = {
-    secret: ('U2FsdGVkX19COuJCyW6vO9L8HPHKzedxSbDyJwvCkp+PD3WLM1SbGH4v0gwBiH4xbINmxU67' +
+    secret: 'U2FsdGVkX19COuJCyW6vO9L8HPHKzedxSbDyJwvCkp+PD3WLM1SbGH4v0gwBiH4xbINmxU67' +
         'QUMSa4nBt0o4sc5xN2DD9mjQ+QjMVkJp568PKmsvfadUKb2Rgm56urKjF6WOY95TjUY/tgNr' +
-        '5BGwUw=='),
-    passCode: '5a102a34f60fa7ec9d643a8a0e72cab9'
+        '5BGwUw==',
+    passCode: '5a102a34f60fa7ec9d643a8a0e72cab9',
 };
 // Aliases
 exports.exchangeAliases = {

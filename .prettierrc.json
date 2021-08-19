@@ -3,9 +3,7 @@
 	"singleQuote": true,
 	"overrides": [
 		{
-			"files": [
-				"FILLER/**"
-			],
+			"files": ["FILLER/**"],
 			"options": {
 				"semi": true
 			}

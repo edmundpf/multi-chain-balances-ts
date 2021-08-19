@@ -35,7 +35,6 @@ const MIN_VALUE = Number(process.env.MIN_VALUE) || 0.05
  */
 
 export default class DefiBalances {
-
 	// Properties
 
 	address = ADDRESS
@@ -84,19 +83,13 @@ export default class DefiBalances {
 	private parseTokenData(data: Token[]) {
 		for (const record of data) {
 			// Token Info
-			const {
-				chain,
-				symbol,
-				price: recPrice,
-				amount: recAmount
-			}	= record
+			const { chain, symbol, price: recPrice, amount: recAmount } = record
 			const price = recPrice || 0
 			const amount = recAmount || 0
 			const value = price * amount
 
 			// Check if chain exists
 			if (this.chainNames.includes(chain)) {
-
 				// Check for Beefy Receipt
 				if (symbol.startsWith('moo')) {
 					this.chains[chain].receipts[symbol] = amount
@@ -133,7 +126,7 @@ export default class DefiBalances {
 				chain,
 				name: platform,
 				site_url: platformUrl,
-				portfolio_item_list: vaults
+				portfolio_item_list: vaults,
 			} = record
 
 			// Check if chain exists
@@ -152,11 +145,7 @@ export default class DefiBalances {
 
 						// Token Info
 						for (const token of tokens) {
-							const {
-								symbol,
-								price: recPrice,
-								amount: recAmount
-							} = token
+							const { symbol, price: recPrice, amount: recAmount } = token
 							if (symbol) {
 								const price = recPrice || 0
 								const amount = recAmount || 0
@@ -166,7 +155,7 @@ export default class DefiBalances {
 								tokenData.push({
 									symbol,
 									amount,
-									value
+									value,
 								})
 							}
 						}
@@ -178,7 +167,7 @@ export default class DefiBalances {
 							value,
 							platform,
 							platformUrl,
-							tokens: tokenData
+							tokens: tokenData,
 						})
 						chainInfo.totalVaultValue += value
 					}
@@ -201,11 +190,8 @@ export default class DefiBalances {
 
 				// Symbol Formatting
 				let symbolsStr = titleCase(
-					position.tokens
-						.join(' ')
-						.toLowerCase()
-				)
-					.toLowerCase()
+					position.tokens.join(' ').toLowerCase()
+				).toLowerCase()
 				const numericSymbol = hasNumber(symbolsStr)
 
 				// Numeric Symbol Format
@@ -231,7 +217,8 @@ export default class DefiBalances {
 					// Pair Format
 					if (isPair) {
 						const dashIndex = receiptStr.indexOf('-')
-						receiptStr = receiptStr.substring(0, dashIndex + 1) +
+						receiptStr =
+							receiptStr.substring(0, dashIndex + 1) +
 							receiptStr.substring(dashIndex + 1).toUpperCase()
 					}
 
@@ -242,13 +229,13 @@ export default class DefiBalances {
 
 					// Check for Match
 					const isMatch = isPair
-						? symbols.every((sym: string) => (
-							receiptWords.slice(receiptWords.length - symbols.length).some(
-								(receiptSym: string) => sym.includes(receiptSym)
-							)
-						))
+						? symbols.every((sym: string) =>
+								receiptWords
+									.slice(receiptWords.length - symbols.length)
+									.some((receiptSym: string) => sym.includes(receiptSym))
+						  )
 						: receiptStr.includes(symbolsStr) ||
-							receiptStrNoSpaces.includes(symbolsStr)
+						  receiptStrNoSpaces.includes(symbolsStr)
 
 					if (isMatch) {
 						matches[receiptName] = Math.abs(position.amount - receiptAmount)
@@ -262,13 +249,15 @@ export default class DefiBalances {
 					const diff = matches[receiptName]
 					if (!receiptMatch || diff < currentDiff) {
 						receiptMatch = receiptName
+						currentDiff = diff
 					}
 				}
 
 				// Get Matching APY
 				if (receiptMatch) {
-					const receiptStr = titleCase(receiptMatch.replace('V2', 'v2'))
-						.toLowerCase()
+					const receiptStr = titleCase(
+						receiptMatch.replace('V2', 'v2')
+					).toLowerCase()
 					let receiptWords = receiptStr.split(' ').slice(1)
 
 					// Check if Symbol has version and format receipt words
@@ -286,10 +275,7 @@ export default class DefiBalances {
 								key as keyof typeof exchangeAliases
 							]) {
 								receiptWordsSet.push(
-									receiptStr
-										.replace(key, alias)
-										.split(' ')
-										.slice(1)
+									receiptStr.replace(key, alias).split(' ').slice(1)
 								)
 							}
 						}
@@ -299,11 +285,13 @@ export default class DefiBalances {
 					for (const vaultName in apyData) {
 						let vaultMatch = ''
 						for (const wordSet of receiptWordsSet) {
-							const isMatch = wordSet.length == 1
-								? vaultName.endsWith(`-${wordSet[0]}`)
-								: wordSet.every((word: string) => (
-								word == 'swap' || vaultName.includes(word)
-							))
+							const isMatch =
+								wordSet.length == 1
+									? vaultName.endsWith(`-${wordSet[0]}`)
+									: wordSet.every(
+											(word: string) =>
+												word == 'swap' || vaultName.includes(word)
+									  )
 							if (isMatch) {
 								vaultMatch = vaultName
 								break
@@ -315,11 +303,11 @@ export default class DefiBalances {
 
 							// Get Matching Vault
 							for (const vaultIndex in chain.vaults) {
-								const isMatch = position.tokens.every((token: string) => (
+								const isMatch = position.tokens.every((token: string) =>
 									chain.vaults[vaultIndex].symbol
 										.toLowerCase()
 										.includes(token.toLowerCase())
-								))
+								)
 								const vault = chain.vaults[vaultIndex]
 								const diff = Math.abs(vault.value - position.value)
 								if (isMatch && (currentDiff == -1 || diff < currentDiff)) {
@@ -360,14 +348,14 @@ export default class DefiBalances {
 			const apy: number = (record as any).apy || 0
 			const beefyVaultName: string = (record as any).beefyVaultName || ''
 			const url: string = (record as any).platformUrl || DEFAULT_URLS[chainName]
-			let symbolStr = useBeefyVaultName && beefyVaultName
-				? beefyVaultName.toUpperCase()
-				: symbol
+			let symbolStr =
+				useBeefyVaultName && beefyVaultName
+					? beefyVaultName.toUpperCase()
+					: symbol
 			if (!beefyVaultName || !useBeefyVaultName) {
 				if (assetCounts[symbol] > 1) {
-					const symbolIndex = assetIndexes[symbol] != null
-						? assetIndexes[symbol] + 1
-						: 0
+					const symbolIndex =
+						assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0
 					symbolStr += `-${symbolIndex}`
 					assetIndexes[symbol] = symbolIndex
 				}
@@ -466,7 +454,7 @@ export default class DefiBalances {
 	async getApeBoardPositions() {
 		const requests = [
 			this.getApeBoardEndpoint('beefyBsc'),
-			this.getApeBoardEndpoint('beefyPolygon')
+			this.getApeBoardEndpoint('beefyPolygon'),
 		]
 		const res: ApeBoardResponse[] = await Promise.all(requests)
 		const bscInfo = res[0]?.positions || []
@@ -506,7 +494,7 @@ export default class DefiBalances {
 		return {
 			bsc: bscPositions,
 			eth: [],
-			matic: maticPositions
+			matic: maticPositions,
 		} as ApeBoardPositions
 	}
 
@@ -527,11 +515,9 @@ export default class DefiBalances {
 			if (paramStr) paramStr = '?' + paramStr
 			const fullUrl = `${apiUrl}/${stub}${paramStr}`
 			return (
-				await axios.get(
-					fullUrl,
-					headers ? { headers } : undefined
-				)
-			)?.data || {}
+				(await axios.get(fullUrl, headers ? { headers } : undefined))?.data ||
+				{}
+			)
 		} catch (err) {
 			return err?.response?.data || {}
 		}
@@ -542,11 +528,7 @@ export default class DefiBalances {
 	 */
 
 	private async getDebankEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint(
-			'debank',
-			endpoint,
-			{ id: this.address }
-		)
+		return await this.getEndpoint('debank', endpoint, { id: this.address })
 	}
 
 	/**

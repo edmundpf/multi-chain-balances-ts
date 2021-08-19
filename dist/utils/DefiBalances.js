@@ -101,7 +101,7 @@ class DefiBalances {
         var _a, _b;
         for (const record of data) {
             // Platform Info
-            const { chain, name: platform, site_url: platformUrl, portfolio_item_list: vaults } = record;
+            const { chain, name: platform, site_url: platformUrl, portfolio_item_list: vaults, } = record;
             // Check if chain exists
             if (this.chainNames.includes(chain)) {
                 const chainInfo = this.chains[chain];
@@ -126,7 +126,7 @@ class DefiBalances {
                                 tokenData.push({
                                     symbol,
                                     amount,
-                                    value
+                                    value,
                                 });
                             }
                         }
@@ -138,7 +138,7 @@ class DefiBalances {
                             value,
                             platform,
                             platformUrl,
-                            tokens: tokenData
+                            tokens: tokenData,
                         });
                         chainInfo.totalVaultValue += value;
                     }
@@ -156,10 +156,7 @@ class DefiBalances {
             for (const position of positionData[chainName]) {
                 const matches = {};
                 // Symbol Formatting
-                let symbolsStr = misc_1.titleCase(position.tokens
-                    .join(' ')
-                    .toLowerCase())
-                    .toLowerCase();
+                let symbolsStr = misc_1.titleCase(position.tokens.join(' ').toLowerCase()).toLowerCase();
                 const numericSymbol = misc_1.hasNumber(symbolsStr);
                 // Numeric Symbol Format
                 if (numericSymbol) {
@@ -182,8 +179,9 @@ class DefiBalances {
                     // Pair Format
                     if (isPair) {
                         const dashIndex = receiptStr.indexOf('-');
-                        receiptStr = receiptStr.substring(0, dashIndex + 1) +
-                            receiptStr.substring(dashIndex + 1).toUpperCase();
+                        receiptStr =
+                            receiptStr.substring(0, dashIndex + 1) +
+                                receiptStr.substring(dashIndex + 1).toUpperCase();
                     }
                     // Receipt Formatting
                     receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
@@ -191,7 +189,9 @@ class DefiBalances {
                     const receiptWords = receiptStr.split(' ');
                     // Check for Match
                     const isMatch = isPair
-                        ? symbols.every((sym) => (receiptWords.slice(receiptWords.length - symbols.length).some((receiptSym) => sym.includes(receiptSym))))
+                        ? symbols.every((sym) => receiptWords
+                            .slice(receiptWords.length - symbols.length)
+                            .some((receiptSym) => sym.includes(receiptSym)))
                         : receiptStr.includes(symbolsStr) ||
                             receiptStrNoSpaces.includes(symbolsStr);
                     if (isMatch) {
@@ -205,12 +205,12 @@ class DefiBalances {
                     const diff = matches[receiptName];
                     if (!receiptMatch || diff < currentDiff) {
                         receiptMatch = receiptName;
+                        currentDiff = diff;
                     }
                 }
                 // Get Matching APY
                 if (receiptMatch) {
-                    const receiptStr = misc_1.titleCase(receiptMatch.replace('V2', 'v2'))
-                        .toLowerCase();
+                    const receiptStr = misc_1.titleCase(receiptMatch.replace('V2', 'v2')).toLowerCase();
                     let receiptWords = receiptStr.split(' ').slice(1);
                     // Check if Symbol has version and format receipt words
                     const symbolHasVersion = receiptWords.length == 2 &&
@@ -223,10 +223,7 @@ class DefiBalances {
                     for (const key in values_1.exchangeAliases) {
                         if (receiptStr.includes(key)) {
                             for (const alias of values_1.exchangeAliases[key]) {
-                                receiptWordsSet.push(receiptStr
-                                    .replace(key, alias)
-                                    .split(' ')
-                                    .slice(1));
+                                receiptWordsSet.push(receiptStr.replace(key, alias).split(' ').slice(1));
                             }
                         }
                     }
@@ -236,7 +233,7 @@ class DefiBalances {
                         for (const wordSet of receiptWordsSet) {
                             const isMatch = wordSet.length == 1
                                 ? vaultName.endsWith(`-${wordSet[0]}`)
-                                : wordSet.every((word) => (word == 'swap' || vaultName.includes(word)));
+                                : wordSet.every((word) => word == 'swap' || vaultName.includes(word));
                             if (isMatch) {
                                 vaultMatch = vaultName;
                                 break;
@@ -247,9 +244,9 @@ class DefiBalances {
                             let vaultIndexMatch = 0;
                             // Get Matching Vault
                             for (const vaultIndex in chain.vaults) {
-                                const isMatch = position.tokens.every((token) => (chain.vaults[vaultIndex].symbol
+                                const isMatch = position.tokens.every((token) => chain.vaults[vaultIndex].symbol
                                     .toLowerCase()
-                                    .includes(token.toLowerCase())));
+                                    .includes(token.toLowerCase()));
                                 const vault = chain.vaults[vaultIndex];
                                 const diff = Math.abs(vault.value - position.value);
                                 if (isMatch && (currentDiff == -1 || diff < currentDiff)) {
@@ -287,9 +284,7 @@ class DefiBalances {
                 : symbol;
             if (!beefyVaultName || !useBeefyVaultName) {
                 if (assetCounts[symbol] > 1) {
-                    const symbolIndex = assetIndexes[symbol] != null
-                        ? assetIndexes[symbol] + 1
-                        : 0;
+                    const symbolIndex = assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0;
                     symbolStr += `-${symbolIndex}`;
                     assetIndexes[symbol] = symbolIndex;
                 }
@@ -383,7 +378,7 @@ class DefiBalances {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [
                 this.getApeBoardEndpoint('beefyBsc'),
-                this.getApeBoardEndpoint('beefyPolygon')
+                this.getApeBoardEndpoint('beefyPolygon'),
             ];
             const res = yield Promise.all(requests);
             const bscInfo = ((_a = res[0]) === null || _a === void 0 ? void 0 : _a.positions) || [];
@@ -421,7 +416,7 @@ class DefiBalances {
             return {
                 bsc: bscPositions,
                 eth: [],
-                matic: maticPositions
+                matic: maticPositions,
             };
         });
     }
@@ -438,7 +433,8 @@ class DefiBalances {
                 if (paramStr)
                     paramStr = '?' + paramStr;
                 const fullUrl = `${apiUrl}/${stub}${paramStr}`;
-                return ((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) || {};
+                return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) ||
+                    {});
             }
             catch (err) {
                 return ((_b = err === null || err === void 0 ? void 0 : err.response) === null || _b === void 0 ? void 0 : _b.data) || {};

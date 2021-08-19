@@ -8,16 +8,8 @@ import {
 	getTicker,
 	setDeposit,
 } from './transactions'
-import {
-	ENDPOINTS,
-	initTrans,
-	defaultHistoryRecord,
-} from './values'
-import {
-	DefiTransaction,
-	HistoryRecord,
-	TokenRecords,
-} from './types'
+import { ENDPOINTS, initTrans, defaultHistoryRecord } from './values'
+import { DefiTransaction, HistoryRecord, TokenRecords } from './types'
 
 // Init
 
@@ -28,7 +20,6 @@ const DUMMY_TRANSACTIONS_FILE = 'trans.json'
  */
 
 export default class DefiTransactions extends DefiBalances {
-
 	// Properties
 
 	transactions = initTrans()
@@ -51,15 +42,13 @@ export default class DefiTransactions extends DefiBalances {
 			const chainAliases = {
 				bsc: 'BSC',
 				eth: 'ETH',
-				matic: 'Polygon'
+				matic: 'Polygon',
 			}
 
 			// Send Requests
 			for (const chainName of this.chainNames) {
 				requests.push(
-					processRequest(
-						{ chain: chainAliases[chainName] || chainName }
-					)
+					processRequest({ chain: chainAliases[chainName] || chainName })
 				)
 			}
 		}
@@ -74,14 +63,8 @@ export default class DefiTransactions extends DefiBalances {
 			const result = res[index]
 			const chainName = this.chainNames[index]
 			for (const record of result) {
-
 				// Transaction Details
-				const {
-					hash,
-					rows,
-					type: transType,
-					ts: timeNum,
-				} = record
+				const { hash, rows, type: transType, ts: timeNum } = record
 
 				// Transaction Properties
 				const date = new Date(Number(timeNum) * 1000).toISOString()
@@ -122,15 +105,8 @@ export default class DefiTransactions extends DefiBalances {
 
 				// Iterate Rows
 				for (const row of rows) {
-
 					// Row Details
-					const {
-						to,
-						from,
-						value,
-						rate,
-						treatment
-					} = row
+					const { to, from, value, rate, treatment } = row
 
 					// Row Properties
 					const token = getTokenName(row)
@@ -154,7 +130,7 @@ export default class DefiTransactions extends DefiBalances {
 								amount,
 								price,
 								fills: 1,
-								type: 'quote'
+								type: 'quote',
 							}
 						}
 
@@ -173,7 +149,7 @@ export default class DefiTransactions extends DefiBalances {
 									amount: adjAmount,
 									price,
 									fills: 1,
-									type: 'base'
+									type: 'base',
 								}
 							} else {
 								const {
@@ -186,8 +162,7 @@ export default class DefiTransactions extends DefiBalances {
 								tokens[token].fills = newFills
 								tokens[token].quantity = adjQuantity + prevQuantity
 								tokens[token].amount = adjAmount + prevAmount
-								tokens[token].price =
-									((prevPrice * prevFills) + price) / newFills
+								tokens[token].price = (prevPrice * prevFills + price) / newFills
 							}
 						}
 
@@ -215,20 +190,16 @@ export default class DefiTransactions extends DefiBalances {
 
 					// Unknown
 					else if (!type) {
-
 						// Receive
 						if (treatment == 'gift' && rows.length == 1) {
-							setDeposit(
-								transRec,
-								{
-									token,
-									quantity,
-									amount,
-									price,
-									from,
-									to
-								}
-							)
+							setDeposit(transRec, {
+								token,
+								quantity,
+								amount,
+								price,
+								from,
+								to,
+							})
 							this.transactions[chainName].push(transRec)
 							break
 						}
@@ -236,17 +207,14 @@ export default class DefiTransactions extends DefiBalances {
 
 					// Deposits
 					else if (type.includes('deposit') && rows.length == 1) {
-						setDeposit(
-							transRec,
-							{
-								token,
-								quantity,
-								amount,
-								price,
-								from,
-								to
-							}
-						)
+						setDeposit(transRec, {
+							token,
+							quantity,
+							amount,
+							price,
+							from,
+							to,
+						})
 						console.log('DEPOSIT')
 						this.transactions[chainName].push(transRec)
 						break
@@ -256,12 +224,7 @@ export default class DefiTransactions extends DefiBalances {
 				// Convert tokens to transaction
 				if (Object.keys(tokens).length > 0) {
 					for (const tokenName in tokens) {
-						const {
-							type,
-							quantity,
-							amount,
-							price,
-						} = tokens[tokenName]
+						const { type, quantity, amount, price } = tokens[tokenName]
 						if (type == 'quote') {
 							transRec.quote = tokenName
 							transRec.quantity = quantity
@@ -274,9 +237,10 @@ export default class DefiTransactions extends DefiBalances {
 							transRec.basePrice = price
 						}
 					}
-					const ticker = transRec.quote && transRec.base
-						? getTicker(transRec.quote, transRec.base)
-						: (transRec.quote || '')
+					const ticker =
+						transRec.quote && transRec.base
+							? getTicker(transRec.quote, transRec.base)
+							: transRec.quote || ''
 					let curAmount = transRec.amount
 						? transRec.amount
 						: transRec.baseAmount
@@ -314,13 +278,9 @@ export default class DefiTransactions extends DefiBalances {
 		endpoint: keyof typeof ENDPOINTS,
 		args: any
 	) {
-		return await this.getEndpoint(
-			'defiTaxes',
-			endpoint,
-			{
-				address: this.address,
-				...args
-			}
-		)
+		return await this.getEndpoint('defiTaxes', endpoint, {
+			address: this.address,
+			...args,
+		})
 	}
 }
