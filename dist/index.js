@@ -3,5 +3,5 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const MultiChain_1 = __importDefault(require("./utils/MultiChain"));
-exports.default = MultiChain_1.default;
+const DefiTransactions_1 = __importDefault(require("./utils/DefiTransactions"));
+exports.default = DefiTransactions_1.default;

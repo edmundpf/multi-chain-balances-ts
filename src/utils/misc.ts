@@ -6,3 +6,9 @@ import camelCase from 'lodash.camelcase'
  */
 
 export const titleCase = (str: string) => startCase(camelCase(str))
+
+/**
+ * Has Number
+ */
+
+export const hasNumber = (str: string) => /\d/.test(str)

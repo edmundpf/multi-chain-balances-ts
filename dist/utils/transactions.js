@@ -1,28 +1,44 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setDeposit = exports.getTicker = exports.getTokenName = exports.checkFee = exports.checkSell = exports.checkBuy = exports.isLP = exports.isBeefyReceipt = void 0;
-// Is Beefy Receipt
+/**
+ * Is Beefy Receipt
+ */
 const isBeefyReceipt = (row) => row.token_name && row.token_name.includes('moo');
 exports.isBeefyReceipt = isBeefyReceipt;
-// Is LP
+/**
+ * Is LP
+ */
 const isLP = (row) => row.token_name && row.token_name.toUpperCase().includes('LP');
 exports.isLP = isLP;
-// Is Buy
+/**
+ * Is Buy
+ */
 const checkBuy = (row) => row.treatment == 'buy';
 exports.checkBuy = checkBuy;
-// Is Sell
+/**
+ * Is Sell
+ */
 const checkSell = (row) => row.treatment == 'sell';
 exports.checkSell = checkSell;
-// Check Fee
+/**
+ * Check Fee
+ */
 const checkFee = (row) => row.treatment == 'burn';
 exports.checkFee = checkFee;
-// Get Token Name
+/**
+ * Get Token Name
+ */
 const getTokenName = (row) => row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '');
 exports.getTokenName = getTokenName;
-// Get Ticker
+/**
+ * Get Ticker
+ */
 const getTicker = (quote, base) => `${quote}-${base}`;
 exports.getTicker = getTicker;
-// Set Deposit
+/**
+ * Set Deposit
+ */
 const setDeposit = (transRec, info) => {
     const { token, quantity, amount, price, from, to } = info;
     transRec.type = 'deposit';

@@ -1,15 +1,28 @@
-import MultiChain from './'
+import DefiInfo from './'
+
+// Init
+
+const info = new DefiInfo()
 
 // Main
 
-const main = async () => {
-	const wallet = new MultiChain()
-	await wallet.driver()
+const main = async (getTransactions = false, useReq = true) => {
+	if (getTransactions) {
+		await transactions(useReq)
+	} else {
+		await info.getBalances()
+	}
+}
+
+// Transactions
+
+const transactions = async (useReq = true) => {
 	let total = 0
-	for (const chainName in wallet.transactions) {
+	await info.getTransactions(useReq)
+	for (const chainName in info.transactions) {
 		if (chainName == 'matic') continue
 		for (
-			const record of wallet.transactions[chainName as keyof typeof wallet.transactions]
+			const record of info.transactions[chainName as keyof typeof info.transactions]
 		) {
 			const { type, amount, fromAddress } = record
 			if (type == 'deposit') {
@@ -19,10 +32,8 @@ const main = async () => {
 			}
 		}
 	}
-	console.log(total)
-	return true
 }
 
 // Run
 
-main()
+main(true, true)

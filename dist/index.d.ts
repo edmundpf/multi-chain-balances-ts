@@ -1,2 +1,2 @@
-import MultiChain from './utils/MultiChain';
-export default MultiChain;
+import DefiInfo from './utils/DefiTransactions';
+export default DefiInfo;

@@ -1,37 +1,53 @@
 import { DefiRow, HistoryRecord } from './types'
 
-// Is Beefy Receipt
+/**
+ * Is Beefy Receipt
+ */
 
 export const isBeefyReceipt = (row: DefiRow) =>
 	row.token_name && row.token_name.includes('moo')
 
-// Is LP
+/**
+ * Is LP
+ */
 
 export const isLP = (row: DefiRow) =>
 	row.token_name && row.token_name.toUpperCase().includes('LP')
 
-// Is Buy
+/**
+ * Is Buy
+ */
 
 export const checkBuy = (row: DefiRow) => row.treatment == 'buy'
 
-// Is Sell
+/**
+ * Is Sell
+ */
 
 export const checkSell = (row: DefiRow) => row.treatment == 'sell'
 
-// Check Fee
+/**
+ * Check Fee
+ */
 
 export const checkFee = (row: DefiRow) => row.treatment == 'burn'
 
-// Get Token Name
+/**
+ * Get Token Name
+ */
 
 export const getTokenName = (row: DefiRow) =>
 	row.token_name ? row.token_name.toUpperCase() : (row.token_contract || '')
 
-// Get Ticker
+/**
+ * Get Ticker
+ */
 
 export const getTicker = (quote: string, base: string) => `${quote}-${base}`
 
-// Set Deposit
+/**
+ * Set Deposit
+ */
 
 export const setDeposit = (
 	transRec: HistoryRecord,

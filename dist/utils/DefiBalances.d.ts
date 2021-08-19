@@ -1,14 +1,14 @@
+import { APIS, ENDPOINTS } from './values';
 import { Chains, ApeBoardPositions, Assets } from './types';
 /**
- * MultiChain Class
+ * DefiBalances Class
  */
-export default class MultiChain {
+export default class DefiBalances {
     address: string;
     totalValue: number;
     totalTokenValue: number;
     totalVaultValue: number;
     chains: Chains;
-    transactions: import("./types").Transactions;
     assets: Assets;
     chainNames: Array<keyof Chains>;
     tokenNames: string[];
@@ -17,9 +17,9 @@ export default class MultiChain {
      */
     constructor();
     /**
-     * Driver
+     * Get All Balances
      */
-    driver(): Promise<void>;
+    getBalances(): Promise<void>;
     /**
      * Parse Token Data
      */
@@ -53,13 +53,9 @@ export default class MultiChain {
      */
     getApeBoardPositions(): Promise<ApeBoardPositions>;
     /**
-     * Get All Transactions
-     */
-    getAllTransactions(useReq?: boolean): Promise<void>;
-    /**
      * Get Endpoint
      */
-    private getEndpoint;
+    getEndpoint(api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any): Promise<any>;
     /**
      * Get Debank Endpoint
      */
@@ -72,12 +68,4 @@ export default class MultiChain {
      * Get Ape Board Endpoint
      */
     private getApeBoardEndpoint;
-    /**
-     * Get Defi Taxes Endpoint
-     */
-    private getDefiTaxesEndpoint;
-    /**
-     * Round Number
-     */
-    private roundNumber;
 }
