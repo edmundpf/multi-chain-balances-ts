@@ -25,7 +25,8 @@
     "release-major": "npm run bump-major && npm run doc && npm run release",
     "doc": "npx typedoc src/index.ts && git add . && git commit -m 'Updated Docs'",
     "start": "if test -f dist/driver.js; then NODE_ENV=production node ./dist/driver.js; else echo 'dist/driver.js not found'; fi",
-    "test": "if test -d dist/tests; then npx mocha dist/tests; else echo 'dist/tests not found'; fi"
+    "test": "if test -d dist/tests; then npx mocha dist/tests; else echo 'dist/tests not found'; fi",
+    "prepare": "husky install"
   },
   "husky": {
     "hooks": {
@@ -67,7 +68,7 @@
     "eslint": "*",
     "eslint-config-prettier": "*",
     "eslint-plugin-react": "*",
-    "husky": "*",
+    "husky": "^7.0.0",
     "lint-staged": "*",
     "prettier": "*",
     "typedoc": "*",
