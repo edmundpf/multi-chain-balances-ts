@@ -187,11 +187,10 @@ class DefiBalances {
                     receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
                     const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
                     const receiptWords = receiptStr.split(' ');
+                    const receiptWordsEnd = receiptWords.slice(receiptWords.length - symbols.length);
                     // Check for Match
                     const isMatch = isPair
-                        ? symbols.every((sym) => receiptWords
-                            .slice(receiptWords.length - symbols.length)
-                            .some((receiptSym) => sym.includes(receiptSym)))
+                        ? symbols.every((sym) => receiptWordsEnd.some((receiptSym) => sym.includes(receiptSym)))
                         : receiptStr.includes(symbolsStr) ||
                             receiptStrNoSpaces.includes(symbolsStr);
                     if (isMatch) {
@@ -203,6 +202,7 @@ class DefiBalances {
                 let currentDiff = 0;
                 for (const receiptName in matches) {
                     const diff = matches[receiptName];
+                    console.log(receiptName, matches[receiptName]);
                     if (!receiptMatch || diff < currentDiff) {
                         receiptMatch = receiptName;
                         currentDiff = diff;

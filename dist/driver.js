@@ -22,6 +22,7 @@ const main = (getTransactions = false, useReq = true) => __awaiter(void 0, void 
     }
     else {
         yield info.getBalances();
+        console.log(info.assets);
     }
 });
 // Transactions
@@ -44,4 +45,4 @@ const transactions = (useReq = true) => __awaiter(void 0, void 0, void 0, functi
     console.log('Total', total);
 });
 // Run
-main(true, true);
+main(false);

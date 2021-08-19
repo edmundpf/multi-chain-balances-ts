@@ -11,6 +11,7 @@ const main = async (getTransactions = false, useReq = true) => {
 		await transactions(useReq)
 	} else {
 		await info.getBalances()
+		console.log(info.assets)
 	}
 }
 
@@ -37,4 +38,4 @@ const transactions = async (useReq = true) => {
 
 // Run
 
-main(true, true)
+main(false)

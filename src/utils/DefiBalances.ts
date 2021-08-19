@@ -226,13 +226,16 @@ export default class DefiBalances {
 					receiptStr = titleCase(receiptStr).toLowerCase()
 					const receiptStrNoSpaces = receiptStr.replace(/ /g, '')
 					const receiptWords = receiptStr.split(' ')
+					const receiptWordsEnd = receiptWords.slice(
+						receiptWords.length - symbols.length
+					)
 
 					// Check for Match
 					const isMatch = isPair
 						? symbols.every((sym: string) =>
-								receiptWords
-									.slice(receiptWords.length - symbols.length)
-									.some((receiptSym: string) => sym.includes(receiptSym))
+								receiptWordsEnd.some((receiptSym: string) =>
+									sym.includes(receiptSym)
+								)
 						  )
 						: receiptStr.includes(symbolsStr) ||
 						  receiptStrNoSpaces.includes(symbolsStr)
@@ -247,6 +250,7 @@ export default class DefiBalances {
 				let currentDiff = 0
 				for (const receiptName in matches) {
 					const diff = matches[receiptName]
+					console.log(receiptName, matches[receiptName])
 					if (!receiptMatch || diff < currentDiff) {
 						receiptMatch = receiptName
 						currentDiff = diff
