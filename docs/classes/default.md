@@ -2,7 +2,13 @@
 
 # Class: default
 
-MultiChain Class
+DefiTransactions Class
+
+## Hierarchy
+
+- `DefiBalances`
+
+  ↳ **`default`**
 
 ## Table of contents
 
@@ -24,22 +30,11 @@ MultiChain Class
 
 ### Methods
 
-- [driver](default.md#driver)
-- [getAllTransactions](default.md#getalltransactions)
-- [getApeBoardEndpoint](default.md#getapeboardendpoint)
 - [getApeBoardPositions](default.md#getapeboardpositions)
-- [getBeefyApy](default.md#getbeefyapy)
-- [getBeefyEndpoint](default.md#getbeefyendpoint)
-- [getDebankEndpoint](default.md#getdebankendpoint)
+- [getBalances](default.md#getbalances)
 - [getDefiTaxesEndpoint](default.md#getdefitaxesendpoint)
 - [getEndpoint](default.md#getendpoint)
-- [getProtocolList](default.md#getprotocollist)
-- [getTokenList](default.md#gettokenlist)
-- [parseApyData](default.md#parseapydata)
-- [parseChainData](default.md#parsechaindata)
-- [parseProtocolData](default.md#parseprotocoldata)
-- [parseTokenData](default.md#parsetokendata)
-- [roundNumber](default.md#roundnumber)
+- [getTransactions](default.md#gettransactions)
 
 ## Constructors
 
@@ -49,9 +44,13 @@ MultiChain Class
 
 Constructor
 
+#### Inherited from
+
+DefiBalances.constructor
+
 #### Defined in
 
-[utils/MultiChain.ts:61](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L61)
+[utils/DefiBalances.ts:53](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L53)
 
 ## Properties
 
@@ -59,9 +58,13 @@ Constructor
 
 • **address**: `string`
 
+#### Inherited from
+
+DefiBalances.address
+
 #### Defined in
 
-[utils/MultiChain.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L47)
+[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L40)
 
 ___
 
@@ -69,9 +72,13 @@ ___
 
 • **assets**: `Assets` = `{}`
 
+#### Inherited from
+
+DefiBalances.assets
+
 #### Defined in
 
-[utils/MultiChain.ts:53](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L53)
+[utils/DefiBalances.ts:45](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L45)
 
 ___
 
@@ -79,9 +86,13 @@ ___
 
 • **chainNames**: keyof `Chains`[]
 
+#### Inherited from
+
+DefiBalances.chainNames
+
 #### Defined in
 
-[utils/MultiChain.ts:54](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L54)
+[utils/DefiBalances.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L46)
 
 ___
 
@@ -89,9 +100,13 @@ ___
 
 • **chains**: `Chains`
 
+#### Inherited from
+
+DefiBalances.chains
+
 #### Defined in
 
-[utils/MultiChain.ts:51](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L51)
+[utils/DefiBalances.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L44)
 
 ___
 
@@ -99,9 +114,13 @@ ___
 
 • **tokenNames**: `string`[] = `[]`
 
+#### Inherited from
+
+DefiBalances.tokenNames
+
 #### Defined in
 
-[utils/MultiChain.ts:55](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L55)
+[utils/DefiBalances.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L47)
 
 ___
 
@@ -109,9 +128,13 @@ ___
 
 • **totalTokenValue**: `number` = `0`
 
+#### Inherited from
+
+DefiBalances.totalTokenValue
+
 #### Defined in
 
-[utils/MultiChain.ts:49](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L49)
+[utils/DefiBalances.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L42)
 
 ___
 
@@ -119,9 +142,13 @@ ___
 
 • **totalValue**: `number` = `0`
 
+#### Inherited from
+
+DefiBalances.totalValue
+
 #### Defined in
 
-[utils/MultiChain.ts:48](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L48)
+[utils/DefiBalances.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L41)
 
 ___
 
@@ -129,9 +156,13 @@ ___
 
 • **totalVaultValue**: `number` = `0`
 
+#### Inherited from
+
+DefiBalances.totalVaultValue
+
 #### Defined in
 
-[utils/MultiChain.ts:50](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L50)
+[utils/DefiBalances.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L43)
 
 ___
 
@@ -141,63 +172,9 @@ ___
 
 #### Defined in
 
-[utils/MultiChain.ts:52](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L52)
+[utils/DefiTransactions.ts:25](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiTransactions.ts#L25)
 
 ## Methods
-
-### driver
-
-▸ **driver**(): `Promise`<`void`\>
-
-Driver
-
-#### Returns
-
-`Promise`<`void`\>
-
-#### Defined in
-
-[utils/MultiChain.ts:69](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L69)
-
-___
-
-### getAllTransactions
-
-▸ **getAllTransactions**(): `Promise`<`void`\>
-
-Get All Transactions
-
-#### Returns
-
-`Promise`<`void`\>
-
-#### Defined in
-
-[utils/MultiChain.ts:528](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L528)
-
-___
-
-### getApeBoardEndpoint
-
-▸ `Private` **getApeBoardEndpoint**(`endpoint`): `Promise`<`any`\>
-
-Get Ape Board Endpoint
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `endpoint` | ``"beefyBsc"`` \| ``"beefyPolygon"`` \| ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` |
-
-#### Returns
-
-`Promise`<`any`\>
-
-#### Defined in
-
-[utils/MultiChain.ts:805](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L805)
-
-___
 
 ### getApeBoardPositions
 
@@ -209,69 +186,33 @@ Get Ape Board Positions
 
 `Promise`<`ApeBoardPositions`\>
 
+#### Inherited from
+
+DefiBalances.getApeBoardPositions
+
 #### Defined in
 
-[utils/MultiChain.ts:477](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L477)
+[utils/DefiBalances.ts:457](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L457)
 
 ___
 
-### getBeefyApy
+### getBalances
 
-▸ `Private` **getBeefyApy**(): `Promise`<`any`\>
+▸ **getBalances**(): `Promise`<`void`\>
 
-Get Beefy APY
-
-#### Returns
-
-`Promise`<`any`\>
-
-#### Defined in
-
-[utils/MultiChain.ts:469](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L469)
-
-___
-
-### getBeefyEndpoint
-
-▸ `Private` **getBeefyEndpoint**(`endpoint`): `Promise`<`any`\>
-
-Get Beefy Endpoint
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `endpoint` | ``"beefyBsc"`` \| ``"beefyPolygon"`` \| ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` |
+Get All Balances
 
 #### Returns
 
-`Promise`<`any`\>
+`Promise`<`void`\>
+
+#### Inherited from
+
+DefiBalances.getBalances
 
 #### Defined in
 
-[utils/MultiChain.ts:797](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L797)
-
-___
-
-### getDebankEndpoint
-
-▸ `Private` **getDebankEndpoint**(`endpoint`): `Promise`<`any`\>
-
-Get Debank Endpoint
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `endpoint` | ``"beefyBsc"`` \| ``"beefyPolygon"`` \| ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` |
-
-#### Returns
-
-`Promise`<`any`\>
-
-#### Defined in
-
-[utils/MultiChain.ts:785](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L785)
+[utils/DefiBalances.ts:61](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L61)
 
 ___
 
@@ -294,13 +235,13 @@ Get Defi Taxes Endpoint
 
 #### Defined in
 
-[utils/MultiChain.ts:821](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L821)
+[utils/DefiTransactions.ts:277](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiTransactions.ts#L277)
 
 ___
 
 ### getEndpoint
 
-▸ `Private` **getEndpoint**(`api`, `endpoint`, `params?`, `headers?`): `Promise`<`any`\>
+▸ **getEndpoint**(`api`, `endpoint`, `params?`, `headers?`): `Promise`<`any`\>
 
 Get Endpoint
 
@@ -317,144 +258,32 @@ Get Endpoint
 
 `Promise`<`any`\>
 
-#### Defined in
+#### Inherited from
 
-[utils/MultiChain.ts:758](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L758)
-
-___
-
-### getProtocolList
-
-▸ `Private` **getProtocolList**(): `Promise`<`any`\>
-
-Get Protocol List
-
-#### Returns
-
-`Promise`<`any`\>
+DefiBalances.getEndpoint
 
 #### Defined in
 
-[utils/MultiChain.ts:461](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L461)
+[utils/DefiBalances.ts:508](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L508)
 
 ___
 
-### getTokenList
+### getTransactions
 
-▸ `Private` **getTokenList**(): `Promise`<`any`\>
+▸ **getTransactions**(`useReq?`): `Promise`<`void`\>
 
-Get Token List
-
-#### Returns
-
-`Promise`<`any`\>
-
-#### Defined in
-
-[utils/MultiChain.ts:453](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L453)
-
-___
-
-### parseApyData
-
-▸ `Private` **parseApyData**(`positionData`, `apyData`): `void`
-
-Parse APY Data
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `positionData` | `ApeBoardPositions` |
-| `apyData` | `NumDict` |
-
-#### Returns
-
-`void`
-
-#### Defined in
-
-[utils/MultiChain.ts:202](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L202)
-
-___
-
-### parseChainData
-
-▸ `Private` **parseChainData**(): `void`
-
-Parse Chain Data
-
-#### Returns
-
-`void`
-
-#### Defined in
-
-[utils/MultiChain.ts:360](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L360)
-
-___
-
-### parseProtocolData
-
-▸ `Private` **parseProtocolData**(`data`): `void`
-
-Parse Protocol Data
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `data` | `Protocol`[] |
-
-#### Returns
-
-`void`
-
-#### Defined in
-
-[utils/MultiChain.ts:137](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L137)
-
-___
-
-### parseTokenData
-
-▸ `Private` **parseTokenData**(`data`): `void`
-
-Parse Token Data
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `data` | `Token`[] |
-
-#### Returns
-
-`void`
-
-#### Defined in
-
-[utils/MultiChain.ts:92](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L92)
-
-___
-
-### roundNumber
-
-▸ `Private` **roundNumber**(`val`, `places?`): `number`
-
-Round Number
+Get Transactions
 
 #### Parameters
 
 | Name | Type | Default value |
 | :------ | :------ | :------ |
-| `val` | `string` \| `number` | `undefined` |
-| `places` | `number` | `2` |
+| `useReq` | `boolean` | `true` |
 
 #### Returns
 
-`number`
+`Promise`<`void`\>
 
 #### Defined in
 
-[utils/MultiChain.ts:839](https://github.com/edmundpf/multi-chain-balances-ts/blob/d918947/src/utils/MultiChain.ts#L839)
+[utils/DefiTransactions.ts:31](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiTransactions.ts#L31)
