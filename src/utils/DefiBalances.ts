@@ -17,9 +17,6 @@ import {
 	TokenData,
 	VaultData,
 	NumDict,
-	ApeBoardResponse,
-	ApeBoardPosition,
-	ApeBoardPositions,
 	MainRequest,
 	Assets,
 } from './types'
@@ -62,17 +59,15 @@ export default class DefiBalances {
 		const requests: Promise<MainRequest>[] = [
 			this.getTokenList(),
 			this.getProtocolList(),
-			this.getApeBoardPositions(),
 			this.getBeefyApy(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
 		const protocolData = res[1] as Protocol[]
-		const positionData = res[2] as ApeBoardPositions
-		const apyData = res[3] as NumDict
+		const apyData = res[2] as NumDict
 		this.parseTokenData(tokenData)
 		this.parseProtocolData(protocolData)
-		this.parseApyData(positionData, apyData)
+		this.parseApyData(apyData)
 		this.parseChainData()
 	}
 
@@ -88,11 +83,12 @@ export default class DefiBalances {
 			const amount = recAmount || 0
 			const value = price * amount
 
-			// Check if chain exists
+			// Check if Chain exists
 			if (this.chainNames.includes(chain)) {
 				// Check for Beefy Receipt
-				if (symbol.startsWith('moo')) {
-					this.chains[chain].receipts[symbol] = amount
+				if (symbol.toLowerCase().startsWith('moo')) {
+					const formattedSymbol = symbol.replace(/ /g, '')
+					this.chains[chain].receipts[formattedSymbol] = amount
 				}
 
 				// Check for minimum value
@@ -129,7 +125,7 @@ export default class DefiBalances {
 				portfolio_item_list: vaults,
 			} = record
 
-			// Check if chain exists
+			// Check if Chain exists
 			if (this.chainNames.includes(chain)) {
 				const chainInfo = this.chains[chain]
 
@@ -180,18 +176,23 @@ export default class DefiBalances {
 	 * Parse APY Data
 	 */
 
-	private parseApyData(positionData: ApeBoardPositions, apyData: NumDict) {
+	private parseApyData(apyData: NumDict) {
+		// Iterate Chains
 		for (const chainName in this.chains) {
 			const chain = this.chains[chainName as keyof Chains]
 
-			// Iterate positions
-			for (const position of positionData[chainName as keyof Chains]) {
+			// Iterate Vault Info
+			for (const vault of chain.vaults) {
 				const matches: NumDict = {}
+				const tokens: string[] = []
 
-				// Symbol Formatting
-				let symbolsStr = titleCase(
-					position.tokens.join(' ').toLowerCase()
-				).toLowerCase()
+				// Get Token Names in Vault
+				for (const token of vault.tokens) {
+					tokens.push(token.symbol)
+				}
+
+				// Format Symbols for Parsing
+				let symbolsStr = titleCase(tokens.join(' ').toLowerCase()).toLowerCase()
 				const numericSymbol = hasNumber(symbolsStr)
 
 				// Numeric Symbol Format
@@ -208,13 +209,13 @@ export default class DefiBalances {
 				}
 				const symbols = symbolsStr.split(' ')
 
-				// Iterate Receipts
+				// Iterate Beefy Receipts
 				for (const receiptName in chain.receipts) {
 					const receiptAmount = chain.receipts[receiptName]
 					const isPair = receiptName.includes('-')
 					let receiptStr = receiptName
 
-					// Pair Format
+					// Format LP Pairs for Parsing
 					if (isPair) {
 						const dashIndex = receiptStr.indexOf('-')
 						receiptStr =
@@ -222,30 +223,35 @@ export default class DefiBalances {
 							receiptStr.substring(dashIndex + 1).toUpperCase()
 					}
 
-					// Receipt Formatting
+					// Format Beefy Receipts for Parsing
 					receiptStr = titleCase(receiptStr).toLowerCase()
 					const receiptStrNoSpaces = receiptStr.replace(/ /g, '')
 					const receiptWords = receiptStr.split(' ')
 					const receiptWordsEnd = receiptWords.slice(
 						receiptWords.length - symbols.length
 					)
+					const hasMultipleSymbols = symbols.length >= 2
+					const tokensMatchReceiptTokens = symbols.every((sym: string) =>
+						receiptWordsEnd.some((receiptSym: string) =>
+							sym.includes(receiptSym)
+						)
+					)
 
-					// Check for Match
+					// Check for Match comparing Symbols vs. Receipts
 					const isMatch = isPair
-						? symbols.every((sym: string) =>
-								receiptWordsEnd.some((receiptSym: string) =>
-									sym.includes(receiptSym)
-								)
-						  )
+						? hasMultipleSymbols && tokensMatchReceiptTokens
 						: receiptStr.includes(symbolsStr) ||
-						  receiptStrNoSpaces.includes(symbolsStr)
+						  receiptStrNoSpaces.includes(symbolsStr) ||
+						  (!hasMultipleSymbols && tokensMatchReceiptTokens)
 
+					// Add Match to Compare Vault/Receipt Amounts
 					if (isMatch) {
-						matches[receiptName] = Math.abs(position.amount - receiptAmount)
+						const vaultAmount = vault.amount || 0
+						matches[receiptName] = Math.abs(vaultAmount - receiptAmount)
 					}
 				}
 
-				// Get Closest Match
+				// Get Closest Match using Vault/Receipt Amounts
 				let receiptMatch = ''
 				let currentDiff = 0
 				for (const receiptName in matches) {
@@ -256,14 +262,15 @@ export default class DefiBalances {
 					}
 				}
 
-				// Get Matching APY
+				// Get Matching APY Info
 				if (receiptMatch) {
+					// Format Pancake-LP V2 Receipts
 					const receiptStr = titleCase(
 						receiptMatch.replace('V2', 'v2')
 					).toLowerCase()
 					let receiptWords = receiptStr.split(' ').slice(1)
 
-					// Check if Symbol has version and format receipt words
+					// Check if Symbol has Version and format Receipt Words
 					const symbolHasVersion =
 						receiptWords.length == 2 &&
 						receiptWords[0].endsWith('v') &&
@@ -271,7 +278,7 @@ export default class DefiBalances {
 					if (symbolHasVersion) receiptWords = [receiptWords.join('')]
 					const receiptWordsSet = [receiptWords]
 
-					// Get Aliases
+					// Get APY Aliases
 					for (const key in exchangeAliases) {
 						if (receiptStr.includes(key)) {
 							for (const alias of exchangeAliases[
@@ -284,7 +291,7 @@ export default class DefiBalances {
 						}
 					}
 
-					// Find Matching Vault
+					// Find Matching APY Info
 					for (const vaultName in apyData) {
 						let vaultMatch = ''
 						for (const wordSet of receiptWordsSet) {
@@ -300,31 +307,13 @@ export default class DefiBalances {
 								break
 							}
 						}
+
+						// Set Vault Info
 						if (vaultMatch) {
-							let currentDiff = -1
-							let vaultIndexMatch = 0
-
-							// Get Matching Vault
-							for (const vaultIndex in chain.vaults) {
-								const isMatch = position.tokens.every((token: string) =>
-									chain.vaults[vaultIndex].symbol
-										.toLowerCase()
-										.includes(token.toLowerCase())
-								)
-								const vault = chain.vaults[vaultIndex]
-								const diff = Math.abs(vault.value - position.value)
-								if (isMatch && (currentDiff == -1 || diff < currentDiff)) {
-									vaultIndexMatch = Number(vaultIndex)
-									currentDiff = diff
-								}
-							}
-
-							// Set Vault Info
-							const vaultInfo = chain.vaults[vaultIndexMatch]
-							vaultInfo.apy = apyData[vaultName] * 100
-							vaultInfo.beefyVaultName = vaultName
-							vaultInfo.beefyReceiptName = receiptMatch
-							vaultInfo.beefyReceiptAmount = chain.receipts[receiptMatch]
+							vault.apy = apyData[vaultName] * 100
+							vault.beefyVaultName = vaultName
+							vault.beefyReceiptName = receiptMatch
+							vault.beefyReceiptAmount = chain.receipts[receiptMatch]
 							break
 						}
 					}
@@ -451,57 +440,6 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Get Ape Board Positions
-	 */
-
-	async getApeBoardPositions() {
-		const requests = [
-			this.getApeBoardEndpoint('beefyBsc'),
-			this.getApeBoardEndpoint('beefyPolygon'),
-		]
-		const res: ApeBoardResponse[] = await Promise.all(requests)
-		const bscInfo = res[0]?.positions || []
-		const maticInfo = res[1]?.positions || []
-		const bscPositions: ApeBoardPosition[] = []
-		const maticPositions: ApeBoardPosition[] = []
-
-		// BSC Positions
-		for (const record of bscInfo) {
-			const tokens: string[] = []
-			let value = 0
-			for (const token of record.tokens) {
-				tokens.push(token.symbol)
-				value += Number(token.price) * token.balance
-			}
-			bscPositions.push({
-				amount: record.balance,
-				value,
-				tokens,
-			})
-		}
-
-		// Matic Positions
-		for (const record of maticInfo) {
-			const tokens: string[] = []
-			let value = 0
-			for (const token of record.tokens) {
-				tokens.push(token.symbol)
-				value += Number(token.price) * token.balance
-			}
-			maticPositions.push({
-				amount: record.balance,
-				value,
-				tokens,
-			})
-		}
-		return {
-			bsc: bscPositions,
-			eth: [],
-			matic: maticPositions,
-		} as ApeBoardPositions
-	}
-
-	/**
 	 * Get Endpoint
 	 */
 
@@ -546,7 +484,7 @@ export default class DefiBalances {
 	 * Get Ape Board Endpoint
 	 */
 
-	private async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
+	async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
 		return await this.getEndpoint(
 			'apeBoard',
 			`${endpoint}/${this.address}` as keyof typeof ENDPOINTS,

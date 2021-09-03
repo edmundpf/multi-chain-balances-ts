@@ -1,10 +1,4 @@
-import {
-	Chain,
-	Chains,
-	Transactions,
-	TokenRecord,
-	HistoryRecord,
-} from './types'
+import { Chain, Chains, Transactions, HistoryRecord } from './types'
 
 // Init Chain
 
@@ -30,6 +24,7 @@ export const initChains = () => {
 	return {
 		bsc: initChain(),
 		eth: initChain(),
+		ftm: initChain(),
 		matic: initChain(),
 	} as Chains
 }
@@ -40,18 +35,9 @@ export const initTrans = () => {
 	return {
 		bsc: [],
 		eth: [],
+		ftm: [],
 		matic: [],
 	} as Transactions
-}
-
-// Init Token Record
-
-export const initTokenRecord = () => {
-	return {
-		amount: 0,
-		quantity: 0,
-		price: 0,
-	} as TokenRecord
 }
 
 // API Url's
@@ -69,9 +55,10 @@ export const ENDPOINTS = {
 	tokenList: 'token_list',
 	protocolList: 'complex_protocol_list',
 	beefyApy: 'apy',
-	beefyBsc: 'beefyBsc',
-	beefyPolygon: 'beefyPolygon',
 	defiTaxesProcess: 'process',
+	transactionHistoryBsc: 'transaction-history/bsc',
+	transactionHistoryEth: 'transaction-history/eth',
+	transactionHistoryMatic: 'transaction-history/matic',
 }
 
 // Native Tokens
@@ -79,7 +66,17 @@ export const ENDPOINTS = {
 export const NATIVE_TOKENS = {
 	bsc: 'BNB',
 	eth: 'ETH',
+	ftm: 'FTM',
 	matic: 'MATIC',
+}
+
+// Chain Aliases
+
+export const CHAIN_ALIASES = {
+	bsc: 'BSC',
+	eth: 'ETH',
+	ftm: 'FTM',
+	matic: 'Polygon',
 }
 
 // Ape Board Credentials
@@ -104,6 +101,7 @@ export const exchangeAliases = {
 export const DEFAULT_URLS = {
 	bsc: 'https://bscscan.com',
 	eth: 'https://etherscan.io',
+	ftm: 'https://ftmscan.com',
 	matic: 'https://polygonscan.com',
 }
 

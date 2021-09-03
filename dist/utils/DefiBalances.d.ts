@@ -1,5 +1,5 @@
 import { APIS, ENDPOINTS } from './values';
-import { Chains, ApeBoardPositions, Assets } from './types';
+import { Chains, Assets } from './types';
 /**
  * DefiBalances Class
  */
@@ -49,10 +49,6 @@ export default class DefiBalances {
      */
     private getBeefyApy;
     /**
-     * Get Ape Board Positions
-     */
-    getApeBoardPositions(): Promise<ApeBoardPositions>;
-    /**
      * Get Endpoint
      */
     getEndpoint(api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any): Promise<any>;
@@ -67,5 +63,5 @@ export default class DefiBalances {
     /**
      * Get Ape Board Endpoint
      */
-    private getApeBoardEndpoint;
+    getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS): Promise<any>;
 }

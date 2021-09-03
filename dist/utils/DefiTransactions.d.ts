@@ -7,7 +7,7 @@ export default class DefiTransactions extends DefiBalances {
     /**
      * Get Transactions
      */
-    getTransactions(useReq?: boolean): Promise<void>;
+    getTransactions(): Promise<void>;
     /**
      * Get Defi Taxes Endpoint
      */

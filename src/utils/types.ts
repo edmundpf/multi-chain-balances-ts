@@ -48,6 +48,7 @@ export type Assets = {
 export type Transactions = {
 	bsc: HistoryRecord[]
 	eth: HistoryRecord[]
+	ftm: HistoryRecord[]
 	matic: HistoryRecord[]
 }
 
@@ -68,23 +69,8 @@ export type Chain = {
 export type Chains = {
 	bsc: Chain
 	eth: Chain
+	ftm: Chain
 	matic: Chain
-}
-
-// Ape Board Position
-
-export type ApeBoardPosition = {
-	amount: number
-	value: number
-	tokens: string[]
-}
-
-// Ape Board Positions
-
-export type ApeBoardPositions = {
-	bsc: ApeBoardPosition[]
-	eth: ApeBoardPosition[]
-	matic: ApeBoardPosition[]
 }
 
 /**
@@ -124,30 +110,41 @@ export type Protocol = {
  * Ape Board Types
  */
 
-// Ape Board Token Type
+// Ape Board History Type
 
-type ApeBoardToken = {
+type ApeBoardHistory = {
+	hash: string
+	from: string
+	to: string
+	function: string
+	fee: number
+	timestamp: number
+	nativePrice?: number
+	transfers: ApeBoardTransfer[]
+}
+
+// Ape Board Transfer Type
+
+type ApeBoardTransfer = {
+	from: string
+	to: string
 	symbol: string
-	price: string
+	tokenAddress: string
+	logo?: string
 	balance: number
 }
 
-// Ape Board Vault
+// Ape Board Transactions Response Type
 
-type ApeBoardVault = {
-	balance: number
-	tokens: ApeBoardToken[]
-}
-
-// Ape Board Response
-
-export type ApeBoardResponse = {
-	positions: ApeBoardVault[]
+export type ApeBoardTransResponse = {
+	histories: ApeBoardHistory[]
 }
 
 /**
  * Defi Taxes Types
  */
+
+// Defi Transaction
 
 export type DefiTransaction = {
 	hash: string
@@ -158,6 +155,8 @@ export type DefiTransaction = {
 	classification_certainty: number
 	rows: DefiRow[]
 }
+
+// Defi Row Type
 
 export type DefiRow = {
 	to?: string
@@ -176,12 +175,7 @@ export type DefiRow = {
 
 // Main Request
 
-export type MainRequest =
-	| Token[]
-	| Protocol[]
-	| ApeBoardPositions
-	| NumDict
-	| void
+export type MainRequest = Token[] | Protocol[] | NumDict | void
 
 // History Record
 
@@ -213,15 +207,20 @@ export type HistoryRecord = {
 // Token Record
 
 export type TokenRecord = {
-	quantity: number
 	amount: number
+	quantity: number
 	price: number
 	fills: number
-	type: 'quote' | 'base'
 }
 
 // Token Records
 
 export type TokenRecords = {
 	[index: string]: TokenRecord
+}
+
+// Hash Records
+
+export type HashRecords = {
+	[index: string]: TokenRecords
 }

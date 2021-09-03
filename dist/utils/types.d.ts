@@ -30,6 +30,7 @@ export declare type Assets = {
 export declare type Transactions = {
     bsc: HistoryRecord[];
     eth: HistoryRecord[];
+    ftm: HistoryRecord[];
     matic: HistoryRecord[];
 };
 export declare type Chain = {
@@ -44,17 +45,8 @@ export declare type Chain = {
 export declare type Chains = {
     bsc: Chain;
     eth: Chain;
+    ftm: Chain;
     matic: Chain;
-};
-export declare type ApeBoardPosition = {
-    amount: number;
-    value: number;
-    tokens: string[];
-};
-export declare type ApeBoardPositions = {
-    bsc: ApeBoardPosition[];
-    eth: ApeBoardPosition[];
-    matic: ApeBoardPosition[];
 };
 /**
  * Debank Types
@@ -82,17 +74,26 @@ export declare type Protocol = {
 /**
  * Ape Board Types
  */
-declare type ApeBoardToken = {
+declare type ApeBoardHistory = {
+    hash: string;
+    from: string;
+    to: string;
+    function: string;
+    fee: number;
+    timestamp: number;
+    nativePrice?: number;
+    transfers: ApeBoardTransfer[];
+};
+declare type ApeBoardTransfer = {
+    from: string;
+    to: string;
     symbol: string;
-    price: string;
+    tokenAddress: string;
+    logo?: string;
     balance: number;
 };
-declare type ApeBoardVault = {
-    balance: number;
-    tokens: ApeBoardToken[];
-};
-export declare type ApeBoardResponse = {
-    positions: ApeBoardVault[];
+export declare type ApeBoardTransResponse = {
+    histories: ApeBoardHistory[];
 };
 /**
  * Defi Taxes Types
@@ -119,7 +120,7 @@ export declare type DefiRow = {
 /**
  * Misc
  */
-export declare type MainRequest = Token[] | Protocol[] | ApeBoardPositions | NumDict | void;
+export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 export declare type HistoryRecord = {
     id: string;
     date: string;
@@ -145,13 +146,15 @@ export declare type HistoryRecord = {
     taxable: boolean;
 };
 export declare type TokenRecord = {
-    quantity: number;
     amount: number;
+    quantity: number;
     price: number;
     fills: number;
-    type: 'quote' | 'base';
 };
 export declare type TokenRecords = {
     [index: string]: TokenRecord;
+};
+export declare type HashRecords = {
+    [index: string]: TokenRecords;
 };
 export {};

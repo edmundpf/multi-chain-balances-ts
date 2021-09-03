@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defaultHistoryRecord = exports.DEFAULT_URLS = exports.exchangeAliases = exports.apeBoardCredentials = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initTokenRecord = exports.initTrans = exports.initChains = void 0;
+exports.defaultHistoryRecord = exports.DEFAULT_URLS = exports.exchangeAliases = exports.apeBoardCredentials = exports.CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.ENDPOINTS = exports.APIS = exports.initTrans = exports.initChains = void 0;
 // Init Chain
 const initChain = () => {
     return {
@@ -22,6 +22,7 @@ const initChains = () => {
     return {
         bsc: initChain(),
         eth: initChain(),
+        ftm: initChain(),
         matic: initChain(),
     };
 };
@@ -31,19 +32,11 @@ const initTrans = () => {
     return {
         bsc: [],
         eth: [],
+        ftm: [],
         matic: [],
     };
 };
 exports.initTrans = initTrans;
-// Init Token Record
-const initTokenRecord = () => {
-    return {
-        amount: 0,
-        quantity: 0,
-        price: 0,
-    };
-};
-exports.initTokenRecord = initTokenRecord;
 // API Url's
 exports.APIS = {
     debank: 'https://openapi.debank.com/v1/user',
@@ -56,15 +49,24 @@ exports.ENDPOINTS = {
     tokenList: 'token_list',
     protocolList: 'complex_protocol_list',
     beefyApy: 'apy',
-    beefyBsc: 'beefyBsc',
-    beefyPolygon: 'beefyPolygon',
     defiTaxesProcess: 'process',
+    transactionHistoryBsc: 'transaction-history/bsc',
+    transactionHistoryEth: 'transaction-history/eth',
+    transactionHistoryMatic: 'transaction-history/matic',
 };
 // Native Tokens
 exports.NATIVE_TOKENS = {
     bsc: 'BNB',
     eth: 'ETH',
+    ftm: 'FTM',
     matic: 'MATIC',
+};
+// Chain Aliases
+exports.CHAIN_ALIASES = {
+    bsc: 'BSC',
+    eth: 'ETH',
+    ftm: 'FTM',
+    matic: 'Polygon',
 };
 // Ape Board Credentials
 exports.apeBoardCredentials = {
@@ -82,6 +84,7 @@ exports.exchangeAliases = {
 exports.DEFAULT_URLS = {
     bsc: 'https://bscscan.com',
     eth: 'https://etherscan.io',
+    ftm: 'https://ftmscan.com',
     matic: 'https://polygonscan.com',
 };
 // Default History Record

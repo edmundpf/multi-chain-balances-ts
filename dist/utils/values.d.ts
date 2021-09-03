@@ -1,7 +1,6 @@
-import { Chains, Transactions, TokenRecord, HistoryRecord } from './types';
+import { Chains, Transactions, HistoryRecord } from './types';
 export declare const initChains: () => Chains;
 export declare const initTrans: () => Transactions;
-export declare const initTokenRecord: () => TokenRecord;
 export declare const APIS: {
     debank: string;
     beefy: string;
@@ -12,13 +11,21 @@ export declare const ENDPOINTS: {
     tokenList: string;
     protocolList: string;
     beefyApy: string;
-    beefyBsc: string;
-    beefyPolygon: string;
     defiTaxesProcess: string;
+    transactionHistoryBsc: string;
+    transactionHistoryEth: string;
+    transactionHistoryMatic: string;
 };
 export declare const NATIVE_TOKENS: {
     bsc: string;
     eth: string;
+    ftm: string;
+    matic: string;
+};
+export declare const CHAIN_ALIASES: {
+    bsc: string;
+    eth: string;
+    ftm: string;
     matic: string;
 };
 export declare const apeBoardCredentials: {
@@ -32,6 +39,7 @@ export declare const exchangeAliases: {
 export declare const DEFAULT_URLS: {
     bsc: string;
     eth: string;
+    ftm: string;
     matic: string;
 };
 export declare const defaultHistoryRecord: HistoryRecord;

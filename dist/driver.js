@@ -16,9 +16,9 @@ const _1 = __importDefault(require("./"));
 // Init
 const info = new _1.default();
 // Main
-const main = (getTransactions = false, useReq = true) => __awaiter(void 0, void 0, void 0, function* () {
+const main = (getTransactions = false) => __awaiter(void 0, void 0, void 0, function* () {
     if (getTransactions) {
-        yield transactions(useReq);
+        yield transactions();
     }
     else {
         yield info.getBalances();
@@ -26,23 +26,8 @@ const main = (getTransactions = false, useReq = true) => __awaiter(void 0, void 
     }
 });
 // Transactions
-const transactions = (useReq = true) => __awaiter(void 0, void 0, void 0, function* () {
-    let total = 0;
-    yield info.getTransactions(useReq);
-    for (const chainName in info.transactions) {
-        if (chainName == 'matic')
-            continue;
-        for (const record of info.transactions[chainName]) {
-            const { type, amount, fromAddress } = record;
-            if (type == 'deposit') {
-                if (chainName == 'bsc' && !fromAddress.startsWith('0X000'))
-                    continue;
-                console.log(record);
-                total += amount;
-            }
-        }
-    }
-    console.log('Total', total);
+const transactions = () => __awaiter(void 0, void 0, void 0, function* () {
+    yield info.getTransactions();
 });
 // Run
 main(false);
