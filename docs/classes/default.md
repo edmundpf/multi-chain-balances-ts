@@ -30,7 +30,7 @@ DefiTransactions Class
 
 ### Methods
 
-- [getApeBoardPositions](default.md#getapeboardpositions)
+- [getApeBoardEndpoint](default.md#getapeboardendpoint)
 - [getBalances](default.md#getbalances)
 - [getDefiTaxesEndpoint](default.md#getdefitaxesendpoint)
 - [getEndpoint](default.md#getendpoint)
@@ -50,7 +50,7 @@ DefiBalances.constructor
 
 #### Defined in
 
-[utils/DefiBalances.ts:53](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L53)
+[utils/DefiBalances.ts:50](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L50)
 
 ## Properties
 
@@ -64,7 +64,7 @@ DefiBalances.address
 
 #### Defined in
 
-[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L40)
+[utils/DefiBalances.ts:37](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L37)
 
 ___
 
@@ -78,7 +78,7 @@ DefiBalances.assets
 
 #### Defined in
 
-[utils/DefiBalances.ts:45](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L45)
+[utils/DefiBalances.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L42)
 
 ___
 
@@ -92,7 +92,7 @@ DefiBalances.chainNames
 
 #### Defined in
 
-[utils/DefiBalances.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L46)
+[utils/DefiBalances.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L43)
 
 ___
 
@@ -106,7 +106,7 @@ DefiBalances.chains
 
 #### Defined in
 
-[utils/DefiBalances.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L44)
+[utils/DefiBalances.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L41)
 
 ___
 
@@ -120,7 +120,7 @@ DefiBalances.tokenNames
 
 #### Defined in
 
-[utils/DefiBalances.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L47)
+[utils/DefiBalances.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L44)
 
 ___
 
@@ -134,7 +134,7 @@ DefiBalances.totalTokenValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L42)
+[utils/DefiBalances.ts:39](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L39)
 
 ___
 
@@ -148,7 +148,7 @@ DefiBalances.totalValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L41)
+[utils/DefiBalances.ts:38](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L38)
 
 ___
 
@@ -162,7 +162,7 @@ DefiBalances.totalVaultValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L43)
+[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L40)
 
 ___
 
@@ -172,27 +172,33 @@ ___
 
 #### Defined in
 
-[utils/DefiTransactions.ts:25](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiTransactions.ts#L25)
+[utils/DefiTransactions.ts:33](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiTransactions.ts#L33)
 
 ## Methods
 
-### getApeBoardPositions
+### getApeBoardEndpoint
 
-▸ **getApeBoardPositions**(): `Promise`<`ApeBoardPositions`\>
+▸ **getApeBoardEndpoint**(`endpoint`): `Promise`<`any`\>
 
-Get Ape Board Positions
+Get Ape Board Endpoint
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `endpoint` | ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` \| ``"transactionHistoryBsc"`` \| ``"transactionHistoryEth"`` \| ``"transactionHistoryMatic"`` |
 
 #### Returns
 
-`Promise`<`ApeBoardPositions`\>
+`Promise`<`any`\>
 
 #### Inherited from
 
-DefiBalances.getApeBoardPositions
+DefiBalances.getApeBoardEndpoint
 
 #### Defined in
 
-[utils/DefiBalances.ts:457](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L457)
+[utils/DefiBalances.ts:487](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L487)
 
 ___
 
@@ -212,7 +218,7 @@ DefiBalances.getBalances
 
 #### Defined in
 
-[utils/DefiBalances.ts:61](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L61)
+[utils/DefiBalances.ts:58](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L58)
 
 ___
 
@@ -226,7 +232,7 @@ Get Defi Taxes Endpoint
 
 | Name | Type |
 | :------ | :------ |
-| `endpoint` | ``"beefyBsc"`` \| ``"beefyPolygon"`` \| ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` |
+| `endpoint` | ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` \| ``"transactionHistoryBsc"`` \| ``"transactionHistoryEth"`` \| ``"transactionHistoryMatic"`` |
 | `args` | `any` |
 
 #### Returns
@@ -235,7 +241,7 @@ Get Defi Taxes Endpoint
 
 #### Defined in
 
-[utils/DefiTransactions.ts:277](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiTransactions.ts#L277)
+[utils/DefiTransactions.ts:367](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiTransactions.ts#L367)
 
 ___
 
@@ -250,7 +256,7 @@ Get Endpoint
 | Name | Type |
 | :------ | :------ |
 | `api` | ``"debank"`` \| ``"beefy"`` \| ``"apeBoard"`` \| ``"defiTaxes"`` |
-| `endpoint` | ``"beefyBsc"`` \| ``"beefyPolygon"`` \| ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` |
+| `endpoint` | ``"tokenList"`` \| ``"protocolList"`` \| ``"beefyApy"`` \| ``"defiTaxesProcess"`` \| ``"transactionHistoryBsc"`` \| ``"transactionHistoryEth"`` \| ``"transactionHistoryMatic"`` |
 | `params?` | `any` |
 | `headers?` | `any` |
 
@@ -264,21 +270,15 @@ DefiBalances.getEndpoint
 
 #### Defined in
 
-[utils/DefiBalances.ts:508](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiBalances.ts#L508)
+[utils/DefiBalances.ts:446](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiBalances.ts#L446)
 
 ___
 
 ### getTransactions
 
-▸ **getTransactions**(`useReq?`): `Promise`<`void`\>
+▸ **getTransactions**(): `Promise`<`void`\>
 
 Get Transactions
-
-#### Parameters
-
-| Name | Type | Default value |
-| :------ | :------ | :------ |
-| `useReq` | `boolean` | `true` |
 
 #### Returns
 
@@ -286,4 +286,4 @@ Get Transactions
 
 #### Defined in
 
-[utils/DefiTransactions.ts:31](https://github.com/edmundpf/multi-chain-balances-ts/blob/26932dc/src/utils/DefiTransactions.ts#L31)
+[utils/DefiTransactions.ts:39](https://github.com/edmundpf/multi-chain-balances-ts/blob/42d5436/src/utils/DefiTransactions.ts#L39)
