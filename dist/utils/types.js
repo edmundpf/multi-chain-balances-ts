@@ -1,5 +1,5 @@
 "use strict";
 /**
- * Data Types
+ * Internal Data Types
  */
 Object.defineProperty(exports, "__esModule", { value: true });

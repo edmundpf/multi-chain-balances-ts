@@ -1,38 +1,20 @@
-import { Chains, Transactions, HistoryRecord } from './types';
-export declare const initChains: () => Chains;
-export declare const initTrans: () => Transactions;
-export declare const APIS: {
-    debank: string;
-    beefy: string;
-    apeBoard: string;
-    defiTaxes: string;
-};
-export declare const ENDPOINTS: {
-    tokenList: string;
-    protocolList: string;
-    beefyApy: string;
-    defiTaxesProcess: string;
-    transactionHistoryBsc: string;
-    transactionHistoryEth: string;
-    transactionHistoryMatic: string;
-};
+import { Chains, HistoryRecord } from './types';
+/**
+ * Crypto Info
+ */
 export declare const NATIVE_TOKENS: {
     bsc: string;
     eth: string;
     ftm: string;
     matic: string;
 };
-export declare const CHAIN_ALIASES: {
+export declare const APEBOARD_CHAIN_ALIASES: {
     bsc: string;
     eth: string;
     ftm: string;
     matic: string;
 };
-export declare const apeBoardCredentials: {
-    secret: string;
-    passCode: string;
-};
-export declare const exchangeAliases: {
+export declare const EXCHANGE_ALIASES: {
     dino: string[];
     ape: string[];
 };
@@ -42,4 +24,29 @@ export declare const DEFAULT_URLS: {
     ftm: string;
     matic: string;
 };
+/**
+ * API Info
+ */
+export declare const APIS: {
+    debank: string;
+    debankPrivate: string;
+    beefy: string;
+    apeBoard: string;
+    defiTaxes: string;
+};
+export declare const ENDPOINTS: {
+    beefyApy: string;
+    tokenList: string;
+    protocolList: string;
+    debankHistory: string;
+    apeBoardHistory: string;
+};
+export declare const apeBoardCredentials: {
+    secret: string;
+    passCode: string;
+};
+/**
+ * Default Values
+ */
 export declare const defaultHistoryRecord: HistoryRecord;
+export declare const initChains: () => Chains;

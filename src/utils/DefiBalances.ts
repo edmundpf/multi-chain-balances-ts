@@ -8,7 +8,7 @@ import {
 	DEFAULT_URLS,
 	initChains,
 	apeBoardCredentials,
-	exchangeAliases,
+	EXCHANGE_ALIASES,
 } from './values'
 import {
 	Token,
@@ -279,10 +279,10 @@ export default class DefiBalances {
 					const receiptWordsSet = [receiptWords]
 
 					// Get APY Aliases
-					for (const key in exchangeAliases) {
+					for (const key in EXCHANGE_ALIASES) {
 						if (receiptStr.includes(key)) {
-							for (const alias of exchangeAliases[
-								key as keyof typeof exchangeAliases
+							for (const alias of EXCHANGE_ALIASES[
+								key as keyof typeof EXCHANGE_ALIASES
 							]) {
 								receiptWordsSet.push(
 									receiptStr.replace(key, alias).split(' ').slice(1)
@@ -465,6 +465,14 @@ export default class DefiBalances {
 	}
 
 	/**
+	 * Get Beefy Endpoint
+	 */
+
+	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		return await this.getEndpoint('beefy', endpoint)
+	}
+
+	/**
 	 * Get Debank Endpoint
 	 */
 
@@ -473,11 +481,17 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Get Beefy Endpoint
+	 * Get Private Debank Endpoint
 	 */
 
-	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint('beefy', endpoint)
+	async getPrivateDebankEndpoint(
+		endpoint: keyof typeof ENDPOINTS,
+		params?: any
+	) {
+		return await this.getEndpoint('debankPrivate', endpoint, {
+			...params,
+			user_addr: this.address.toLowerCase(),
+		})
 	}
 
 	/**

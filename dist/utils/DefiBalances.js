@@ -200,7 +200,7 @@ class DefiBalances {
                         ? hasMultipleSymbols && tokensMatchReceiptTokens
                         : receiptStr.includes(symbolsStr) ||
                             receiptStrNoSpaces.includes(symbolsStr) ||
-                            !hasMultipleSymbols && tokensMatchReceiptTokens;
+                            (!hasMultipleSymbols && tokensMatchReceiptTokens);
                     // Add Match to Compare Vault/Receipt Amounts
                     if (isMatch) {
                         const vaultAmount = vault.amount || 0;
@@ -230,9 +230,9 @@ class DefiBalances {
                         receiptWords = [receiptWords.join('')];
                     const receiptWordsSet = [receiptWords];
                     // Get APY Aliases
-                    for (const key in values_1.exchangeAliases) {
+                    for (const key in values_1.EXCHANGE_ALIASES) {
                         if (receiptStr.includes(key)) {
-                            for (const alias of values_1.exchangeAliases[key]) {
+                            for (const alias of values_1.EXCHANGE_ALIASES[key]) {
                                 receiptWordsSet.push(receiptStr.replace(key, alias).split(' ').slice(1));
                             }
                         }
@@ -387,6 +387,14 @@ class DefiBalances {
         });
     }
     /**
+     * Get Beefy Endpoint
+     */
+    getBeefyEndpoint(endpoint) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('beefy', endpoint);
+        });
+    }
+    /**
      * Get Debank Endpoint
      */
     getDebankEndpoint(endpoint) {
@@ -395,11 +403,11 @@ class DefiBalances {
         });
     }
     /**
-     * Get Beefy Endpoint
+     * Get Private Debank Endpoint
      */
-    getBeefyEndpoint(endpoint) {
+    getPrivateDebankEndpoint(endpoint, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('beefy', endpoint);
+            return yield this.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, params), { user_addr: this.address.toLowerCase() }));
         });
     }
     /**

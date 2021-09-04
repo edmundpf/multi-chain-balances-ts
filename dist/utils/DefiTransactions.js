@@ -13,303 +13,317 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiBalances_1 = __importDefault(require("./DefiBalances"));
-// import {
-// 	checkBuy,
-// 	checkSell,
-// 	checkFee,
-// 	getTokenName,
-// 	getTicker,
-// 	setDeposit,
-// } from './transactions'
-const misc_1 = require("./misc");
 const values_1 = require("./values");
 /**
  * DefiTransactions Class
  */
 class DefiTransactions extends DefiBalances_1.default {
-    constructor() {
-        // Properties
-        super(...arguments);
-        this.transactions = values_1.initTrans();
-    }
     /**
      * Get Transactions
      */
-    getTransactions() {
-        var _a;
+    getTransactions(useDebank = true) {
         return __awaiter(this, void 0, void 0, function* () {
-            const requests = [];
-            const processRequest = this.getDefiTaxesEndpoint.bind(this, 'defiTaxesProcess');
-            // Is Debit
-            const transIsDebit = (from) => from.toUpperCase() == this.address.toUpperCase();
-            // Send Requests
-            for (const chainName of this.chainNames) {
-                requests.push(processRequest({ chain: values_1.CHAIN_ALIASES[chainName] || chainName }));
-                requests.push(this.getApeBoardEndpoint(`transactionHistory${misc_1.titleCase(chainName)}}`));
+            const debankRequests = [];
+            const apeBoardRequests = [];
+            const rawChains = [];
+            const debankTokens = [];
+            // Get Info from Debank
+            const getInfoFromDebank = () => __awaiter(this, void 0, void 0, function* () {
+                var _a, _b, _c;
+                for (const index in this.chainNames) {
+                    const chainName = this.chainNames[index];
+                    if (!rawChains[index]) {
+                        debankRequests.push(this.getPrivateDebankEndpoint('debankHistory', { chain: chainName }));
+                    }
+                    else {
+                        debankRequests.push(undefined);
+                    }
+                }
+                const res = yield Promise.all(debankRequests);
+                const isFilled = rawChains.length == this.chainNames.length;
+                for (const index in res) {
+                    const result = res[index];
+                    if (((_a = result === null || result === void 0 ? void 0 : result.data) === null || _a === void 0 ? void 0 : _a.history_list) && !((_b = result) === null || _b === void 0 ? void 0 : _b.error_msg)) {
+                        rawChains[index] = result.data.history_list;
+                    }
+                    else if (!rawChains[index]) {
+                        rawChains[index] = isFilled ? [] : undefined;
+                    }
+                    debankTokens.push(((_c = result === null || result === void 0 ? void 0 : result.data) === null || _c === void 0 ? void 0 : _c.token_dict) || {});
+                }
+            });
+            // Get Info from Ape Board
+            const getInfoFromApeBoard = () => __awaiter(this, void 0, void 0, function* () {
+                var _d;
+                for (const index in this.chainNames) {
+                    const chainName = this.chainNames[index];
+                    const chainAlias = values_1.APEBOARD_CHAIN_ALIASES[chainName];
+                    if (!rawChains[index]) {
+                        const endpoint = `${values_1.ENDPOINTS['apeBoardHistory']}/${chainAlias}`;
+                        apeBoardRequests.push(this.getApeBoardEndpoint(endpoint));
+                    }
+                    else {
+                        apeBoardRequests.push(undefined);
+                    }
+                }
+                const res = yield Promise.all(apeBoardRequests);
+                const isFilled = rawChains.length == this.chainNames.length;
+                for (const index in res) {
+                    const result = res[index];
+                    if (result && !((_d = result) === null || _d === void 0 ? void 0 : _d.statusCode)) {
+                        rawChains[index] = result;
+                    }
+                    else if (!rawChains[index]) {
+                        rawChains[index] = isFilled ? [] : undefined;
+                    }
+                }
+            });
+            // Get Info
+            if (useDebank) {
+                yield getInfoFromDebank();
+                yield getInfoFromApeBoard();
             }
-            // Resolve Requests
-            const res = yield Promise.all(requests);
-            // Iterate Chains
-            for (const index in this.chainNames) {
-                const priceIndex = Number(index) * 2;
-                const transIndex = priceIndex + 1;
+            else {
+                yield getInfoFromApeBoard();
+                yield getInfoFromDebank();
+            }
+            // Iterate Chain Results
+            for (const index in rawChains) {
                 const chainName = this.chainNames[index];
-                const nativeToken = values_1.NATIVE_TOKENS[chainName];
-                const priceInfo = res[priceIndex];
-                const transInfo = ((_a = res[transIndex]) === null || _a === void 0 ? void 0 : _a.histories) || [];
-                const hashes = {};
-                // Get Hashes w/ Prices
-                for (const record of priceInfo) {
-                    const { hash, rows } = record;
-                    const tokens = {};
-                    // Iterate Rows
-                    for (const row of rows) {
-                        const { from, token_name: tokenName, token_contract: tokenContract, value: tokenQuantity, rate: tokenPrice, treatment, } = row;
-                        // Skip burns/missing tokens
-                        const isBurn = treatment == 'burn';
-                        const token = tokenName || tokenContract || '';
-                        if (isBurn || !token)
-                            continue;
-                        const isDebit = transIsDebit(from);
-                        const price = tokenPrice || 0;
-                        let quantity = tokenQuantity || 0;
-                        let amount = quantity * price;
-                        if (isDebit) {
-                            if (quantity)
-                                quantity = quantity * -1;
-                            if (amount)
-                                amount = amount * -1;
-                        }
-                        // Update token
-                        if (!tokens[token]) {
-                            tokens[token] = {
-                                amount,
-                                quantity,
-                                price,
-                                fills: 1
-                            };
-                        }
-                        else {
-                            const { amount: priorAmount, quantity: priorQuantity, price: priorPrice, fills: priorFills, } = tokens[token];
-                            const newFills = priorFills + 1;
-                            const newPrice = ((priorPrice * priorFills) + price) / newFills;
-                            tokens[token] = {
-                                amount: priorAmount + amount,
-                                quantity: priorQuantity + quantity,
-                                price: newPrice,
-                                fills: newFills,
-                            };
-                        }
-                    }
-                    // Fill in missing info
-                    const numTokens = Object.keys(tokens).length;
-                    if (numTokens) {
-                        let totalAmount = 0;
-                        const incomplete = [];
-                        for (const tokenName in tokens) {
-                            const token = tokens[tokenName];
-                            const { amount } = token;
-                            totalAmount += amount;
-                            if (!amount)
-                                incomplete.push(tokenName);
-                        }
-                        if (incomplete.length == 1 && numTokens > 1) {
-                            const incompleteToken = tokens[incomplete[0]];
-                            const { quantity: priorQuantity } = tokens[incomplete[0]];
-                            const amount = totalAmount * -1;
-                            const quantity = amount >= 0 ? priorQuantity : priorQuantity * -1;
-                            const price = Math.abs(amount / quantity);
-                            incompleteToken.amount = amount;
-                            incompleteToken.quantity = quantity;
-                            incompleteToken.price = price;
-                        }
-                        // Normalize Swap Prices
-                        if (numTokens == 2) {
-                            let buyToken = '';
-                            let sellToken = '';
-                            let buyAmount = 0;
-                            let sellAmount = 0;
-                            for (const tokenName in tokens) {
-                                const { amount } = tokens[tokenName];
-                                if (!amount)
-                                    break;
-                                if (amount >= 0) {
-                                    buyToken = tokenName;
-                                    buyAmount = amount;
-                                }
-                                else {
-                                    sellToken = tokenName;
-                                    sellAmount = amount;
-                                }
-                            }
-                            if (buyAmount && sellAmount) {
-                                const absBuyAmount = Math.abs(buyAmount);
-                                if (absBuyAmount != sellAmount) {
-                                    const higherBuy = absBuyAmount >= sellAmount;
-                                    if (higherBuy) {
-                                        const { quantity } = tokens[buyToken];
-                                        const amount = sellAmount * -1;
-                                        const price = Math.abs(amount / quantity);
-                                        tokens[buyToken].amount = amount;
-                                        tokens[buyToken].price = price;
-                                    }
-                                    else {
-                                        const { quantity } = tokens[sellToken];
-                                        const amount = absBuyAmount;
-                                        const price = Math.abs(amount / quantity);
-                                        tokens[sellToken].amount = amount;
-                                        tokens[sellToken].price = price;
-                                    }
-                                }
-                            }
-                        }
-                        // Set Hash
-                        hashes[hash] = tokens;
-                    }
+                const records = rawChains[index];
+                let historyRecords = [];
+                for (const record of records) {
+                    const nestedRecord = this.sterilizeHistoryRecord(record, chainName, debankTokens[index]);
+                    const splitRecords = this.splitHistoryRecord(nestedRecord);
+                    historyRecords = [...historyRecords, ...splitRecords];
                 }
-                // Parse History
-                for (const record of transInfo) {
-                    const { hash, 
-                    // from: fromAddress,
-                    // to: toAddress,
-                    function: method, 
-                    // fee: feeQuant,
-                    timestamp, nativePrice, transfers } = record;
-                    // Properties
-                    const type = method || '';
-                    const isSwap = type.includes('swap');
-                    // const feeQuantity = feeQuant || 0
-                    const feePrice = nativePrice || 0;
-                    // const fees = feeQuantity * feePrice
-                    const date = new Date(timestamp).toISOString();
-                    // Get Hash Info
-                    const hashTokens = hashes[hash];
-                    const hashTokenNames = Object.keys(hashTokens);
-                    const hashTokensCount = hashTokenNames.length;
-                    const hashIsSterile = hashTokensCount == 2 &&
-                        hashTokens[0].amount &&
-                        hashTokens[1].amount &&
-                        hashTokens[0].amount == hashTokens[1].amount * -1;
-                    const hashHasNativeToken = hashTokenNames.some((tokenName) => tokenName.toUpperCase() == nativeToken);
-                    // Replace native token prices
-                    if (hashHasNativeToken && feePrice) {
-                        let nativeTokenIndex = 0;
-                        for (const index in hashTokenNames) {
-                            const tokenName = hashTokenNames[index];
-                            const upperTokenName = tokenName.toUpperCase();
-                            if (upperTokenName == nativeToken) {
-                                nativeTokenIndex = Number(index);
-                                break;
-                            }
-                        }
-                        const nativeTokenKey = hashTokenNames[nativeTokenIndex];
-                        const { quantity: nativeQuantity } = hashTokens[nativeTokenKey];
-                        const nativePrice = feePrice;
-                        const nativeAmount = nativeQuantity * nativePrice;
-                        hashTokens[nativeTokenKey].amount = nativeAmount;
-                        hashTokens[nativeTokenKey].price = feePrice;
-                        // Normalize swaps w/ new prices
-                        if (hashIsSterile) {
-                            const quoteTokenIndex = nativeTokenIndex ? 0 : 1;
-                            const quoteTokenKey = hashTokenNames[quoteTokenIndex];
-                            const { quantity: quoteQuantity } = hashTokens[quoteTokenKey];
-                            const quoteAmount = nativeAmount * -1;
-                            const quotePrice = Math.abs(quoteAmount / quoteQuantity);
-                            hashTokens[quoteTokenKey].amount = quoteAmount;
-                            hashTokens[quoteTokenKey].price = quotePrice;
-                        }
-                    }
-                    // Get Buy Token for Swaps
-                    let hashBuyToken = '';
-                    let hashBuyTokenUpper = '';
-                    let buyTokenInfo = undefined;
-                    if (isSwap) {
-                        let buyToken = '';
-                        let buyTokenUpper = '';
-                        for (const transfer of transfers) {
-                            const { from, symbol, tokenAddress,
-                            // balance: tokenQuantity
-                             } = transfer;
-                            const isDebit = transIsDebit(from);
-                            if (isDebit) {
-                                buyToken = symbol || tokenAddress || '';
-                                buyTokenUpper = buyToken.toUpperCase();
-                                break;
-                            }
-                        }
-                        // Get Buy Token Info from Hash
-                        let buyTokenIndex = 0;
-                        for (const index in hashTokenNames) {
-                            const tokenName = hashTokenNames[index];
-                            const upperTokenName = tokenName.toUpperCase();
-                            if (upperTokenName == buyTokenUpper) {
-                                buyTokenIndex = Number(index);
-                                break;
-                            }
-                        }
-                        hashBuyToken = hashTokenNames[buyTokenIndex];
-                        hashBuyTokenUpper = hashBuyToken.toUpperCase();
-                        buyTokenInfo = hashTokens[hashBuyToken];
-                    }
-                    // Iterate Transfers
-                    for (const transfer of transfers) {
-                        const { 
-                        // from,
-                        symbol, tokenAddress,
-                        // balance: tokenQuantity
-                         } = transfer;
-                        const token = symbol || tokenAddress || '';
-                        const tokenUpper = token.toUpperCase();
-                        // const quantity = tokenQuantity || 0
-                        // const isDebit = transIsDebit(from)
-                        // Format Swaps
-                        if (isSwap && buyTokenInfo) {
-                            const isBuyToken = tokenUpper == hashBuyTokenUpper;
-                            if (!isBuyToken) {
-                                // Get Current Token Info from Hash
-                                let curTokenIndex = 0;
-                                for (const index in hashTokenNames) {
-                                    const tokenName = hashTokenNames[index];
-                                    const upperTokenName = tokenName.toUpperCase();
-                                    if (upperTokenName == tokenUpper) {
-                                        curTokenIndex = Number(index);
-                                        break;
-                                    }
-                                }
-                                const hashCurToken = hashTokenNames[curTokenIndex];
-                                // const curTokenInfo = hashTokens[hashCurToken]
-                                // const { price } = buyTokenInfo
-                                // const {
-                                // 	amount: baseAmount,
-                                // 	quantity: baseQuantity,
-                                // 	price: basePrice,
-                                // } = curTokenInfo
-                                const quote = hashBuyToken;
-                                const base = hashCurToken;
-                                const ticker = quote.includes('-') || base.includes('-')
-                                    ? quote
-                                    : `${quote}-${base}`;
-                                // const amount = baseAmount * -1
-                                // const quantity = amount / price
-                                this.transactions[chainName].push(Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, date,
-                                    ticker,
-                                    quote,
-                                    base,
-                                    type, direction: 'buy' }));
-                            }
-                        }
-                    }
-                }
+                this.chains[chainName].transactions = historyRecords;
             }
         });
     }
     /**
-     * Get Defi Taxes Endpoint
+     * Sterilize History Record
      */
-    getDefiTaxesEndpoint(endpoint, args) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('defiTaxes', endpoint, Object.assign({ address: this.address }, args));
-        });
+    sterilizeHistoryRecord(record, chainName, tokenSymbols) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        const debankRec = record;
+        const apeBoardRec = record;
+        const tokens = {};
+        // Add Token
+        const addToken = (info) => {
+            const { token, quantity } = info;
+            if (quantity != 0) {
+                tokens[token] = {
+                    amount: 0,
+                    quantity,
+                    price: 0
+                };
+            }
+        };
+        // Get Universal Info
+        let type = debankRec.cate_id ||
+            ((_a = debankRec.tx) === null || _a === void 0 ? void 0 : _a.name) ||
+            ((_c = (_b = apeBoardRec.interactions) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.function) ||
+            '';
+        const hash = debankRec.id || apeBoardRec.hash || '';
+        const date = new Date((debankRec.time_at * 1000) || apeBoardRec.timestamp).toISOString();
+        const toAddress = ((_d = debankRec.tx) === null || _d === void 0 ? void 0 : _d.to_addr) || ((_f = (_e = apeBoardRec.interactions) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.to) || this.address;
+        const fromAddress = ((_g = debankRec.tx) === null || _g === void 0 ? void 0 : _g.from_addr) ||
+            debankRec.other_addr ||
+            ((_j = (_h = apeBoardRec.interactions) === null || _h === void 0 ? void 0 : _h[0]) === null || _j === void 0 ? void 0 : _j.from) ||
+            this.address;
+        const feeToken = values_1.NATIVE_TOKENS[chainName];
+        const feeQuantity = ((_k = debankRec.tx) === null || _k === void 0 ? void 0 : _k.eth_gas_fee) || ((_m = (_l = apeBoardRec.fee) === null || _l === void 0 ? void 0 : _l[0]) === null || _m === void 0 ? void 0 : _m.amount) || 0;
+        let feePrice = ((_p = (_o = apeBoardRec.fee) === null || _o === void 0 ? void 0 : _o[0]) === null || _p === void 0 ? void 0 : _p.price) || 0;
+        let fees = ((_q = debankRec.tx) === null || _q === void 0 ? void 0 : _q.usd_gas_fee) || 0;
+        feePrice = feePrice || fees / feeQuantity || 0;
+        fees = fees || feeQuantity * feePrice || 0;
+        // Get Tokens Info
+        if (apeBoardRec.transfers) {
+            for (const record of apeBoardRec.transfers) {
+                const tokenInfo = this.sterilizeApeBoardTransfer(record);
+                addToken(tokenInfo);
+            }
+        }
+        else {
+            for (const record of debankRec.sends) {
+                const tokenInfo = this.sterilizeDebankTransfer(record, true, tokenSymbols);
+                addToken(tokenInfo);
+            }
+            for (const record of debankRec.receives) {
+                const tokenInfo = this.sterilizeDebankTransfer(record, false, tokenSymbols);
+                addToken(tokenInfo);
+            }
+        }
+        // Sterilize Type
+        type = this.sterilizeTransactionType(type, tokens);
+        // Get Direction
+        const direction = ['receive', 'swap'].includes(type) ? 'credit' : 'debit';
+        // Format Result
+        return Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, date,
+            type,
+            direction,
+            tokens, basePrice: 0, fees,
+            feeQuantity,
+            feePrice,
+            feeToken, chain: chainName, fromAddress,
+            toAddress });
+    }
+    /**
+     * Split History Record
+     */
+    splitHistoryRecord(record) {
+        const splitRecords = [];
+        // Get Quantity
+        const getQuantity = (oldQuantity, numRecords) => oldQuantity / numRecords;
+        // Get Fees
+        const getFees = (feeQuantity, feePrice) => feeQuantity * feePrice;
+        // Get Ticker
+        const getTicker = (quote, base) => {
+            const hasDashes = quote.includes('-') || base.includes('-');
+            return hasDashes ? `${quote}/${base}` : `${quote}-${base}`;
+        };
+        if (record.tokens) {
+            // Swaps
+            if (record.type == 'swap') {
+                const debitTokens = [];
+                const creditTokens = [];
+                let iterTokens = creditTokens;
+                let compareToken = '';
+                let compareIsBase = true;
+                // Get Debit & Credit Tokens
+                for (const tokenName in record.tokens) {
+                    const token = record.tokens[tokenName];
+                    const isDebit = token.quantity < 0;
+                    if (isDebit)
+                        debitTokens.push(tokenName);
+                    else
+                        creditTokens.push(tokenName);
+                }
+                // Multiple Buy Tokens or 1-1 Swap
+                if (creditTokens.length >= debitTokens.length) {
+                    compareToken = debitTokens[0];
+                }
+                // Multiple Sell Tokens
+                else if (debitTokens.length > creditTokens.length) {
+                    compareToken = creditTokens[0];
+                    iterTokens = debitTokens;
+                    compareIsBase = false;
+                }
+                // Iterate Tokens
+                for (const tokenName of iterTokens) {
+                    const quote = compareIsBase ? tokenName : compareToken;
+                    const base = compareIsBase ? compareToken : tokenName;
+                    const quantity = compareIsBase
+                        ? record.tokens[quote].quantity
+                        : getQuantity(record.tokens[quote].quantity, iterTokens.length);
+                    const baseQuantity = compareIsBase
+                        ? getQuantity(record.tokens[base].quantity, iterTokens.length)
+                        : record.tokens[base].quantity;
+                    const feeQuantity = getQuantity(record.feeQuantity, iterTokens.length);
+                    const fees = getFees(feeQuantity, record.feePrice);
+                    const ticker = getTicker(quote, base);
+                    const splitRecord = Object.assign(Object.assign({}, record), { ticker,
+                        quote,
+                        base,
+                        quantity,
+                        baseQuantity,
+                        fees,
+                        feeQuantity });
+                    delete splitRecord.tokens;
+                    splitRecords.push(splitRecord);
+                }
+            }
+            // Sends/Receives
+            else if (['send', 'receive'].includes(record.type)) {
+                const numTokens = Object.keys(record.tokens).length;
+                for (const tokenName in record.tokens) {
+                    const curToken = record.tokens[tokenName];
+                    const quote = tokenName;
+                    const base = record.base;
+                    const quantity = curToken.quantity;
+                    const feeQuantity = getQuantity(record.feeQuantity, numTokens);
+                    const fees = getFees(feeQuantity, record.feePrice);
+                    const ticker = getTicker(quote, base);
+                    const splitRecord = Object.assign(Object.assign({}, record), { ticker,
+                        quote,
+                        quantity,
+                        fees,
+                        feeQuantity });
+                    delete splitRecord.tokens;
+                    splitRecords.push(splitRecord);
+                }
+            }
+            // Failures & Approvals
+            else {
+                const splitRecord = record;
+                delete splitRecord.tokens;
+                splitRecords.push(splitRecord);
+            }
+        }
+        return splitRecords;
+    }
+    /**
+     * Sterilize Ape Board Transfer
+     */
+    sterilizeApeBoardTransfer(record) {
+        const { symbol, tokenAddress, balance, type } = record;
+        const token = (symbol || tokenAddress).toUpperCase();
+        const isDebit = type == 'out';
+        const quantity = isDebit ? balance * -1 : balance;
+        return {
+            token,
+            quantity,
+        };
+    }
+    /**
+     * Sterilize Debank Transfer
+     */
+    sterilizeDebankTransfer(record, isSend = true, tokenSymbols) {
+        const { amount, token_id: tokenId } = record;
+        const token = (tokenSymbols[tokenId].symbol || tokenId).toUpperCase();
+        const quantity = isSend ? amount * -1 : amount;
+        return {
+            token,
+            quantity
+        };
+    }
+    /**
+     * Sterilize Transaction Type
+     */
+    sterilizeTransactionType(type, tokens) {
+        let newType = type;
+        const tokenKeys = Object.keys(tokens);
+        const numTokens = tokenKeys.length;
+        // Check for Debits & Credits
+        let hasDebit = false;
+        let hasCredit = false;
+        for (const tokenKey in tokens) {
+            const token = tokens[tokenKey];
+            if (token.quantity > 0)
+                hasCredit = true;
+            else if (token.quantity < 0)
+                hasDebit = true;
+            if (hasDebit && hasCredit)
+                break;
+        }
+        // Receive
+        if (numTokens >= 1 && hasCredit && !hasDebit) {
+            newType = 'receive';
+        }
+        // Send
+        else if (numTokens >= 1 && hasDebit && !hasCredit) {
+            newType = 'send';
+        }
+        // Swap
+        else if (numTokens > 1 && hasDebit && hasCredit) {
+            newType = 'swap';
+        }
+        // Failure
+        else if (type != 'approve' && !numTokens) {
+            newType = 'failure';
+        }
+        return newType;
     }
 }
 exports.default = DefiTransactions;

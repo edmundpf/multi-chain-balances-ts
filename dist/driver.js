@@ -16,18 +16,17 @@ const _1 = __importDefault(require("./"));
 // Init
 const info = new _1.default();
 // Main
-const main = (getTransactions = false) => __awaiter(void 0, void 0, void 0, function* () {
+const main = (getTransactions = false, useDebank = true) => __awaiter(void 0, void 0, void 0, function* () {
     if (getTransactions) {
-        yield transactions();
+        yield info.getTransactions(useDebank);
+        for (const chainName in info.chains) {
+            console.log(info.chains[chainName].transactions);
+        }
     }
     else {
         yield info.getBalances();
         console.log(info.assets);
     }
 });
-// Transactions
-const transactions = () => __awaiter(void 0, void 0, void 0, function* () {
-    yield info.getTransactions();
-});
 // Run
-main(false);
+main(true, false);

@@ -1,6 +1,23 @@
 /**
- * Data Types
+ * Internal Data Types
  */
+
+// Asset Data Type
+
+type AssetData = {
+	value: number
+	apy: number
+	url: string
+	desc: string
+}
+
+// Token Record Type
+
+type TokenRecord = {
+	amount: number
+	quantity: number
+	price: number
+}
 
 // Numeric Dict Type
 
@@ -16,6 +33,12 @@ export type TokenData = {
 	amount?: number
 }
 
+// Token Records Type
+
+export type TokenRecords = {
+	[index: string]: TokenRecord
+}
+
 // Vault Data Type
 
 export type VaultData = TokenData & {
@@ -28,28 +51,10 @@ export type VaultData = TokenData & {
 	tokens: TokenData[]
 }
 
-// Asset Data Type
-
-type AssetData = {
-	value: number
-	apy: number
-	url: string
-	desc: string
-}
-
 // Assets Type
 
 export type Assets = {
 	[index: string]: AssetData
-}
-
-// Transactions Type
-
-export type Transactions = {
-	bsc: HistoryRecord[]
-	eth: HistoryRecord[]
-	ftm: HistoryRecord[]
-	matic: HistoryRecord[]
 }
 
 // Chain Type
@@ -62,6 +67,7 @@ export type Chain = {
 	tokens: TokenData[]
 	vaults: VaultData[]
 	receipts: NumDict
+	transactions: HistoryRecord[]
 }
 
 // Chains Type
@@ -73,111 +79,7 @@ export type Chains = {
 	matic: Chain
 }
 
-/**
- * Debank Types
- */
-
-// Token Type
-
-export type Token = {
-	chain: keyof Chains
-	symbol: string
-	price: number
-	amount: number
-}
-
-// Portfolio Item List Type
-
-type PortfolioItemList = {
-	detail: {
-		supply_token_list: Token[]
-	}
-	stats: {
-		net_usd_value: number
-	}
-}
-
-// Protocol Type
-
-export type Protocol = {
-	chain: keyof Chains
-	name: string
-	site_url: string
-	portfolio_item_list: PortfolioItemList[]
-}
-
-/**
- * Ape Board Types
- */
-
-// Ape Board History Type
-
-type ApeBoardHistory = {
-	hash: string
-	from: string
-	to: string
-	function: string
-	fee: number
-	timestamp: number
-	nativePrice?: number
-	transfers: ApeBoardTransfer[]
-}
-
-// Ape Board Transfer Type
-
-type ApeBoardTransfer = {
-	from: string
-	to: string
-	symbol: string
-	tokenAddress: string
-	logo?: string
-	balance: number
-}
-
-// Ape Board Transactions Response Type
-
-export type ApeBoardTransResponse = {
-	histories: ApeBoardHistory[]
-}
-
-/**
- * Defi Taxes Types
- */
-
-// Defi Transaction
-
-export type DefiTransaction = {
-	hash: string
-	type?: string
-	ts: string
-	rate_inferred: string | false
-	rate_adjusted: number | false
-	classification_certainty: number
-	rows: DefiRow[]
-}
-
-// Defi Row Type
-
-export type DefiRow = {
-	to?: string
-	from: string
-	token_name: string
-	token_contract?: string
-	value: number
-	rate?: number
-	treatment: string
-	good_rate: number
-}
-
-/**
- * Misc
- */
-
-// Main Request
-
-export type MainRequest = Token[] | Protocol[] | NumDict | void
-
-// History Record
+// History Record Type
 
 export type HistoryRecord = {
 	id: string
@@ -190,10 +92,10 @@ export type HistoryRecord = {
 	amount: number
 	quantity: number
 	price: number
+	tokens?: TokenRecords
 	baseAmount: number
 	baseQuantity: number
 	basePrice: number
-	fills: number
 	fees: number
 	feeQuantity: number
 	feePrice: number
@@ -201,26 +103,136 @@ export type HistoryRecord = {
 	chain: keyof Chains
 	fromAddress: string
 	toAddress: string
-	taxable: boolean
 }
 
-// Token Record
+// Main Request Type
 
-export type TokenRecord = {
+export type MainRequest = Token[] | Protocol[] | NumDict | void
+
+/**
+ * Debank Types
+ */
+
+// Portfolio Item List Type
+
+type PortfolioItemList = {
+	detail: {
+		supply_token_list: Token[]
+	}
+	stats: {
+		net_usd_value: number
+	}
+}
+
+// Debank Transaction Info Type
+
+type DebankTransactionInfo = {
+	eth_gas_fee: number
+	usd_gas_fee: number
+	to_addr: string
+	from_addr: string
+	name: string
+}
+
+// Debank Tokens Type
+
+export type DebankTokens = {
+	[index: string]: {
+		symbol: string
+	}
+}
+
+// Debank Transfer Type
+
+export type DebankTransfer = {
 	amount: number
-	quantity: number
+	to_addr?: string
+	from_addr?: string
+	token_id: string
+}
+
+// Token Type
+
+export type Token = {
+	chain: keyof Chains
+	symbol: string
 	price: number
-	fills: number
+	amount: number
 }
 
-// Token Records
+// Protocol Type
 
-export type TokenRecords = {
-	[index: string]: TokenRecord
+export type Protocol = {
+	chain: keyof Chains
+	name: string
+	site_url: string
+	portfolio_item_list: PortfolioItemList[]
 }
 
-// Hash Records
+// Debank Trans Response Type
 
-export type HashRecords = {
-	[index: string]: TokenRecords
+export type DebankTransResponse = {
+	data: {
+		history_list: DebankHistory[]
+		token_dict: DebankTokens
+		project_dict: any
+		cate_dict: any
+	}
 }
+
+// Debank History Type
+
+export type DebankHistory = {
+	id: string
+	cate_id?: string
+	other_addr: string
+	time_at: number
+	sends: DebankTransfer[]
+	receives: DebankTransfer[]
+	tx?: DebankTransactionInfo
+}
+
+/**
+ * Ape Board Types
+ */
+
+// Ape Board Interaction Type
+
+type ApeBoardInteraction = {
+	from: string
+	to: string
+	function?: string
+}
+
+// Ape Board Fee Type
+
+type ApeBoardFee = {
+	amount: number
+	price: number
+	symbol: string
+}
+
+// Ape Board Transfer Type
+
+export type ApeBoardTransfer = {
+	from: string
+	to: string
+	symbol: string
+	tokenAddress: string
+	balance: number
+	type: 'in' | 'out'
+}
+
+// Ape Board History Type
+
+export type ApeBoardHistory = {
+	hash: string
+	timestamp: number
+	transfers: ApeBoardTransfer[]
+	interactions: ApeBoardInteraction[]
+	fee: ApeBoardFee[]
+}
+
+// Ape Board Transactions Response Type
+
+export type ApeBoardTransResponse = ApeBoardHistory[]

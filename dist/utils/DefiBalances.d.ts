@@ -53,13 +53,17 @@ export default class DefiBalances {
      */
     getEndpoint(api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any): Promise<any>;
     /**
+     * Get Beefy Endpoint
+     */
+    private getBeefyEndpoint;
+    /**
      * Get Debank Endpoint
      */
     private getDebankEndpoint;
     /**
-     * Get Beefy Endpoint
+     * Get Private Debank Endpoint
      */
-    private getBeefyEndpoint;
+    getPrivateDebankEndpoint(endpoint: keyof typeof ENDPOINTS, params?: any): Promise<any>;
     /**
      * Get Ape Board Endpoint
      */

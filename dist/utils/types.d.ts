@@ -1,6 +1,17 @@
 /**
- * Data Types
+ * Internal Data Types
  */
+declare type AssetData = {
+    value: number;
+    apy: number;
+    url: string;
+    desc: string;
+};
+declare type TokenRecord = {
+    amount: number;
+    quantity: number;
+    price: number;
+};
 export declare type NumDict = {
     [index: string]: number;
 };
@@ -8,6 +19,9 @@ export declare type TokenData = {
     symbol: string;
     value: number;
     amount?: number;
+};
+export declare type TokenRecords = {
+    [index: string]: TokenRecord;
 };
 export declare type VaultData = TokenData & {
     platform: string;
@@ -18,20 +32,8 @@ export declare type VaultData = TokenData & {
     beefyReceiptAmount?: number;
     tokens: TokenData[];
 };
-declare type AssetData = {
-    value: number;
-    apy: number;
-    url: string;
-    desc: string;
-};
 export declare type Assets = {
     [index: string]: AssetData;
-};
-export declare type Transactions = {
-    bsc: HistoryRecord[];
-    eth: HistoryRecord[];
-    ftm: HistoryRecord[];
-    matic: HistoryRecord[];
 };
 export declare type Chain = {
     totalValue: number;
@@ -41,6 +43,7 @@ export declare type Chain = {
     tokens: TokenData[];
     vaults: VaultData[];
     receipts: NumDict;
+    transactions: HistoryRecord[];
 };
 export declare type Chains = {
     bsc: Chain;
@@ -48,79 +51,6 @@ export declare type Chains = {
     ftm: Chain;
     matic: Chain;
 };
-/**
- * Debank Types
- */
-export declare type Token = {
-    chain: keyof Chains;
-    symbol: string;
-    price: number;
-    amount: number;
-};
-declare type PortfolioItemList = {
-    detail: {
-        supply_token_list: Token[];
-    };
-    stats: {
-        net_usd_value: number;
-    };
-};
-export declare type Protocol = {
-    chain: keyof Chains;
-    name: string;
-    site_url: string;
-    portfolio_item_list: PortfolioItemList[];
-};
-/**
- * Ape Board Types
- */
-declare type ApeBoardHistory = {
-    hash: string;
-    from: string;
-    to: string;
-    function: string;
-    fee: number;
-    timestamp: number;
-    nativePrice?: number;
-    transfers: ApeBoardTransfer[];
-};
-declare type ApeBoardTransfer = {
-    from: string;
-    to: string;
-    symbol: string;
-    tokenAddress: string;
-    logo?: string;
-    balance: number;
-};
-export declare type ApeBoardTransResponse = {
-    histories: ApeBoardHistory[];
-};
-/**
- * Defi Taxes Types
- */
-export declare type DefiTransaction = {
-    hash: string;
-    type?: string;
-    ts: string;
-    rate_inferred: string | false;
-    rate_adjusted: number | false;
-    classification_certainty: number;
-    rows: DefiRow[];
-};
-export declare type DefiRow = {
-    to?: string;
-    from: string;
-    token_name: string;
-    token_contract?: string;
-    value: number;
-    rate?: number;
-    treatment: string;
-    good_rate: number;
-};
-/**
- * Misc
- */
-export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 export declare type HistoryRecord = {
     id: string;
     date: string;
@@ -132,10 +62,10 @@ export declare type HistoryRecord = {
     amount: number;
     quantity: number;
     price: number;
+    tokens?: TokenRecords;
     baseAmount: number;
     baseQuantity: number;
     basePrice: number;
-    fills: number;
     fees: number;
     feeQuantity: number;
     feePrice: number;
@@ -143,18 +73,93 @@ export declare type HistoryRecord = {
     chain: keyof Chains;
     fromAddress: string;
     toAddress: string;
-    taxable: boolean;
 };
-export declare type TokenRecord = {
+export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
+/**
+ * Debank Types
+ */
+declare type PortfolioItemList = {
+    detail: {
+        supply_token_list: Token[];
+    };
+    stats: {
+        net_usd_value: number;
+    };
+};
+declare type DebankTransactionInfo = {
+    eth_gas_fee: number;
+    usd_gas_fee: number;
+    to_addr: string;
+    from_addr: string;
+    name: string;
+};
+export declare type DebankTokens = {
+    [index: string]: {
+        symbol: string;
+    };
+};
+export declare type DebankTransfer = {
     amount: number;
-    quantity: number;
+    to_addr?: string;
+    from_addr?: string;
+    token_id: string;
+};
+export declare type Token = {
+    chain: keyof Chains;
+    symbol: string;
     price: number;
-    fills: number;
+    amount: number;
 };
-export declare type TokenRecords = {
-    [index: string]: TokenRecord;
+export declare type Protocol = {
+    chain: keyof Chains;
+    name: string;
+    site_url: string;
+    portfolio_item_list: PortfolioItemList[];
 };
-export declare type HashRecords = {
-    [index: string]: TokenRecords;
+export declare type DebankTransResponse = {
+    data: {
+        history_list: DebankHistory[];
+        token_dict: DebankTokens;
+        project_dict: any;
+        cate_dict: any;
+    };
 };
+export declare type DebankHistory = {
+    id: string;
+    cate_id?: string;
+    other_addr: string;
+    time_at: number;
+    sends: DebankTransfer[];
+    receives: DebankTransfer[];
+    tx?: DebankTransactionInfo;
+};
+/**
+ * Ape Board Types
+ */
+declare type ApeBoardInteraction = {
+    from: string;
+    to: string;
+    function?: string;
+};
+declare type ApeBoardFee = {
+    amount: number;
+    price: number;
+    symbol: string;
+};
+export declare type ApeBoardTransfer = {
+    from: string;
+    to: string;
+    symbol: string;
+    tokenAddress: string;
+    balance: number;
+    type: 'in' | 'out';
+};
+export declare type ApeBoardHistory = {
+    hash: string;
+    timestamp: number;
+    transfers: ApeBoardTransfer[];
+    interactions: ApeBoardInteraction[];
+    fee: ApeBoardFee[];
+};
+export declare type ApeBoardTransResponse = ApeBoardHistory[];
 export {};

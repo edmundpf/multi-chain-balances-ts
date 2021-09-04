@@ -1,26 +1,20 @@
 import DefiBalances from './DefiBalances'
-// import {
-// 	checkBuy,
-// 	checkSell,
-// 	checkFee,
-// 	getTokenName,
-// 	getTicker,
-// 	setDeposit,
-// } from './transactions'
-import { titleCase } from './misc'
 import {
-	defaultHistoryRecord,
-	ENDPOINTS,
-	initTrans,
 	NATIVE_TOKENS,
-	CHAIN_ALIASES,
+	ENDPOINTS,
+	APEBOARD_CHAIN_ALIASES,
+	defaultHistoryRecord,
 } from './values'
 import {
-	DefiTransaction,
+	DebankTransfer,
+	DebankHistory,
+	DebankTokens,
+	DebankTransResponse,
+	ApeBoardTransfer,
+	ApeBoardHistory,
 	ApeBoardTransResponse,
-	HashRecords,
 	TokenRecords,
-	TokenRecord,
+	HistoryRecord,
 } from './types'
 
 /**
@@ -28,349 +22,377 @@ import {
  */
 
 export default class DefiTransactions extends DefiBalances {
-	// Properties
-
-	transactions = initTrans()
-
 	/**
 	 * Get Transactions
 	 */
 
-	async getTransactions() {
-		const requests: Promise<any>[] = []
-		const processRequest = this.getDefiTaxesEndpoint.bind(
-			this,
-			'defiTaxesProcess'
-		)
-
-		// Is Debit
-		const transIsDebit = (from: string) =>
-			from.toUpperCase() == this.address.toUpperCase()
-
-		// Send Requests
-		for (const chainName of this.chainNames) {
-			requests.push(
-				processRequest({ chain: CHAIN_ALIASES[chainName] || chainName })
-			)
-			requests.push(
-				this.getApeBoardEndpoint(
-					`transactionHistory${titleCase(chainName)}}` as keyof typeof ENDPOINTS
-				)
-			)
+	async getTransactions(useDebank = true) {
+		const debankRequests: (Promise<DebankTransResponse> | undefined)[] = []
+		const apeBoardRequests: (Promise<ApeBoardTransResponse> | undefined)[] = []
+		const rawChains: (DebankHistory[] | ApeBoardHistory[] | undefined)[] = []
+		const debankTokens: DebankTokens[] = []
+		// Get Info from Debank
+		const getInfoFromDebank = async () => {
+			for (const index in this.chainNames) {
+				const chainName = this.chainNames[index]
+				if (!rawChains[index]) {
+					debankRequests.push(
+						this.getPrivateDebankEndpoint('debankHistory', { chain: chainName })
+					)
+				} else {
+					debankRequests.push(undefined)
+				}
+			}
+			const res = await Promise.all(debankRequests)
+			const isFilled = rawChains.length == this.chainNames.length
+			for (const index in res) {
+				const result = res[index]
+				if (result?.data?.history_list && !(result as any)?.error_msg) {
+					rawChains[index] = result.data.history_list
+				} else if (!rawChains[index]) {
+					rawChains[index] = isFilled ? [] : undefined
+				}
+				debankTokens.push(result?.data?.token_dict || {})
+			}
 		}
 
-		// Resolve Requests
-		const res: Array<DefiTransaction[] | ApeBoardTransResponse> =
-			await Promise.all(requests)
+		// Get Info from Ape Board
+		const getInfoFromApeBoard = async () => {
+			for (const index in this.chainNames) {
+				const chainName = this.chainNames[index]
+				const chainAlias = APEBOARD_CHAIN_ALIASES[chainName]
+				if (!rawChains[index]) {
+					const endpoint =
+						`${ENDPOINTS['apeBoardHistory']}/${chainAlias}` as keyof typeof ENDPOINTS
+					apeBoardRequests.push(this.getApeBoardEndpoint(endpoint))
+				} else {
+					apeBoardRequests.push(undefined)
+				}
+			}
+			const res = await Promise.all(apeBoardRequests)
+			const isFilled = rawChains.length == this.chainNames.length
+			for (const index in res) {
+				const result = res[index]
+				if (result && !(result as any)?.statusCode) {
+					rawChains[index] = result
+				} else if (!rawChains[index]) {
+					rawChains[index] = isFilled ? [] : undefined
+				}
+			}
+		}
 
-		// Iterate Chains
-		for (const index in this.chainNames) {
-			const priceIndex = Number(index) * 2
-			const transIndex = priceIndex + 1
+		// Get Info
+		if (useDebank) {
+			await getInfoFromDebank()
+			await getInfoFromApeBoard()
+		} else {
+			await getInfoFromApeBoard()
+			await getInfoFromDebank()
+		}
+
+		// Iterate Chain Results
+		for (const index in rawChains) {
 			const chainName = this.chainNames[index]
-			const nativeToken = NATIVE_TOKENS[chainName]
-			const priceInfo = res[priceIndex] as DefiTransaction[]
-			const transInfo =
-				(res[transIndex] as ApeBoardTransResponse)?.histories || []
-			const hashes: HashRecords = {}
-
-			// Get Hashes w/ Prices
-			for (const record of priceInfo) {
-				const { hash, rows } = record
-				const tokens: TokenRecords = {}
-
-				// Iterate Rows
-				for (const row of rows) {
-					const {
-						from,
-						token_name: tokenName,
-						token_contract: tokenContract,
-						value: tokenQuantity,
-						rate: tokenPrice,
-						treatment,
-					} = row
-
-					// Skip burns/missing tokens
-					const isBurn = treatment == 'burn'
-					const token = tokenName || tokenContract || ''
-					if (isBurn || !token) continue
-					const isDebit = transIsDebit(from)
-					const price = tokenPrice || 0
-					let quantity = tokenQuantity || 0
-					let amount = quantity * price
-					if (isDebit) {
-						if (quantity) quantity = quantity * -1
-						if (amount) amount = amount * -1
-					}
-
-					// Update token
-					if (!tokens[token]) {
-						tokens[token] = {
-							amount,
-							quantity,
-							price,
-							fills: 1,
-						}
-					} else {
-						const {
-							amount: priorAmount,
-							quantity: priorQuantity,
-							price: priorPrice,
-							fills: priorFills,
-						} = tokens[token]
-						const newFills = priorFills + 1
-						const newPrice = (priorPrice * priorFills + price) / newFills
-						tokens[token] = {
-							amount: priorAmount + amount,
-							quantity: priorQuantity + quantity,
-							price: newPrice,
-							fills: newFills,
-						}
-					}
-				}
-
-				// Fill in missing info
-				const numTokens = Object.keys(tokens).length
-				if (numTokens) {
-					let totalAmount = 0
-					const incomplete: string[] = []
-					for (const tokenName in tokens) {
-						const token = tokens[tokenName]
-						const { amount } = token
-						totalAmount += amount
-						if (!amount) incomplete.push(tokenName)
-					}
-					if (incomplete.length == 1 && numTokens > 1) {
-						const incompleteToken = tokens[incomplete[0]]
-						const { quantity: priorQuantity } = tokens[incomplete[0]]
-						const amount = totalAmount * -1
-						const quantity = amount >= 0 ? priorQuantity : priorQuantity * -1
-						const price = Math.abs(amount / quantity)
-						incompleteToken.amount = amount
-						incompleteToken.quantity = quantity
-						incompleteToken.price = price
-					}
-
-					// Normalize Swap Prices
-					if (numTokens == 2) {
-						let buyToken = ''
-						let sellToken = ''
-						let buyAmount = 0
-						let sellAmount = 0
-						for (const tokenName in tokens) {
-							const { amount } = tokens[tokenName]
-							if (!amount) break
-							if (amount >= 0) {
-								buyToken = tokenName
-								buyAmount = amount
-							} else {
-								sellToken = tokenName
-								sellAmount = amount
-							}
-						}
-						if (buyAmount && sellAmount) {
-							const absBuyAmount = Math.abs(buyAmount)
-							if (absBuyAmount != sellAmount) {
-								const higherBuy = absBuyAmount >= sellAmount
-								if (higherBuy) {
-									const { quantity } = tokens[buyToken]
-									const amount = sellAmount * -1
-									const price = Math.abs(amount / quantity)
-									tokens[buyToken].amount = amount
-									tokens[buyToken].price = price
-								} else {
-									const { quantity } = tokens[sellToken]
-									const amount = absBuyAmount
-									const price = Math.abs(amount / quantity)
-									tokens[sellToken].amount = amount
-									tokens[sellToken].price = price
-								}
-							}
-						}
-					}
-
-					// Set Hash
-					hashes[hash] = tokens
-				}
-			}
-
-			// Parse History
-			for (const record of transInfo) {
-				const {
-					hash,
-					// from: fromAddress,
-					// to: toAddress,
-					function: method,
-					// fee: feeQuant,
-					timestamp,
-					nativePrice,
-					transfers,
-				} = record
-
-				// Properties
-				const type = method || ''
-				const isSwap = type.includes('swap')
-				// const feeQuantity = feeQuant || 0
-				const feePrice = nativePrice || 0
-				// const fees = feeQuantity * feePrice
-				const date = new Date(timestamp).toISOString()
-
-				// Get Hash Info
-				const hashTokens = hashes[hash]
-				const hashTokenNames = Object.keys(hashTokens)
-				const hashTokensCount = hashTokenNames.length
-				const hashIsSterile =
-					hashTokensCount == 2 &&
-					hashTokens[0].amount &&
-					hashTokens[1].amount &&
-					hashTokens[0].amount == hashTokens[1].amount * -1
-				const hashHasNativeToken = hashTokenNames.some(
-					(tokenName: string) => tokenName.toUpperCase() == nativeToken
+			const records = rawChains[index] as ApeBoardHistory[] | DebankHistory[]
+			let historyRecords: HistoryRecord[] = []
+			for (const record of records) {
+				const nestedRecord = this.sterilizeHistoryRecord(
+					record,
+					chainName,
+					debankTokens[index]
 				)
-
-				// Replace native token prices
-				if (hashHasNativeToken && feePrice) {
-					let nativeTokenIndex = 0
-					for (const index in hashTokenNames) {
-						const tokenName = hashTokenNames[index]
-						const upperTokenName = tokenName.toUpperCase()
-						if (upperTokenName == nativeToken) {
-							nativeTokenIndex = Number(index)
-							break
-						}
-					}
-					const nativeTokenKey = hashTokenNames[nativeTokenIndex]
-					const { quantity: nativeQuantity } = hashTokens[nativeTokenKey]
-					const nativePrice = feePrice
-					const nativeAmount = nativeQuantity * nativePrice
-					hashTokens[nativeTokenKey].amount = nativeAmount
-					hashTokens[nativeTokenKey].price = feePrice
-
-					// Normalize swaps w/ new prices
-					if (hashIsSterile) {
-						const quoteTokenIndex = nativeTokenIndex ? 0 : 1
-						const quoteTokenKey = hashTokenNames[quoteTokenIndex]
-						const { quantity: quoteQuantity } = hashTokens[quoteTokenKey]
-						const quoteAmount = nativeAmount * -1
-						const quotePrice = Math.abs(quoteAmount / quoteQuantity)
-						hashTokens[quoteTokenKey].amount = quoteAmount
-						hashTokens[quoteTokenKey].price = quotePrice
-					}
-				}
-
-				// Get Buy Token for Swaps
-				let hashBuyToken = ''
-				let hashBuyTokenUpper = ''
-				let buyTokenInfo: TokenRecord | undefined = undefined
-
-				if (isSwap) {
-					let buyToken = ''
-					let buyTokenUpper = ''
-					for (const transfer of transfers) {
-						const {
-							from,
-							symbol,
-							tokenAddress,
-							// balance: tokenQuantity
-						} = transfer
-						const isDebit = transIsDebit(from)
-						if (isDebit) {
-							buyToken = symbol || tokenAddress || ''
-							buyTokenUpper = buyToken.toUpperCase()
-							break
-						}
-					}
-
-					// Get Buy Token Info from Hash
-					let buyTokenIndex = 0
-					for (const index in hashTokenNames) {
-						const tokenName = hashTokenNames[index]
-						const upperTokenName = tokenName.toUpperCase()
-						if (upperTokenName == buyTokenUpper) {
-							buyTokenIndex = Number(index)
-							break
-						}
-					}
-					hashBuyToken = hashTokenNames[buyTokenIndex]
-					hashBuyTokenUpper = hashBuyToken.toUpperCase()
-					buyTokenInfo = hashTokens[hashBuyToken]
-				}
-
-				// Iterate Transfers
-				for (const transfer of transfers) {
-					const {
-						// from,
-						symbol,
-						tokenAddress,
-						// balance: tokenQuantity
-					} = transfer
-					const token = symbol || tokenAddress || ''
-					const tokenUpper = token.toUpperCase()
-					// const quantity = tokenQuantity || 0
-					// const isDebit = transIsDebit(from)
-
-					// Format Swaps
-					if (isSwap && buyTokenInfo) {
-						const isBuyToken = tokenUpper == hashBuyTokenUpper
-						if (!isBuyToken) {
-							// Get Current Token Info from Hash
-							let curTokenIndex = 0
-							for (const index in hashTokenNames) {
-								const tokenName = hashTokenNames[index]
-								const upperTokenName = tokenName.toUpperCase()
-								if (upperTokenName == tokenUpper) {
-									curTokenIndex = Number(index)
-									break
-								}
-							}
-							const hashCurToken = hashTokenNames[curTokenIndex]
-							// const curTokenInfo = hashTokens[hashCurToken]
-
-							// const { price } = buyTokenInfo
-
-							// const {
-							// 	amount: baseAmount,
-							// 	quantity: baseQuantity,
-							// 	price: basePrice,
-							// } = curTokenInfo
-
-							const quote = hashBuyToken
-							const base = hashCurToken
-							const ticker =
-								quote.includes('-') || base.includes('-')
-									? quote
-									: `${quote}-${base}`
-							// const amount = baseAmount * -1
-							// const quantity = amount / price
-
-							this.transactions[chainName].push({
-								...defaultHistoryRecord,
-								id: hash,
-								date,
-								ticker,
-								quote,
-								base,
-								type,
-								direction: 'buy',
-							})
-						}
-					}
-				}
+				const splitRecords = this.splitHistoryRecord(nestedRecord)
+				historyRecords = [...historyRecords, ...splitRecords]
 			}
+			this.chains[chainName].transactions = historyRecords
 		}
 	}
 
 	/**
-	 * Get Defi Taxes Endpoint
+	 * Sterilize History Record
 	 */
 
-	private async getDefiTaxesEndpoint(
-		endpoint: keyof typeof ENDPOINTS,
-		args: any
+	sterilizeHistoryRecord(
+		record: DebankHistory | ApeBoardHistory,
+		chainName: keyof typeof NATIVE_TOKENS,
+		tokenSymbols: DebankTokens
 	) {
-		return await this.getEndpoint('defiTaxes', endpoint, {
-			address: this.address,
-			...args,
-		})
+		const debankRec = record as DebankHistory
+		const apeBoardRec = record as ApeBoardHistory
+		const tokens: TokenRecords = {}
+
+		// Add Token
+		const addToken = (
+			info: ReturnType<DefiTransactions['sterilizeDebankTransfer']>
+		) => {
+			const { token, quantity } = info
+			if (quantity != 0) {
+				tokens[token] = {
+					amount: 0,
+					quantity,
+					price: 0,
+				}
+			}
+		}
+
+		// Get Universal Info
+		let type =
+			debankRec.cate_id ||
+			debankRec.tx?.name ||
+			apeBoardRec.interactions?.[0]?.function ||
+			''
+		const hash = debankRec.id || apeBoardRec.hash || ''
+		const date = new Date(
+			debankRec.time_at * 1000 || apeBoardRec.timestamp
+		).toISOString()
+		const toAddress =
+			debankRec.tx?.to_addr || apeBoardRec.interactions?.[0]?.to || this.address
+		const fromAddress =
+			debankRec.tx?.from_addr ||
+			debankRec.other_addr ||
+			apeBoardRec.interactions?.[0]?.from ||
+			this.address
+		const feeToken = NATIVE_TOKENS[chainName]
+		const feeQuantity =
+			debankRec.tx?.eth_gas_fee || apeBoardRec.fee?.[0]?.amount || 0
+		let feePrice = apeBoardRec.fee?.[0]?.price || 0
+		let fees = debankRec.tx?.usd_gas_fee || 0
+		feePrice = feePrice || fees / feeQuantity || 0
+		fees = fees || feeQuantity * feePrice || 0
+
+		// Get Tokens Info
+		if (apeBoardRec.transfers) {
+			for (const record of apeBoardRec.transfers) {
+				const tokenInfo = this.sterilizeApeBoardTransfer(record)
+				addToken(tokenInfo)
+			}
+		} else {
+			for (const record of debankRec.sends) {
+				const tokenInfo = this.sterilizeDebankTransfer(
+					record,
+					true,
+					tokenSymbols
+				)
+				addToken(tokenInfo)
+			}
+			for (const record of debankRec.receives) {
+				const tokenInfo = this.sterilizeDebankTransfer(
+					record,
+					false,
+					tokenSymbols
+				)
+				addToken(tokenInfo)
+			}
+		}
+
+		// Sterilize Type
+		type = this.sterilizeTransactionType(type, tokens)
+
+		// Get Direction
+		const direction = ['receive', 'swap'].includes(type) ? 'credit' : 'debit'
+
+		// Format Result
+		return {
+			...defaultHistoryRecord,
+			id: hash,
+			date,
+			type,
+			direction,
+			tokens,
+			basePrice: 0,
+			fees,
+			feeQuantity,
+			feePrice,
+			feeToken,
+			chain: chainName,
+			fromAddress,
+			toAddress,
+		} as HistoryRecord
+	}
+
+	/**
+	 * Split History Record
+	 */
+
+	splitHistoryRecord(record: HistoryRecord) {
+		const splitRecords: HistoryRecord[] = []
+
+		// Get Quantity
+		const getQuantity = (oldQuantity: number, numRecords: number) =>
+			oldQuantity / numRecords
+
+		// Get Fees
+		const getFees = (feeQuantity: number, feePrice: number) =>
+			feeQuantity * feePrice
+
+		// Get Ticker
+		const getTicker = (quote: string, base: string) => {
+			const hasDashes = quote.includes('-') || base.includes('-')
+			return hasDashes ? `${quote}/${base}` : `${quote}-${base}`
+		}
+
+		if (record.tokens) {
+			// Swaps
+			if (record.type == 'swap') {
+				const debitTokens: string[] = []
+				const creditTokens: string[] = []
+				let iterTokens = creditTokens
+				let compareToken = ''
+				let compareIsBase = true
+
+				// Get Debit & Credit Tokens
+				for (const tokenName in record.tokens) {
+					const token = record.tokens[tokenName]
+					const isDebit = token.quantity < 0
+					if (isDebit) debitTokens.push(tokenName)
+					else creditTokens.push(tokenName)
+				}
+
+				// Multiple Buy Tokens or 1-1 Swap
+				if (creditTokens.length >= debitTokens.length) {
+					compareToken = debitTokens[0]
+				}
+
+				// Multiple Sell Tokens
+				else if (debitTokens.length > creditTokens.length) {
+					compareToken = creditTokens[0]
+					iterTokens = debitTokens
+					compareIsBase = false
+				}
+
+				// Iterate Tokens
+				for (const tokenName of iterTokens) {
+					const quote = compareIsBase ? tokenName : compareToken
+					const base = compareIsBase ? compareToken : tokenName
+					const quantity = compareIsBase
+						? record.tokens[quote].quantity
+						: getQuantity(record.tokens[quote].quantity, iterTokens.length)
+					const baseQuantity = compareIsBase
+						? getQuantity(record.tokens[base].quantity, iterTokens.length)
+						: record.tokens[base].quantity
+					const feeQuantity = getQuantity(record.feeQuantity, iterTokens.length)
+					const fees = getFees(feeQuantity, record.feePrice)
+					const ticker = getTicker(quote, base)
+					const splitRecord = {
+						...record,
+						ticker,
+						quote,
+						base,
+						quantity,
+						baseQuantity,
+						fees,
+						feeQuantity,
+					}
+					delete splitRecord.tokens
+					splitRecords.push(splitRecord)
+				}
+			}
+
+			// Sends/Receives
+			else if (['send', 'receive'].includes(record.type)) {
+				const numTokens = Object.keys(record.tokens).length
+				for (const tokenName in record.tokens) {
+					const curToken = record.tokens[tokenName]
+					const quote = tokenName
+					const base = record.base
+					const quantity = curToken.quantity
+					const feeQuantity = getQuantity(record.feeQuantity, numTokens)
+					const fees = getFees(feeQuantity, record.feePrice)
+					const ticker = getTicker(quote, base)
+					const splitRecord = {
+						...record,
+						ticker,
+						quote,
+						quantity,
+						fees,
+						feeQuantity,
+					}
+					delete splitRecord.tokens
+					splitRecords.push(splitRecord)
+				}
+			}
+
+			// Failures & Approvals
+			else {
+				const splitRecord = record
+				delete splitRecord.tokens
+				splitRecords.push(splitRecord)
+			}
+		}
+		return splitRecords
+	}
+
+	/**
+	 * Sterilize Ape Board Transfer
+	 */
+
+	sterilizeApeBoardTransfer(record: ApeBoardTransfer) {
+		const { symbol, tokenAddress, balance, type } = record
+		const token = (symbol || tokenAddress).toUpperCase()
+		const isDebit = type == 'out'
+		const quantity = isDebit ? balance * -1 : balance
+		return {
+			token,
+			quantity,
+		}
+	}
+
+	/**
+	 * Sterilize Debank Transfer
+	 */
+
+	sterilizeDebankTransfer(
+		record: DebankTransfer,
+		isSend = true,
+		tokenSymbols: DebankTokens
+	) {
+		const { amount, token_id: tokenId } = record
+		const token = (tokenSymbols[tokenId].symbol || tokenId).toUpperCase()
+		const quantity = isSend ? amount * -1 : amount
+		return {
+			token,
+			quantity,
+		}
+	}
+
+	/**
+	 * Sterilize Transaction Type
+	 */
+
+	sterilizeTransactionType(type: string, tokens: TokenRecords) {
+		let newType = type
+		const tokenKeys = Object.keys(tokens)
+		const numTokens = tokenKeys.length
+
+		// Check for Debits & Credits
+		let hasDebit = false
+		let hasCredit = false
+		for (const tokenKey in tokens) {
+			const token = tokens[tokenKey]
+			if (token.quantity > 0) hasCredit = true
+			else if (token.quantity < 0) hasDebit = true
+			if (hasDebit && hasCredit) break
+		}
+
+		// Receive
+		if (numTokens >= 1 && hasCredit && !hasDebit) {
+			newType = 'receive'
+		}
+
+		// Send
+		else if (numTokens >= 1 && hasDebit && !hasCredit) {
+			newType = 'send'
+		}
+
+		// Swap
+		else if (numTokens > 1 && hasDebit && hasCredit) {
+			newType = 'swap'
+		}
+
+		// Failure
+		else if (type != 'approve' && !numTokens) {
+			newType = 'failure'
+		}
+		return newType
 	}
 }
