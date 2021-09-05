@@ -33,7 +33,10 @@ DefiTransactions Class
 - [getBalances](default.md#getbalances)
 - [getEndpoint](default.md#getendpoint)
 - [getPrivateDebankEndpoint](default.md#getprivatedebankendpoint)
+- [getTokenAddresses](default.md#gettokenaddresses)
+- [getTokenName](default.md#gettokenname)
 - [getTransactions](default.md#gettransactions)
+- [isContract](default.md#iscontract)
 - [splitHistoryRecord](default.md#splithistoryrecord)
 - [sterilizeApeBoardTransfer](default.md#sterilizeapeboardtransfer)
 - [sterilizeDebankTransfer](default.md#sterilizedebanktransfer)
@@ -54,7 +57,7 @@ DefiBalances.constructor
 
 #### Defined in
 
-[utils/DefiBalances.ts:50](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L50)
+[utils/DefiBalances.ts:50](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L50)
 
 ## Properties
 
@@ -68,7 +71,7 @@ DefiBalances.address
 
 #### Defined in
 
-[utils/DefiBalances.ts:37](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L37)
+[utils/DefiBalances.ts:37](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L37)
 
 ___
 
@@ -82,7 +85,7 @@ DefiBalances.assets
 
 #### Defined in
 
-[utils/DefiBalances.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L42)
+[utils/DefiBalances.ts:42](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L42)
 
 ___
 
@@ -96,7 +99,7 @@ DefiBalances.chainNames
 
 #### Defined in
 
-[utils/DefiBalances.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L43)
+[utils/DefiBalances.ts:43](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L43)
 
 ___
 
@@ -110,7 +113,7 @@ DefiBalances.chains
 
 #### Defined in
 
-[utils/DefiBalances.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L41)
+[utils/DefiBalances.ts:41](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L41)
 
 ___
 
@@ -124,7 +127,7 @@ DefiBalances.tokenNames
 
 #### Defined in
 
-[utils/DefiBalances.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L44)
+[utils/DefiBalances.ts:44](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L44)
 
 ___
 
@@ -138,7 +141,7 @@ DefiBalances.totalTokenValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:39](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L39)
+[utils/DefiBalances.ts:39](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L39)
 
 ___
 
@@ -152,7 +155,7 @@ DefiBalances.totalValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:38](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L38)
+[utils/DefiBalances.ts:38](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L38)
 
 ___
 
@@ -166,7 +169,7 @@ DefiBalances.totalVaultValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L40)
+[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L40)
 
 ## Methods
 
@@ -192,7 +195,7 @@ DefiBalances.getApeBoardEndpoint
 
 #### Defined in
 
-[utils/DefiBalances.ts:501](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L501)
+[utils/DefiBalances.ts:501](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L501)
 
 ___
 
@@ -212,7 +215,7 @@ DefiBalances.getBalances
 
 #### Defined in
 
-[utils/DefiBalances.ts:58](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L58)
+[utils/DefiBalances.ts:58](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L58)
 
 ___
 
@@ -241,7 +244,7 @@ DefiBalances.getEndpoint
 
 #### Defined in
 
-[utils/DefiBalances.ts:446](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L446)
+[utils/DefiBalances.ts:446](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L446)
 
 ___
 
@@ -268,7 +271,55 @@ DefiBalances.getPrivateDebankEndpoint
 
 #### Defined in
 
-[utils/DefiBalances.ts:487](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiBalances.ts#L487)
+[utils/DefiBalances.ts:487](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiBalances.ts#L487)
+
+___
+
+### getTokenAddresses
+
+▸ `Private` **getTokenAddresses**(`records`, `tokenSymbols`): `Object`
+
+Get Token Addresses
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `records` | `ApeBoardHistory`[] \| `DebankHistory`[] |
+| `tokenSymbols` | `DebankTokens` |
+
+#### Returns
+
+`Object`
+
+#### Defined in
+
+[utils/DefiTransactions.ts:355](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L355)
+
+___
+
+### getTokenName
+
+▸ `Private` **getTokenName**(`symbol`, `address`, `chainName`, `tokenAddresses`): `string`
+
+Get Token Name
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `symbol` | `string` |
+| `address` | `string` |
+| `chainName` | keyof `Chains` |
+| `tokenAddresses` | `Object` |
+
+#### Returns
+
+`string`
+
+#### Defined in
+
+[utils/DefiTransactions.ts:407](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L407)
 
 ___
 
@@ -290,13 +341,35 @@ Get Transactions
 
 #### Defined in
 
-[utils/DefiTransactions.ts:29](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiTransactions.ts#L29)
+[utils/DefiTransactions.ts:30](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L30)
+
+___
+
+### isContract
+
+▸ `Private` **isContract**(`address`): `boolean`
+
+Is Contract
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `address` | `string` |
+
+#### Returns
+
+`boolean`
+
+#### Defined in
+
+[utils/DefiTransactions.ts:533](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L533)
 
 ___
 
 ### splitHistoryRecord
 
-▸ **splitHistoryRecord**(`record`): `HistoryRecord`[]
+▸ `Private` **splitHistoryRecord**(`record`): `HistoryRecord`[]
 
 Split History Record
 
@@ -312,13 +385,13 @@ Split History Record
 
 #### Defined in
 
-[utils/DefiTransactions.ts:217](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiTransactions.ts#L217)
+[utils/DefiTransactions.ts:242](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L242)
 
 ___
 
 ### sterilizeApeBoardTransfer
 
-▸ **sterilizeApeBoardTransfer**(`record`): `Object`
+▸ `Private` **sterilizeApeBoardTransfer**(`record`, `chainName`, `tokenAddresses`): `Object`
 
 Sterilize Ape Board Transfer
 
@@ -327,6 +400,8 @@ Sterilize Ape Board Transfer
 | Name | Type |
 | :------ | :------ |
 | `record` | `ApeBoardTransfer` |
+| `chainName` | keyof `Chains` |
+| `tokenAddresses` | `Object` |
 
 #### Returns
 
@@ -339,13 +414,13 @@ Sterilize Ape Board Transfer
 
 #### Defined in
 
-[utils/DefiTransactions.ts:329](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiTransactions.ts#L329)
+[utils/DefiTransactions.ts:443](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L443)
 
 ___
 
 ### sterilizeDebankTransfer
 
-▸ **sterilizeDebankTransfer**(`record`, `isSend?`, `tokenSymbols`): `Object`
+▸ `Private` **sterilizeDebankTransfer**(`record`, `chainName`, `isSend?`, `tokenSymbols`, `tokenAddresses`): `Object`
 
 Sterilize Debank Transfer
 
@@ -354,8 +429,10 @@ Sterilize Debank Transfer
 | Name | Type | Default value |
 | :------ | :------ | :------ |
 | `record` | `DebankTransfer` | `undefined` |
+| `chainName` | keyof `Chains` | `undefined` |
 | `isSend` | `boolean` | `true` |
 | `tokenSymbols` | `DebankTokens` | `undefined` |
+| `tokenAddresses` | `Object` | `undefined` |
 
 #### Returns
 
@@ -368,13 +445,13 @@ Sterilize Debank Transfer
 
 #### Defined in
 
-[utils/DefiTransactions.ts:344](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiTransactions.ts#L344)
+[utils/DefiTransactions.ts:467](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L467)
 
 ___
 
 ### sterilizeHistoryRecord
 
-▸ **sterilizeHistoryRecord**(`record`, `chainName`, `tokenSymbols`): `HistoryRecord`
+▸ `Private` **sterilizeHistoryRecord**(`record`, `chainName`, `tokenSymbols`, `tokenAddresses`): `HistoryRecord`
 
 Sterilize History Record
 
@@ -385,6 +462,7 @@ Sterilize History Record
 | `record` | `DebankHistory` \| `ApeBoardHistory` |
 | `chainName` | ``"bsc"`` \| ``"eth"`` \| ``"ftm"`` \| ``"matic"`` |
 | `tokenSymbols` | `DebankTokens` |
+| `tokenAddresses` | `Object` |
 
 #### Returns
 
@@ -392,13 +470,13 @@ Sterilize History Record
 
 #### Defined in
 
-[utils/DefiTransactions.ts:115](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiTransactions.ts#L115)
+[utils/DefiTransactions.ts:125](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L125)
 
 ___
 
 ### sterilizeTransactionType
 
-▸ **sterilizeTransactionType**(`type`, `tokens`): `string`
+▸ `Private` **sterilizeTransactionType**(`type`, `tokens`): `string`
 
 Sterilize Transaction Type
 
@@ -415,4 +493,4 @@ Sterilize Transaction Type
 
 #### Defined in
 
-[utils/DefiTransactions.ts:362](https://github.com/edmundpf/multi-chain-balances-ts/blob/7c16a0b/src/utils/DefiTransactions.ts#L362)
+[utils/DefiTransactions.ts:492](https://github.com/edmundpf/multi-chain-balances-ts/blob/30c515a/src/utils/DefiTransactions.ts#L492)
