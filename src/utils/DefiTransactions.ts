@@ -114,7 +114,9 @@ export default class DefiTransactions extends DefiBalances {
 				const splitRecords = this.splitHistoryRecord(nestedRecord)
 				historyRecords = [...historyRecords, ...splitRecords]
 			}
-			this.chains[chainName].transactions = historyRecords
+			this.chains[chainName].transactions = historyRecords.sort((a, b) =>
+				a.date < b.date ? 1 : -1
+			)
 		}
 	}
 
@@ -183,9 +185,6 @@ export default class DefiTransactions extends DefiBalances {
 					chainName,
 					tokenAddresses
 				)
-				if (tokenInfo.token == 'bnb') {
-					console.log(record)
-				}
 				addToken(tokenInfo)
 			}
 		} else {
@@ -421,7 +420,7 @@ export default class DefiTransactions extends DefiBalances {
 
 		// Rename Duplicate Symbols
 		if (tokenAddresses[upperSymbol] && tokenAddresses[upperSymbol].length > 1) {
-			const addressStub = lowerAddress.substring(2, 6).toUpperCase()
+			const addressStub = this.getAddressStub(lowerAddress)
 			newSymbol = `${newSymbol}-${upperChain}-${addressStub}`
 		}
 
@@ -527,10 +526,32 @@ export default class DefiTransactions extends DefiBalances {
 	}
 
 	/**
+	 * Get Private Debank Endpoint
+	 */
+
+	private async getPrivateDebankEndpoint(
+		endpoint: keyof typeof ENDPOINTS,
+		params?: any
+	) {
+		return await this.getEndpoint('debankPrivate', endpoint, {
+			...params,
+			user_addr: this.address.toLowerCase(),
+		})
+	}
+
+	/**
 	 * Is Contract
 	 */
 
 	private isContract(address: string) {
 		return address.startsWith('0x')
+	}
+
+	/**
+	 * Get Address Stub
+	 */
+
+	getAddressStub(address: string) {
+		return address.substring(2, 6).toUpperCase()
 	}
 }

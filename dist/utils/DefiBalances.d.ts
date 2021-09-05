@@ -21,6 +21,22 @@ export default class DefiBalances {
      */
     getBalances(): Promise<void>;
     /**
+     * Get Endpoint
+     */
+    getEndpoint(api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any): Promise<any>;
+    /**
+     * Get Ape Board Endpoint
+     */
+    getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS): Promise<any>;
+    /**
+     * Get Beefy Endpoint
+     */
+    private getBeefyEndpoint;
+    /**
+     * Get Debank Endpoint
+     */
+    private getDebankEndpoint;
+    /**
      * Parse Token Data
      */
     private parseTokenData;
@@ -48,24 +64,4 @@ export default class DefiBalances {
      * Get Beefy APY
      */
     private getBeefyApy;
-    /**
-     * Get Endpoint
-     */
-    getEndpoint(api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any): Promise<any>;
-    /**
-     * Get Beefy Endpoint
-     */
-    private getBeefyEndpoint;
-    /**
-     * Get Debank Endpoint
-     */
-    private getDebankEndpoint;
-    /**
-     * Get Private Debank Endpoint
-     */
-    getPrivateDebankEndpoint(endpoint: keyof typeof ENDPOINTS, params?: any): Promise<any>;
-    /**
-     * Get Ape Board Endpoint
-     */
-    getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS): Promise<any>;
 }

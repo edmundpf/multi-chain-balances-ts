@@ -63,6 +63,7 @@
     "@types/lodash.camelcase": "^4.3.6",
     "@types/lodash.startcase": "^4.4.6",
     "@types/node": "*",
+    "@types/sqlite3": "^3.1.7",
     "@typescript-eslint/eslint-plugin": "*",
     "@typescript-eslint/parser": "*",
     "eslint": "*",
@@ -80,6 +81,8 @@
     "axios": "^0.21.1",
     "dotenv": "^10.0.0",
     "lodash.camelcase": "^4.3.0",
-    "lodash.startcase": "^4.4.0"
+    "lodash.startcase": "^4.4.0",
+    "sqlite": "^4.0.23",
+    "sqlite3": "^5.0.2"
   }
 }

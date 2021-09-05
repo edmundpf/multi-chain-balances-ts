@@ -59,6 +59,54 @@ class DefiBalances {
         });
     }
     /**
+     * Get Endpoint
+     */
+    getEndpoint(api, endpoint, params, headers) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const apiUrl = values_1.APIS[api];
+                const stub = values_1.ENDPOINTS[endpoint] || endpoint;
+                let paramStr = params ? new URLSearchParams(params).toString() : '';
+                if (paramStr)
+                    paramStr = '?' + paramStr;
+                const fullUrl = `${apiUrl}/${stub}${paramStr}`;
+                return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) ||
+                    {});
+            }
+            catch (err) {
+                return ((_b = err === null || err === void 0 ? void 0 : err.response) === null || _b === void 0 ? void 0 : _b.data) || {};
+            }
+        });
+    }
+    /**
+     * Get Ape Board Endpoint
+     */
+    getApeBoardEndpoint(endpoint) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('apeBoard', `${endpoint}/${this.address}`, undefined, {
+                passcode: values_1.apeBoardCredentials.passCode,
+                'ape-secret': values_1.apeBoardCredentials.secret,
+            });
+        });
+    }
+    /**
+     * Get Beefy Endpoint
+     */
+    getBeefyEndpoint(endpoint) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('beefy', endpoint);
+        });
+    }
+    /**
+     * Get Debank Endpoint
+     */
+    getDebankEndpoint(endpoint) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('debank', endpoint, { id: this.address });
+        });
+    }
+    /**
      * Parse Token Data
      */
     parseTokenData(data) {
@@ -363,62 +411,6 @@ class DefiBalances {
     getBeefyApy() {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getBeefyEndpoint('beefyApy');
-        });
-    }
-    /**
-     * Get Endpoint
-     */
-    getEndpoint(api, endpoint, params, headers) {
-        var _a, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const apiUrl = values_1.APIS[api];
-                const stub = values_1.ENDPOINTS[endpoint] || endpoint;
-                let paramStr = params ? new URLSearchParams(params).toString() : '';
-                if (paramStr)
-                    paramStr = '?' + paramStr;
-                const fullUrl = `${apiUrl}/${stub}${paramStr}`;
-                return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) ||
-                    {});
-            }
-            catch (err) {
-                return ((_b = err === null || err === void 0 ? void 0 : err.response) === null || _b === void 0 ? void 0 : _b.data) || {};
-            }
-        });
-    }
-    /**
-     * Get Beefy Endpoint
-     */
-    getBeefyEndpoint(endpoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('beefy', endpoint);
-        });
-    }
-    /**
-     * Get Debank Endpoint
-     */
-    getDebankEndpoint(endpoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debank', endpoint, { id: this.address });
-        });
-    }
-    /**
-     * Get Private Debank Endpoint
-     */
-    getPrivateDebankEndpoint(endpoint, params) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, params), { user_addr: this.address.toLowerCase() }));
-        });
-    }
-    /**
-     * Get Ape Board Endpoint
-     */
-    getApeBoardEndpoint(endpoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('apeBoard', `${endpoint}/${this.address}`, undefined, {
-                passcode: values_1.apeBoardCredentials.passCode,
-                'ape-secret': values_1.apeBoardCredentials.secret,
-            });
         });
     }
 }

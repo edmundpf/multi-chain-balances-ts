@@ -12,7 +12,7 @@ declare type TokenRecord = {
     quantity: number;
     price: number;
 };
-declare type StringDict = {
+export declare type StringDict = {
     [index: string]: string;
 };
 export declare type NumDict = {
@@ -22,6 +22,10 @@ export declare type TokenData = {
     symbol: string;
     value: number;
     amount?: number;
+};
+export declare type PriceData = {
+    time: number;
+    price: number;
 };
 export declare type TokenRecords = {
     [index: string]: TokenRecord;
@@ -37,6 +41,12 @@ export declare type VaultData = TokenData & {
 };
 export declare type Assets = {
     [index: string]: AssetData;
+};
+export declare type TokenTimes = {
+    [index: string]: number[];
+};
+export declare type TokenPrices = {
+    [index: string]: PriceData[];
 };
 export declare type Chain = {
     totalValue: number;
@@ -166,4 +176,21 @@ export declare type ApeBoardHistory = {
     fee: ApeBoardFee[];
 };
 export declare type ApeBoardTransResponse = ApeBoardHistory[];
+/**
+ * Coin Gecko Types
+ */
+export declare type CoinGeckoToken = {
+    id: string;
+    symbol: string;
+    name: string;
+};
+export declare type CoinGeckoPricesResponse = {
+    prices: number[][];
+};
+/**
+ * Local DB Types
+ */
+export declare type LocalPriceData = PriceData & {
+    symbol: string;
+};
 export {};

@@ -21,7 +21,7 @@ type TokenRecord = {
 
 // String Dict Type
 
-type StringDict = {
+export type StringDict = {
 	[index: string]: string
 }
 
@@ -37,6 +37,13 @@ export type TokenData = {
 	symbol: string
 	value: number
 	amount?: number
+}
+
+// Price Data Type
+
+export type PriceData = {
+	time: number
+	price: number
 }
 
 // Token Records Type
@@ -61,6 +68,18 @@ export type VaultData = TokenData & {
 
 export type Assets = {
 	[index: string]: AssetData
+}
+
+// Token Times Type
+
+export type TokenTimes = {
+	[index: string]: number[]
+}
+
+// Token Prices Type
+
+export type TokenPrices = {
+	[index: string]: PriceData[]
 }
 
 // Chain Type
@@ -243,3 +262,27 @@ export type ApeBoardHistory = {
 // Ape Board Transactions Response Type
 
 export type ApeBoardTransResponse = ApeBoardHistory[]
+
+/**
+ * Coin Gecko Types
+ */
+
+// Coin Gecko Token
+
+export type CoinGeckoToken = {
+	id: string
+	symbol: string
+	name: string
+}
+
+// Coin Gecko Prices Response
+
+export type CoinGeckoPricesResponse = {
+	prices: number[][]
+}
+
+/**
+ * Local DB Types
+ */
+
+export type LocalPriceData = PriceData & { symbol: string }

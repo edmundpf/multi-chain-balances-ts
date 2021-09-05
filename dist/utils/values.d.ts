@@ -28,11 +28,11 @@ export declare const DEFAULT_URLS: {
  * API Info
  */
 export declare const APIS: {
-    debank: string;
-    debankPrivate: string;
     beefy: string;
     apeBoard: string;
-    defiTaxes: string;
+    debank: string;
+    debankPrivate: string;
+    coinGecko: string;
 };
 export declare const ENDPOINTS: {
     beefyApy: string;
@@ -40,13 +40,21 @@ export declare const ENDPOINTS: {
     protocolList: string;
     debankHistory: string;
     apeBoardHistory: string;
+    coinGeckoList: string;
+    coinGeckoPrices: string;
 };
 export declare const apeBoardCredentials: {
     secret: string;
     passCode: string;
 };
+export declare const coinGeckoLimits: {
+    calls: number;
+    ms: number;
+};
+export declare const coinGeckoDayCutoffs: number[];
 /**
  * Default Values
  */
 export declare const defaultHistoryRecord: HistoryRecord;
 export declare const initChains: () => Chains;
+export declare const ONE_DAY: number;

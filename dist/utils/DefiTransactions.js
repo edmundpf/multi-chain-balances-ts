@@ -100,7 +100,7 @@ class DefiTransactions extends DefiBalances_1.default {
                     const splitRecords = this.splitHistoryRecord(nestedRecord);
                     historyRecords = [...historyRecords, ...splitRecords];
                 }
-                this.chains[chainName].transactions = historyRecords;
+                this.chains[chainName].transactions = historyRecords.sort((a, b) => a.date < b.date ? 1 : -1);
             }
         });
     }
@@ -147,9 +147,6 @@ class DefiTransactions extends DefiBalances_1.default {
         if (apeBoardRec.transfers) {
             for (const record of apeBoardRec.transfers) {
                 const tokenInfo = this.sterilizeApeBoardTransfer(record, chainName, tokenAddresses);
-                if (tokenInfo.token == 'bnb') {
-                    console.log(record);
-                }
                 addToken(tokenInfo);
             }
         }
@@ -328,13 +325,14 @@ class DefiTransactions extends DefiBalances_1.default {
             newSymbol = upperSymbol;
         // Rename Duplicate Symbols
         if (tokenAddresses[upperSymbol] && tokenAddresses[upperSymbol].length > 1) {
-            const addressStub = lowerAddress.substring(2, 6).toUpperCase();
+            const addressStub = this.getAddressStub(lowerAddress);
             newSymbol = `${newSymbol}-${upperChain}-${addressStub}`;
         }
         // Add New Token Addresses
         if (this.chains[chainName].tokenAddresses[newSymbol] == null) {
-            this.chains[chainName].tokenAddresses[newSymbol] =
-                this.isContract(lowerAddress) ? lowerAddress : '';
+            this.chains[chainName].tokenAddresses[newSymbol] = this.isContract(lowerAddress)
+                ? lowerAddress
+                : '';
         }
         return newSymbol || lowerAddress;
     }
@@ -401,10 +399,24 @@ class DefiTransactions extends DefiBalances_1.default {
         return newType;
     }
     /**
+     * Get Private Debank Endpoint
+     */
+    getPrivateDebankEndpoint(endpoint, params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, params), { user_addr: this.address.toLowerCase() }));
+        });
+    }
+    /**
      * Is Contract
      */
     isContract(address) {
         return address.startsWith('0x');
+    }
+    /**
+     * Get Address Stub
+     */
+    getAddressStub(address) {
+        return address.substring(2, 6).toUpperCase();
     }
 }
 exports.default = DefiTransactions;

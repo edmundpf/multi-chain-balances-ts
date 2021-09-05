@@ -45,11 +45,11 @@ export const DEFAULT_URLS = {
 // API Url's
 
 export const APIS = {
-	debank: 'https://openapi.debank.com/v1/user',
-	debankPrivate: 'https://api.debank.com',
 	beefy: 'https://api.beefy.finance',
 	apeBoard: 'https://api.apeboard.finance',
-	defiTaxes: 'https://defitaxes.us',
+	debank: 'https://openapi.debank.com/v1/user',
+	debankPrivate: 'https://api.debank.com',
+	coinGecko: 'https://api.coingecko.com/api/v3',
 }
 
 // Endpoints
@@ -60,6 +60,8 @@ export const ENDPOINTS = {
 	protocolList: 'complex_protocol_list',
 	debankHistory: 'history/list',
 	apeBoardHistory: 'transaction-history',
+	coinGeckoList: 'coins/list',
+	coinGeckoPrices: 'coins/$id/market_chart',
 }
 
 // Ape Board Credentials
@@ -71,6 +73,17 @@ export const apeBoardCredentials = {
 		'5BGwUw==',
 	passCode: '5a102a34f60fa7ec9d643a8a0e72cab9',
 }
+
+// Coin Gecko Limits
+
+export const coinGeckoLimits = {
+	calls: 10,
+	ms: 12.5 * 1000,
+}
+
+// Coin Gecko Day Cutoffs
+
+export const coinGeckoDayCutoffs = [1, 90]
 
 /**
  * Default Values
@@ -135,3 +148,19 @@ export const initChains = () => {
 		matic: initChain(),
 	} as Chains
 }
+
+/**
+ * Misc
+ */
+
+// One Second
+const ONE_SECOND = 1000
+
+// One Minute
+const ONE_MINUTE = 60 * ONE_SECOND
+
+// One Hour
+const ONE_HOUR = 60 * ONE_MINUTE
+
+// One Day
+export const ONE_DAY = 24 * ONE_HOUR

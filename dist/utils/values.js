@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.initChains = exports.defaultHistoryRecord = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = void 0;
+exports.ONE_DAY = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = void 0;
 /**
  * Crypto Info
  */
@@ -35,11 +35,11 @@ exports.DEFAULT_URLS = {
  */
 // API Url's
 exports.APIS = {
-    debank: 'https://openapi.debank.com/v1/user',
-    debankPrivate: 'https://api.debank.com',
     beefy: 'https://api.beefy.finance',
     apeBoard: 'https://api.apeboard.finance',
-    defiTaxes: 'https://defitaxes.us',
+    debank: 'https://openapi.debank.com/v1/user',
+    debankPrivate: 'https://api.debank.com',
+    coinGecko: 'https://api.coingecko.com/api/v3'
 };
 // Endpoints
 exports.ENDPOINTS = {
@@ -48,6 +48,8 @@ exports.ENDPOINTS = {
     protocolList: 'complex_protocol_list',
     debankHistory: 'history/list',
     apeBoardHistory: 'transaction-history',
+    coinGeckoList: 'coins/list',
+    coinGeckoPrices: 'coins/$id/market_chart',
 };
 // Ape Board Credentials
 exports.apeBoardCredentials = {
@@ -56,6 +58,13 @@ exports.apeBoardCredentials = {
         '5BGwUw==',
     passCode: '5a102a34f60fa7ec9d643a8a0e72cab9',
 };
+// Coin Gecko Limits
+exports.coinGeckoLimits = {
+    calls: 10,
+    ms: 12.5 * 1000,
+};
+// Coin Gecko Day Cutoffs
+exports.coinGeckoDayCutoffs = [1, 90];
 /**
  * Default Values
  */
@@ -113,3 +122,14 @@ const initChains = () => {
     };
 };
 exports.initChains = initChains;
+/**
+ * Misc
+ */
+// One Second
+const ONE_SECOND = 1000;
+// One Minute
+const ONE_MINUTE = 60 * ONE_SECOND;
+// One Hour
+const ONE_HOUR = 60 * ONE_MINUTE;
+// One Day
+exports.ONE_DAY = 24 * ONE_HOUR;

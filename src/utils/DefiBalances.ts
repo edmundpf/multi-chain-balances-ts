@@ -72,6 +72,63 @@ export default class DefiBalances {
 	}
 
 	/**
+	 * Get Endpoint
+	 */
+
+	async getEndpoint(
+		api: keyof typeof APIS,
+		endpoint: keyof typeof ENDPOINTS,
+		params?: any,
+		headers?: any
+	) {
+		try {
+			const apiUrl = APIS[api]
+			const stub = ENDPOINTS[endpoint] || endpoint
+			let paramStr = params ? new URLSearchParams(params).toString() : ''
+			if (paramStr) paramStr = '?' + paramStr
+			const fullUrl = `${apiUrl}/${stub}${paramStr}`
+			return (
+				(await axios.get(fullUrl, headers ? { headers } : undefined))?.data ||
+				{}
+			)
+		} catch (err) {
+			return err?.response?.data || {}
+		}
+	}
+
+	/**
+	 * Get Ape Board Endpoint
+	 */
+
+	async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		return await this.getEndpoint(
+			'apeBoard',
+			`${endpoint}/${this.address}` as keyof typeof ENDPOINTS,
+			undefined,
+			{
+				passcode: apeBoardCredentials.passCode,
+				'ape-secret': apeBoardCredentials.secret,
+			}
+		)
+	}
+
+	/**
+	 * Get Beefy Endpoint
+	 */
+
+	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		return await this.getEndpoint('beefy', endpoint)
+	}
+
+	/**
+	 * Get Debank Endpoint
+	 */
+
+	private async getDebankEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		return await this.getEndpoint('debank', endpoint, { id: this.address })
+	}
+
+	/**
 	 * Parse Token Data
 	 */
 
@@ -437,76 +494,5 @@ export default class DefiBalances {
 
 	private async getBeefyApy() {
 		return await this.getBeefyEndpoint('beefyApy')
-	}
-
-	/**
-	 * Get Endpoint
-	 */
-
-	async getEndpoint(
-		api: keyof typeof APIS,
-		endpoint: keyof typeof ENDPOINTS,
-		params?: any,
-		headers?: any
-	) {
-		try {
-			const apiUrl = APIS[api]
-			const stub = ENDPOINTS[endpoint] || endpoint
-			let paramStr = params ? new URLSearchParams(params).toString() : ''
-			if (paramStr) paramStr = '?' + paramStr
-			const fullUrl = `${apiUrl}/${stub}${paramStr}`
-			return (
-				(await axios.get(fullUrl, headers ? { headers } : undefined))?.data ||
-				{}
-			)
-		} catch (err) {
-			return err?.response?.data || {}
-		}
-	}
-
-	/**
-	 * Get Beefy Endpoint
-	 */
-
-	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint('beefy', endpoint)
-	}
-
-	/**
-	 * Get Debank Endpoint
-	 */
-
-	private async getDebankEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint('debank', endpoint, { id: this.address })
-	}
-
-	/**
-	 * Get Private Debank Endpoint
-	 */
-
-	async getPrivateDebankEndpoint(
-		endpoint: keyof typeof ENDPOINTS,
-		params?: any
-	) {
-		return await this.getEndpoint('debankPrivate', endpoint, {
-			...params,
-			user_addr: this.address.toLowerCase(),
-		})
-	}
-
-	/**
-	 * Get Ape Board Endpoint
-	 */
-
-	async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint(
-			'apeBoard',
-			`${endpoint}/${this.address}` as keyof typeof ENDPOINTS,
-			undefined,
-			{
-				passcode: apeBoardCredentials.passCode,
-				'ape-secret': apeBoardCredentials.secret,
-			}
-		)
 	}
 }
