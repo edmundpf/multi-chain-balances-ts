@@ -15,6 +15,7 @@ import {
 	ApeBoardTransResponse,
 	TokenRecords,
 	HistoryRecord,
+	Chains,
 } from './types'
 
 /**
@@ -95,11 +96,20 @@ export default class DefiTransactions extends DefiBalances {
 			const chainName = this.chainNames[index]
 			const records = rawChains[index] as ApeBoardHistory[] | DebankHistory[]
 			let historyRecords: HistoryRecord[] = []
+
+			// Get Token Addresses
+			const tokenAddresses = this.getTokenAddresses(
+				records,
+				debankTokens[index]
+			)
+
+			// Iterate Records
 			for (const record of records) {
 				const nestedRecord = this.sterilizeHistoryRecord(
 					record,
 					chainName,
-					debankTokens[index]
+					debankTokens[index],
+					tokenAddresses
 				)
 				const splitRecords = this.splitHistoryRecord(nestedRecord)
 				historyRecords = [...historyRecords, ...splitRecords]
@@ -112,10 +122,11 @@ export default class DefiTransactions extends DefiBalances {
 	 * Sterilize History Record
 	 */
 
-	sterilizeHistoryRecord(
+	private sterilizeHistoryRecord(
 		record: DebankHistory | ApeBoardHistory,
 		chainName: keyof typeof NATIVE_TOKENS,
-		tokenSymbols: DebankTokens
+		tokenSymbols: DebankTokens,
+		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
 	) {
 		const debankRec = record as DebankHistory
 		const apeBoardRec = record as ApeBoardHistory
@@ -141,45 +152,60 @@ export default class DefiTransactions extends DefiBalances {
 			debankRec.tx?.name ||
 			apeBoardRec.interactions?.[0]?.function ||
 			''
-		const hash = debankRec.id || apeBoardRec.hash || ''
+		const hash = (debankRec.id || apeBoardRec.hash || '').toLowerCase()
 		const date = new Date(
 			debankRec.time_at * 1000 || apeBoardRec.timestamp
 		).toISOString()
-		const toAddress =
-			debankRec.tx?.to_addr || apeBoardRec.interactions?.[0]?.to || this.address
-		const fromAddress =
+		const toAddress = (
+			debankRec.tx?.to_addr ||
+			apeBoardRec.interactions?.[0]?.to ||
+			this.address
+		).toLowerCase()
+		const fromAddress = (
 			debankRec.tx?.from_addr ||
 			debankRec.other_addr ||
 			apeBoardRec.interactions?.[0]?.from ||
 			this.address
-		const feeToken = NATIVE_TOKENS[chainName]
+		).toLowerCase()
+		const feeSymbol = NATIVE_TOKENS[chainName]
 		const feeQuantity =
 			debankRec.tx?.eth_gas_fee || apeBoardRec.fee?.[0]?.amount || 0
-		let feePrice = apeBoardRec.fee?.[0]?.price || 0
-		let fees = debankRec.tx?.usd_gas_fee || 0
-		feePrice = feePrice || fees / feeQuantity || 0
-		fees = fees || feeQuantity * feePrice || 0
+		let feePriceUSD = apeBoardRec.fee?.[0]?.price || 0
+		let feeValueUSD = debankRec.tx?.usd_gas_fee || 0
+		feePriceUSD = feePriceUSD || feeValueUSD / feeQuantity || 0
+		feeValueUSD = feeValueUSD || feeQuantity * feePriceUSD || 0
 
 		// Get Tokens Info
 		if (apeBoardRec.transfers) {
 			for (const record of apeBoardRec.transfers) {
-				const tokenInfo = this.sterilizeApeBoardTransfer(record)
+				const tokenInfo = this.sterilizeApeBoardTransfer(
+					record,
+					chainName,
+					tokenAddresses
+				)
+				if (tokenInfo.token == 'bnb') {
+					console.log(record)
+				}
 				addToken(tokenInfo)
 			}
 		} else {
 			for (const record of debankRec.sends) {
 				const tokenInfo = this.sterilizeDebankTransfer(
 					record,
+					chainName,
 					true,
-					tokenSymbols
+					tokenSymbols,
+					tokenAddresses
 				)
 				addToken(tokenInfo)
 			}
 			for (const record of debankRec.receives) {
 				const tokenInfo = this.sterilizeDebankTransfer(
 					record,
+					chainName,
 					false,
-					tokenSymbols
+					tokenSymbols,
+					tokenAddresses
 				)
 				addToken(tokenInfo)
 			}
@@ -196,17 +222,16 @@ export default class DefiTransactions extends DefiBalances {
 			...defaultHistoryRecord,
 			id: hash,
 			date,
+			feeSymbol,
 			type,
 			direction,
-			tokens,
-			basePrice: 0,
-			fees,
 			feeQuantity,
-			feePrice,
-			feeToken,
+			feeValueUSD,
+			feePriceUSD,
 			chain: chainName,
 			fromAddress,
 			toAddress,
+			tokens,
 		} as HistoryRecord
 	}
 
@@ -214,7 +239,7 @@ export default class DefiTransactions extends DefiBalances {
 	 * Split History Record
 	 */
 
-	splitHistoryRecord(record: HistoryRecord) {
+	private splitHistoryRecord(record: HistoryRecord) {
 		const splitRecords: HistoryRecord[] = []
 
 		// Get Quantity
@@ -264,23 +289,24 @@ export default class DefiTransactions extends DefiBalances {
 				for (const tokenName of iterTokens) {
 					const quote = compareIsBase ? tokenName : compareToken
 					const base = compareIsBase ? compareToken : tokenName
-					const quantity = compareIsBase
+					const quoteQuantity = compareIsBase
 						? record.tokens[quote].quantity
 						: getQuantity(record.tokens[quote].quantity, iterTokens.length)
 					const baseQuantity = compareIsBase
 						? getQuantity(record.tokens[base].quantity, iterTokens.length)
 						: record.tokens[base].quantity
 					const feeQuantity = getQuantity(record.feeQuantity, iterTokens.length)
-					const fees = getFees(feeQuantity, record.feePrice)
+					const feeValueUSD = getFees(feeQuantity, record.feePriceUSD)
 					const ticker = getTicker(quote, base)
-					const splitRecord = {
+					const splitRecord: HistoryRecord = {
 						...record,
 						ticker,
-						quote,
-						base,
-						quantity,
+						quoteSymbol: quote,
+						baseSymbol: base,
+						quoteQuantity,
 						baseQuantity,
-						fees,
+						basePriceUSD: 0,
+						feeValueUSD,
 						feeQuantity,
 					}
 					delete splitRecord.tokens
@@ -294,18 +320,18 @@ export default class DefiTransactions extends DefiBalances {
 				for (const tokenName in record.tokens) {
 					const curToken = record.tokens[tokenName]
 					const quote = tokenName
-					const base = record.base
-					const quantity = curToken.quantity
+					const base = record.baseSymbol
+					const quoteQuantity = curToken.quantity
 					const feeQuantity = getQuantity(record.feeQuantity, numTokens)
-					const fees = getFees(feeQuantity, record.feePrice)
+					const feeValueUSD = getFees(feeQuantity, record.feePriceUSD)
 					const ticker = getTicker(quote, base)
-					const splitRecord = {
+					const splitRecord: HistoryRecord = {
 						...record,
 						ticker,
-						quote,
-						quantity,
-						fees,
+						quoteSymbol: quote,
+						quoteQuantity,
 						feeQuantity,
+						feeValueUSD,
 					}
 					delete splitRecord.tokens
 					splitRecords.push(splitRecord)
@@ -323,12 +349,109 @@ export default class DefiTransactions extends DefiBalances {
 	}
 
 	/**
+	 * Get Token Addresses
+	 */
+
+	private getTokenAddresses(
+		records: ApeBoardHistory[] | DebankHistory[],
+		tokenSymbols: DebankTokens
+	) {
+		const symbols: { [index: string]: string[] } = {}
+		// Add Contract
+		const addContract = (symbol: string, address: string) => {
+			const upperSymbol = symbol.toUpperCase()
+			const lowerAddress = address.toLowerCase()
+			const isContract = this.isContract(lowerAddress)
+			if (upperSymbol && isContract) {
+				if (!symbols[upperSymbol]) {
+					symbols[upperSymbol] = [lowerAddress]
+				} else if (!symbols[upperSymbol].includes(lowerAddress)) {
+					symbols[upperSymbol].push(lowerAddress)
+				}
+			}
+		}
+
+		// Iterate Records
+		for (const record of records) {
+			const debankRec = record as DebankHistory
+			const apeBoardRec = record as ApeBoardHistory
+			if (debankRec?.sends?.length) {
+				for (const transfer of debankRec.sends) {
+					const address = transfer.token_id || ''
+					const symbol = tokenSymbols[address].symbol || ''
+					addContract(symbol, address)
+				}
+			}
+			if (debankRec?.receives?.length) {
+				for (const transfer of debankRec.sends) {
+					const address = transfer.token_id || ''
+					const symbol = tokenSymbols[address].symbol || ''
+					addContract(symbol, address)
+				}
+			}
+			if (apeBoardRec?.transfers?.length) {
+				for (const transfer of apeBoardRec.transfers) {
+					const address = transfer.tokenAddress || ''
+					const symbol = transfer.symbol || ''
+					addContract(symbol, address)
+				}
+			}
+		}
+		return symbols
+	}
+
+	/**
+	 * Get Token Name
+	 */
+
+	private getTokenName(
+		symbol: string,
+		address: string,
+		chainName: keyof Chains,
+		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
+	) {
+		let newSymbol = (symbol || '').replace(/ /g, '-')
+		const upperSymbol = newSymbol.toUpperCase()
+		const upperChain = chainName.toUpperCase()
+		const lowerAddress = (address || '').toLowerCase()
+
+		// Capitalize Native Tokens
+		const isNativeToken = Object.values(NATIVE_TOKENS).includes(upperSymbol)
+		if (isNativeToken) newSymbol = upperSymbol
+
+		// Rename Duplicate Symbols
+		if (tokenAddresses[upperSymbol] && tokenAddresses[upperSymbol].length > 1) {
+			const addressStub = lowerAddress.substring(2, 6).toUpperCase()
+			newSymbol = `${newSymbol}-${upperChain}-${addressStub}`
+		}
+
+		// Add New Token Addresses
+		if (this.chains[chainName].tokenAddresses[newSymbol] == null) {
+			this.chains[chainName].tokenAddresses[newSymbol] = this.isContract(
+				lowerAddress
+			)
+				? lowerAddress
+				: ''
+		}
+		return newSymbol || lowerAddress
+	}
+
+	/**
 	 * Sterilize Ape Board Transfer
 	 */
 
-	sterilizeApeBoardTransfer(record: ApeBoardTransfer) {
+	private sterilizeApeBoardTransfer(
+		record: ApeBoardTransfer,
+		chainName: keyof Chains,
+		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
+	) {
 		const { symbol, tokenAddress, balance, type } = record
-		const token = (symbol || tokenAddress).toUpperCase()
+		const token = this.getTokenName(
+			symbol,
+			tokenAddress,
+			chainName,
+			tokenAddresses
+		)
 		const isDebit = type == 'out'
 		const quantity = isDebit ? balance * -1 : balance
 		return {
@@ -341,13 +464,20 @@ export default class DefiTransactions extends DefiBalances {
 	 * Sterilize Debank Transfer
 	 */
 
-	sterilizeDebankTransfer(
+	private sterilizeDebankTransfer(
 		record: DebankTransfer,
+		chainName: keyof Chains,
 		isSend = true,
-		tokenSymbols: DebankTokens
+		tokenSymbols: DebankTokens,
+		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
 	) {
 		const { amount, token_id: tokenId } = record
-		const token = (tokenSymbols[tokenId].symbol || tokenId).toUpperCase()
+		const token = this.getTokenName(
+			tokenSymbols[tokenId].symbol,
+			tokenId,
+			chainName,
+			tokenAddresses
+		)
 		const quantity = isSend ? amount * -1 : amount
 		return {
 			token,
@@ -359,7 +489,7 @@ export default class DefiTransactions extends DefiBalances {
 	 * Sterilize Transaction Type
 	 */
 
-	sterilizeTransactionType(type: string, tokens: TokenRecords) {
+	private sterilizeTransactionType(type: string, tokens: TokenRecords) {
 		let newType = type
 		const tokenKeys = Object.keys(tokens)
 		const numTokens = tokenKeys.length
@@ -394,5 +524,13 @@ export default class DefiTransactions extends DefiBalances {
 			newType = 'failure'
 		}
 		return newType
+	}
+
+	/**
+	 * Is Contract
+	 */
+
+	private isContract(address: string) {
+		return address.startsWith('0x')
 	}
 }

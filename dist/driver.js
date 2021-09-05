@@ -20,7 +20,8 @@ const main = (getTransactions = false, useDebank = true) => __awaiter(void 0, vo
     if (getTransactions) {
         yield info.getTransactions(useDebank);
         for (const chainName in info.chains) {
-            console.log(info.chains[chainName].transactions);
+            const chain = info.chains[chainName];
+            console.log(chain.transactions);
         }
     }
     else {

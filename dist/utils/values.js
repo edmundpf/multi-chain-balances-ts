@@ -47,7 +47,7 @@ exports.ENDPOINTS = {
     tokenList: 'token_list',
     protocolList: 'complex_protocol_list',
     debankHistory: 'history/list',
-    apeBoardHistory: 'transaction-history'
+    apeBoardHistory: 'transaction-history',
 };
 // Ape Board Credentials
 exports.apeBoardCredentials = {
@@ -63,22 +63,22 @@ exports.apeBoardCredentials = {
 exports.defaultHistoryRecord = {
     id: '',
     date: '',
+    quoteSymbol: '',
+    baseSymbol: 'USD',
+    feeSymbol: '',
     ticker: '',
-    quote: '',
-    base: 'USD',
-    type: '',
-    direction: '',
-    quantity: 0,
-    amount: 0,
-    price: 0,
+    type: 'failure',
+    direction: 'debit',
+    quoteQuantity: 0,
+    quoteValueUSD: 0,
+    quotePriceUSD: 0,
     baseQuantity: 0,
-    baseAmount: 0,
-    basePrice: 1,
-    fees: 0,
+    baseValueUSD: 0,
+    basePriceUSD: 1,
     feeQuantity: 0,
-    feePrice: 0,
-    feeToken: '',
-    chain: 'bsc',
+    feeValueUSD: 0,
+    feePriceUSD: 0,
+    chain: 'eth',
     fromAddress: '',
     toAddress: '',
 };
@@ -100,6 +100,7 @@ const initChain = () => {
         vaults: [],
         receipts: {},
         transactions: [],
+        tokenAddresses: {},
     };
 };
 // Init Chains

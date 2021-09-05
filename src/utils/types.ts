@@ -19,6 +19,12 @@ type TokenRecord = {
 	price: number
 }
 
+// String Dict Type
+
+type StringDict = {
+	[index: string]: string
+}
+
 // Numeric Dict Type
 
 export type NumDict = {
@@ -68,6 +74,7 @@ export type Chain = {
 	vaults: VaultData[]
 	receipts: NumDict
 	transactions: HistoryRecord[]
+	tokenAddresses: StringDict
 }
 
 // Chains Type
@@ -84,25 +91,25 @@ export type Chains = {
 export type HistoryRecord = {
 	id: string
 	date: string
+	quoteSymbol: string
+	baseSymbol: string
+	feeSymbol: string
 	ticker: string
-	quote: string
-	base: string
-	type: string
-	direction: string
-	amount: number
-	quantity: number
-	price: number
-	tokens?: TokenRecords
-	baseAmount: number
+	type: 'receive' | 'send' | 'swap' | 'approve' | 'failure'
+	direction: 'credit' | 'debit'
+	quoteQuantity: number
+	quoteValueUSD: number
+	quotePriceUSD: number
 	baseQuantity: number
-	basePrice: number
-	fees: number
+	baseValueUSD: number
+	basePriceUSD: number
 	feeQuantity: number
-	feePrice: number
-	feeToken: string
+	feeValueUSD: number
+	feePriceUSD: number
 	chain: keyof Chains
 	fromAddress: string
 	toAddress: string
+	tokens?: TokenRecords
 }
 
 // Main Request Type

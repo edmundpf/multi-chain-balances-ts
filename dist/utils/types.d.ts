@@ -12,6 +12,9 @@ declare type TokenRecord = {
     quantity: number;
     price: number;
 };
+declare type StringDict = {
+    [index: string]: string;
+};
 export declare type NumDict = {
     [index: string]: number;
 };
@@ -44,6 +47,7 @@ export declare type Chain = {
     vaults: VaultData[];
     receipts: NumDict;
     transactions: HistoryRecord[];
+    tokenAddresses: StringDict;
 };
 export declare type Chains = {
     bsc: Chain;
@@ -54,25 +58,25 @@ export declare type Chains = {
 export declare type HistoryRecord = {
     id: string;
     date: string;
+    quoteSymbol: string;
+    baseSymbol: string;
+    feeSymbol: string;
     ticker: string;
-    quote: string;
-    base: string;
-    type: string;
-    direction: string;
-    amount: number;
-    quantity: number;
-    price: number;
-    tokens?: TokenRecords;
-    baseAmount: number;
+    type: 'receive' | 'send' | 'swap' | 'approve' | 'failure';
+    direction: 'credit' | 'debit';
+    quoteQuantity: number;
+    quoteValueUSD: number;
+    quotePriceUSD: number;
     baseQuantity: number;
-    basePrice: number;
-    fees: number;
+    baseValueUSD: number;
+    basePriceUSD: number;
     feeQuantity: number;
-    feePrice: number;
-    feeToken: string;
+    feeValueUSD: number;
+    feePriceUSD: number;
     chain: keyof Chains;
     fromAddress: string;
     toAddress: string;
+    tokens?: TokenRecords;
 };
 export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 /**
