@@ -16,18 +16,26 @@ const _1 = __importDefault(require("./"));
 // Init
 const info = new _1.default();
 // Main
-const main = (getTransactions = false, useDebank = true) => __awaiter(void 0, void 0, void 0, function* () {
+const main = (useDebank = true, getTransactions = false, logTransactions = false) => __awaiter(void 0, void 0, void 0, function* () {
     if (getTransactions) {
         yield info.getTransactions(useDebank);
-        for (const chainName in info.chains) {
-            const chain = info.chains[chainName];
-            console.log(chain.transactions);
-        }
+        yield info.getPriceData();
+        if (logTransactions)
+            logTrans();
     }
     else {
         yield info.getBalances();
         console.log(info.assets);
     }
 });
+// Log Transactions
+const logTrans = () => {
+    for (const chainNm in info.chains) {
+        const chainName = chainNm;
+        for (const transaction of info.chains[chainName].transactions) {
+            console.log(transaction);
+        }
+    }
+};
 // Run
-main(true, false);
+main(true, true, true);

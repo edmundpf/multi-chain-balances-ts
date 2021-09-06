@@ -6,19 +6,32 @@ const info = new DefiInfo()
 
 // Main
 
-const main = async (getTransactions = false, useDebank = true) => {
+const main = async (
+	useDebank = true,
+	getTransactions = false,
+	logTransactions = false
+) => {
 	if (getTransactions) {
 		await info.getTransactions(useDebank)
-		for (const chainName in info.chains) {
-			const chain = info.chains[chainName as keyof typeof info.chains]
-			console.log(chain.transactions)
-		}
+		await info.getPriceData()
+		if (logTransactions) logTrans()
 	} else {
 		await info.getBalances()
 		console.log(info.assets)
 	}
 }
 
+// Log Transactions
+
+const logTrans = () => {
+	for (const chainNm in info.chains) {
+		const chainName = chainNm as keyof typeof info.chains
+		for (const transaction of info.chains[chainName].transactions) {
+			console.log(transaction)
+		}
+	}
+}
+
 // Run
 
-main(true, false)
+main(true, true, true)

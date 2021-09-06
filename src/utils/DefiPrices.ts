@@ -1,4 +1,5 @@
 import DefiTransactions from './DefiTransactions'
+import { waitMs } from './misc'
 import { prepareDB, selectPrices, insertPrice } from './priceData'
 import {
 	CoinGeckoToken,
@@ -15,6 +16,7 @@ import {
 	coinGeckoLimits,
 	coinGeckoDayCutoffs,
 	ONE_DAY,
+	FIAT_CURRENCY,
 } from './values'
 
 /**
@@ -47,9 +49,10 @@ export default class DefiPrices extends DefiTransactions {
 			daysOutLists,
 			supportedTokens
 		)
-		const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
 		const insertRecords = this.getInsertRecords(localPrices, apiPrices)
+		const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
 		this.linkMergedPrices(transPrices, mergedPrices)
+		this.updateTransactionData(transPrices)
 		await this.syncMissingPrices(insertRecords)
 	}
 
@@ -97,6 +100,7 @@ export default class DefiPrices extends DefiTransactions {
 				const baseSupported = supportedTokenNames.includes(baseName)
 				const quoteHasNativePrice = quoteSymbol == feeSymbol && hasFeePrice
 				const baseHasNativePrice = baseSymbol == feeSymbol && hasFeePrice
+				const baseIsFiat = baseSymbol == FIAT_CURRENCY
 
 				// Add Quote Time
 				if (quoteSupported && !quoteHasNativePrice) {
@@ -104,7 +108,7 @@ export default class DefiPrices extends DefiTransactions {
 				}
 
 				// Add Base Time
-				if (baseSupported && !baseHasNativePrice) {
+				if (baseSupported && !baseIsFiat && !baseHasNativePrice) {
 					this.addTokenTime(tokenTimes, baseName, time)
 				}
 			}
@@ -190,15 +194,15 @@ export default class DefiPrices extends DefiTransactions {
 		supportedTokens: StringDict
 	) {
 		const tokenPrices: TokenPrices = {}
-		const requests: Promise<PriceData[]>[] = []
+		const requests: (Promise<PriceData[]> | PriceData[])[] = []
 		const tokenNames = Object.keys(daysOutLists)
 		for (const tokenName in daysOutLists) {
 			const daysOutList = daysOutLists[tokenName]
-			if (daysOutList?.length) {
-				requests.push(
-					this.getTokenPrices(supportedTokens[tokenName], daysOutList)
-				)
-			}
+			requests.push(
+				daysOutList.length
+					? this.getTokenPrices(supportedTokens[tokenName], daysOutList)
+					: []
+			)
 		}
 		const res = await Promise.all(requests)
 		for (const index in res) {
@@ -219,16 +223,12 @@ export default class DefiPrices extends DefiTransactions {
 		localPrices: TokenPrices,
 		apiPrices: TokenPrices
 	) {
-		const mergedPrices: TokenPrices = localPrices
-		for (const tokenName in apiPrices) {
-			if (!mergedPrices[tokenName]) {
-				mergedPrices[tokenName] = apiPrices[tokenName]
-			} else {
-				mergedPrices[tokenName] = [
-					...mergedPrices[tokenName],
-					...apiPrices[tokenName],
-				].sort((a, b) => (a.time < b.time ? 1 : -1))
-			}
+		const mergedPrices: TokenPrices = { ...localPrices }
+		for (const tokenName in localPrices) {
+			mergedPrices[tokenName] = [
+				...mergedPrices[tokenName],
+				...(apiPrices[tokenName] || []),
+			].sort((a, b) => (a.time < b.time ? 1 : -1))
 		}
 		return mergedPrices
 	}
@@ -255,7 +255,10 @@ export default class DefiPrices extends DefiTransactions {
 						mergedTimes
 					)
 					if (validLocalRecord) {
-						transTimes[index] = validLocalRecord
+						transTimes[index] = {
+							time: record.time,
+							price: validLocalRecord.price,
+						}
 					}
 				}
 			}
@@ -267,20 +270,20 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private getInsertRecords(localPrices: TokenPrices, apiPrices: TokenPrices) {
-		const localTimes: TokenTimes = {}
 		const insertRecords: LocalPriceData[] = []
 
-		// Get Local Times
-		for (const tokenName in localPrices) {
-			localTimes[tokenName] = []
-			for (const record of localPrices[tokenName]) {
-				localTimes[tokenName].push(record.time)
-			}
-		}
-
-		// Compare API Times
+		// Iterate Tokens
 		for (const tokenName in apiPrices) {
-			const existingTimes = localTimes[tokenName]
+			const existingTimes: number[] = []
+
+			// Get Local Times
+			if (localPrices[tokenName]) {
+				for (const record of localPrices[tokenName]) {
+					existingTimes.push(record.time)
+				}
+			}
+
+			// Iterate API Prices
 			for (const record of apiPrices[tokenName]) {
 				const { time, price } = record
 				if (!existingTimes.includes(record.time)) {
@@ -312,40 +315,96 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private updateTransactionData(transPrices: TokenPrices) {
-		// Has Matching Price
-		const hasMatchingPrice = (prices: PriceData[], time: number) => {
+		// Get Matching Price
+		const getMatchingPrice = (prices: PriceData[], time: number) => {
 			for (const price of prices) {
 				if (price.time == time) {
-					return true
+					return price
 				}
 			}
 			return false
 		}
 
+		// Get Price And Value
+		const getPriceAndValue = (priceInfo: PriceData, quantity: number) => {
+			const price = priceInfo.price
+			const value = price * quantity
+			return { price, value }
+		}
+
 		// Iterate Prices
 		for (const tokenName in transPrices) {
 			// Iterate Chains
-			for (const chainNm in this.chainNames) {
+			for (const chainNm in this.chains) {
 				const chainName = chainNm as keyof Chains
 				const chain = this.chains[chainName]
 
 				// Iterate Transactions
 				for (const transaction of chain.transactions) {
-					const { quoteSymbol, baseSymbol, date } = transaction
+					const {
+						quoteSymbol,
+						baseSymbol,
+						feeSymbol,
+						feePriceUSD,
+						quoteQuantity,
+						baseQuantity,
+						date,
+					} = transaction
 					const time = this.getTimeMs(date)
 					const quoteName = this.sterilizeTokenNameNoStub(
 						quoteSymbol,
 						chainName
 					)
 					const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName)
-					if (tokenName == quoteName) {
-						if (hasMatchingPrice(transPrices[tokenName], time)) {
-							// Price Here
+					const quoteTokenMatch = tokenName == quoteName
+					const baseTokenMatch = tokenName == baseName
+					const quoteFeeMatch = quoteSymbol == feeSymbol && feePriceUSD
+					const baseFeeMatch = baseSymbol == feeSymbol && feePriceUSD
+
+					// Quote Token
+					if (!quoteFeeMatch && quoteTokenMatch) {
+						const priceMatch = getMatchingPrice(transPrices[tokenName], time)
+						if (priceMatch && priceMatch.price) {
+							const { price, value } = getPriceAndValue(
+								priceMatch,
+								quoteQuantity
+							)
+							transaction.quotePriceUSD = price
+							transaction.quoteValueUSD = value
 						}
-					} else if (tokenName == baseName) {
-						if (hasMatchingPrice(transPrices[tokenName], time)) {
-							// Price Here
+					}
+
+					// Quote Token is Fee Token
+					else if (quoteFeeMatch) {
+						const { price, value } = getPriceAndValue(
+							{ price: feePriceUSD } as PriceData,
+							quoteQuantity
+						)
+						transaction.quotePriceUSD = price
+						transaction.quoteValueUSD = value
+					}
+
+					// Base Token
+					else if (!baseFeeMatch && baseTokenMatch) {
+						const priceMatch = getMatchingPrice(transPrices[tokenName], time)
+						if (priceMatch && priceMatch.price) {
+							const { price, value } = getPriceAndValue(
+								priceMatch,
+								baseQuantity
+							)
+							transaction.basePriceUSD = price
+							transaction.baseValueUSD = value
 						}
+					}
+
+					// Base Token is Fee Token
+					else if (baseFeeMatch) {
+						const { price, value } = getPriceAndValue(
+							{ price: feePriceUSD } as PriceData,
+							baseQuantity
+						)
+						transaction.basePriceUSD = price
+						transaction.baseValueUSD = value
 					}
 				}
 			}
@@ -385,8 +444,8 @@ export default class DefiPrices extends DefiTransactions {
 		const closestValidRecord =
 			pastDiff && futureDiff
 				? pastDiff > futureDiff
-					? validRecords.past
-					: validRecords.future
+					? validRecords.future
+					: validRecords.past
 				: undefined
 		return validRecords.equal || closestValidRecord
 	}
@@ -399,12 +458,13 @@ export default class DefiPrices extends DefiTransactions {
 		const times: number[] = []
 		const prices: PriceData[] = []
 		const requests: Promise<CoinGeckoPricesResponse>[] = []
+		const fiatLower = FIAT_CURRENCY.toLowerCase()
 		for (const daysOut of daysOutList) {
 			requests.push(
 				this.getCoinGeckoEndpoint(
 					'coinGeckoPrices',
 					{ $id: tokenId },
-					{ vs_currency: 'usd', days: daysOut }
+					{ vs_currency: fiatLower, days: daysOut }
 				)
 			)
 		}
@@ -438,10 +498,11 @@ export default class DefiPrices extends DefiTransactions {
 		const secondCutoffMs = secondCutoff * ONE_DAY
 
 		// Get Days Out
-		const getDaysOut = (diff: number) => Math.floor(diff / ONE_DAY) + 1
+		const getDaysOut = (diff: number) => Math.ceil(diff / ONE_DAY) + 1
 
 		let firstDaysSearch = 0
 		let secondDaysSearch = 0
+		let secondDaysMaxDiff = 0
 
 		// Iterate Times
 		for (const time of times) {
@@ -449,24 +510,28 @@ export default class DefiPrices extends DefiTransactions {
 			if (!firstDaysSearch && diff <= firstCutoffMs) {
 				firstDaysSearch = firstCutoff
 			} else if (
-				!secondDaysSearch &&
 				diff > firstCutoffMs &&
-				diff <= secondCutoffMs
+				diff <= secondCutoffMs &&
+				diff > secondDaysMaxDiff
 			) {
+				secondDaysMaxDiff = diff
 				secondDaysSearch = getDaysOut(diff)
-				break
+				if (secondDaysSearch >= secondCutoff) {
+					secondDaysSearch = secondCutoff
+					break
+				}
 			}
 		}
 
-		// Get Maxes
-		const maxMs = times.length ? Math.max(...times) : 0
-		const maxDiff = maxMs ? Math.abs(nowMs - maxMs) : 0
+		// Get Max Days Out
+		const minMs = times.length ? Math.min(...times) : 0
+		const maxDiff = minMs ? Math.abs(nowMs - minMs) : 0
 		const maxDays = maxDiff ? getDaysOut(maxDiff) : 0
 
 		// Add Days Out
 		if (firstDaysSearch) daysOutList.push(firstDaysSearch)
 		if (secondDaysSearch) daysOutList.push(secondDaysSearch)
-		if (maxDays) daysOutList.push(maxDays)
+		if (maxDays && maxDays > secondCutoff) daysOutList.push(maxDays)
 		return daysOutList
 	}
 
@@ -478,7 +543,7 @@ export default class DefiPrices extends DefiTransactions {
 		endpoint: keyof typeof ENDPOINTS,
 		replaceArgs?: any,
 		params?: any
-	) {
+	): Promise<any> {
 		// Format URL
 		let url = ENDPOINTS[endpoint]
 		if (replaceArgs) {
@@ -500,12 +565,15 @@ export default class DefiPrices extends DefiTransactions {
 		}
 
 		// Manage API Limits
-		if (!this.nextApiCallMs) {
+
+		const nowMs = this.getTimeMs()
+		const diffMs = this.nextApiCallMs - nowMs
+
+		if (diffMs <= 0) {
 			return await getUrl()
 		} else {
-			const nowMs = this.getTimeMs()
-			const diffMs = nowMs - this.nextApiCallMs
-			return setTimeout(getUrl, diffMs)
+			await waitMs(diffMs)
+			return await this.getCoinGeckoEndpoint(endpoint, replaceArgs, params)
 		}
 	}
 

@@ -63,7 +63,7 @@ const openDB = () => __awaiter(void 0, void 0, void 0, function* () {
         if (!db) {
             db = yield sqlite_1.open({
                 filename: DB_LOCATION,
-                driver: sqlite3_1.default.Database
+                driver: sqlite3_1.default.Database,
             });
         }
     }

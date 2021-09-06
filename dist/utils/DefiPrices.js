@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiTransactions_1 = __importDefault(require("./DefiTransactions"));
+const misc_1 = require("./misc");
 const priceData_1 = require("./priceData");
 const values_1 = require("./values");
 /**
@@ -39,9 +40,10 @@ class DefiPrices extends DefiTransactions_1.default {
             const { transPrices, missingTimes } = this.linkLocalPrices(transTokenTimes, localPrices);
             const daysOutLists = this.getAllDaysOutLists(missingTimes);
             const apiPrices = yield this.getAllTokenPrices(daysOutLists, supportedTokens);
-            const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
             const insertRecords = this.getInsertRecords(localPrices, apiPrices);
+            const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
             this.linkMergedPrices(transPrices, mergedPrices);
+            this.updateTransactionData(transPrices);
             yield this.syncMissingPrices(insertRecords);
         });
     }
@@ -83,12 +85,13 @@ class DefiPrices extends DefiTransactions_1.default {
                 const baseSupported = supportedTokenNames.includes(baseName);
                 const quoteHasNativePrice = quoteSymbol == feeSymbol && hasFeePrice;
                 const baseHasNativePrice = baseSymbol == feeSymbol && hasFeePrice;
+                const baseIsFiat = baseSymbol == values_1.FIAT_CURRENCY;
                 // Add Quote Time
                 if (quoteSupported && !quoteHasNativePrice) {
                     this.addTokenTime(tokenTimes, quoteName, time);
                 }
                 // Add Base Time
-                if (baseSupported && !baseHasNativePrice) {
+                if (baseSupported && !baseIsFiat && !baseHasNativePrice) {
                     this.addTokenTime(tokenTimes, baseName, time);
                 }
             }
@@ -132,7 +135,7 @@ class DefiPrices extends DefiTransactions_1.default {
                 const validLocalRecord = this.getValidPriceRecord(transTime, localTimes);
                 transPrices[tokenName].push({
                     time: transTime,
-                    price: (validLocalRecord === null || validLocalRecord === void 0 ? void 0 : validLocalRecord.price) || 0
+                    price: (validLocalRecord === null || validLocalRecord === void 0 ? void 0 : validLocalRecord.price) || 0,
                 });
                 if (!validLocalRecord) {
                     this.addTokenTime(missingTimes, tokenName, transTime);
@@ -141,7 +144,7 @@ class DefiPrices extends DefiTransactions_1.default {
         }
         return {
             missingTimes,
-            transPrices
+            transPrices,
         };
     }
     /**
@@ -165,9 +168,9 @@ class DefiPrices extends DefiTransactions_1.default {
             const tokenNames = Object.keys(daysOutLists);
             for (const tokenName in daysOutLists) {
                 const daysOutList = daysOutLists[tokenName];
-                if (daysOutList === null || daysOutList === void 0 ? void 0 : daysOutList.length) {
-                    requests.push(this.getTokenPrices(supportedTokens[tokenName], daysOutList));
-                }
+                requests.push(daysOutList.length
+                    ? this.getTokenPrices(supportedTokens[tokenName], daysOutList)
+                    : []);
             }
             const res = yield Promise.all(requests);
             for (const index in res) {
@@ -184,17 +187,12 @@ class DefiPrices extends DefiTransactions_1.default {
      * Merge API and Local Prices
      */
     mergeApiAndLocalPrices(localPrices, apiPrices) {
-        const mergedPrices = localPrices;
-        for (const tokenName in apiPrices) {
-            if (!mergedPrices[tokenName]) {
-                mergedPrices[tokenName] = apiPrices[tokenName];
-            }
-            else {
-                mergedPrices[tokenName] = [
-                    ...mergedPrices[tokenName],
-                    ...apiPrices[tokenName]
-                ].sort((a, b) => a.time < b.time ? 1 : -1);
-            }
+        const mergedPrices = Object.assign({}, localPrices);
+        for (const tokenName in localPrices) {
+            mergedPrices[tokenName] = [
+                ...mergedPrices[tokenName],
+                ...(apiPrices[tokenName] || []),
+            ].sort((a, b) => (a.time < b.time ? 1 : -1));
         }
         return mergedPrices;
     }
@@ -212,7 +210,10 @@ class DefiPrices extends DefiTransactions_1.default {
                 if (!record.price) {
                     const validLocalRecord = this.getValidPriceRecord(record.time, mergedTimes);
                     if (validLocalRecord) {
-                        transTimes[index] = validLocalRecord;
+                        transTimes[index] = {
+                            time: record.time,
+                            price: validLocalRecord.price,
+                        };
                     }
                 }
             }
@@ -222,25 +223,24 @@ class DefiPrices extends DefiTransactions_1.default {
      * Get Insert Records
      */
     getInsertRecords(localPrices, apiPrices) {
-        const localTimes = {};
         const insertRecords = [];
-        // Get Local Times
-        for (const tokenName in localPrices) {
-            localTimes[tokenName] = [];
-            for (const record of localPrices[tokenName]) {
-                localTimes[tokenName].push(record.time);
-            }
-        }
-        // Compare API Times
+        // Iterate Tokens
         for (const tokenName in apiPrices) {
-            const existingTimes = localTimes[tokenName];
+            const existingTimes = [];
+            // Get Local Times
+            if (localPrices[tokenName]) {
+                for (const record of localPrices[tokenName]) {
+                    existingTimes.push(record.time);
+                }
+            }
+            // Iterate API Prices
             for (const record of apiPrices[tokenName]) {
                 const { time, price } = record;
                 if (!existingTimes.includes(record.time)) {
                     insertRecords.push({
                         symbol: tokenName,
                         time,
-                        price
+                        price,
                     });
                 }
             }
@@ -263,36 +263,66 @@ class DefiPrices extends DefiTransactions_1.default {
      * Update Transaction Data
      */
     updateTransactionData(transPrices) {
-        // Has Matching Price
-        const hasMatchingPrice = (prices, time) => {
+        // Get Matching Price
+        const getMatchingPrice = (prices, time) => {
             for (const price of prices) {
                 if (price.time == time) {
-                    return true;
+                    return price;
                 }
             }
             return false;
         };
+        // Get Price And Value
+        const getPriceAndValue = (priceInfo, quantity) => {
+            const price = priceInfo.price;
+            const value = price * quantity;
+            return { price, value };
+        };
         // Iterate Prices
         for (const tokenName in transPrices) {
             // Iterate Chains
-            for (const chainNm in this.chainNames) {
+            for (const chainNm in this.chains) {
                 const chainName = chainNm;
                 const chain = this.chains[chainName];
                 // Iterate Transactions
                 for (const transaction of chain.transactions) {
-                    const { quoteSymbol, baseSymbol, date } = transaction;
+                    const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, date } = transaction;
                     const time = this.getTimeMs(date);
                     const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
                     const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
-                    if (tokenName == quoteName) {
-                        if (hasMatchingPrice(transPrices[tokenName], time)) {
-                            // Price Here
+                    const quoteTokenMatch = tokenName == quoteName;
+                    const baseTokenMatch = tokenName == baseName;
+                    const quoteFeeMatch = quoteSymbol == feeSymbol && feePriceUSD;
+                    const baseFeeMatch = baseSymbol == feeSymbol && feePriceUSD;
+                    // Quote Token
+                    if (!quoteFeeMatch && quoteTokenMatch) {
+                        const priceMatch = getMatchingPrice(transPrices[tokenName], time);
+                        if (priceMatch && priceMatch.price) {
+                            const { price, value } = getPriceAndValue(priceMatch, quoteQuantity);
+                            transaction.quotePriceUSD = price;
+                            transaction.quoteValueUSD = value;
                         }
                     }
-                    else if (tokenName == baseName) {
-                        if (hasMatchingPrice(transPrices[tokenName], time)) {
-                            // Price Here
+                    // Quote Token is Fee Token
+                    else if (quoteFeeMatch) {
+                        const { price, value } = getPriceAndValue({ price: feePriceUSD }, quoteQuantity);
+                        transaction.quotePriceUSD = price;
+                        transaction.quoteValueUSD = value;
+                    }
+                    // Base Token
+                    else if (!baseFeeMatch && baseTokenMatch) {
+                        const priceMatch = getMatchingPrice(transPrices[tokenName], time);
+                        if (priceMatch && priceMatch.price) {
+                            const { price, value } = getPriceAndValue(priceMatch, baseQuantity);
+                            transaction.basePriceUSD = price;
+                            transaction.baseValueUSD = value;
                         }
+                    }
+                    // Base Token is Fee Token
+                    else if (baseFeeMatch) {
+                        const { price, value } = getPriceAndValue({ price: feePriceUSD }, baseQuantity);
+                        transaction.basePriceUSD = price;
+                        transaction.baseValueUSD = value;
                     }
                 }
             }
@@ -327,11 +357,11 @@ class DefiPrices extends DefiTransactions_1.default {
         const futureDiff = validRecords.future
             ? validRecords.future.time - transTime
             : 0;
-        const pastDiff = validRecords.past
-            ? transTime - validRecords.past.time
-            : 0;
+        const pastDiff = validRecords.past ? transTime - validRecords.past.time : 0;
         const closestValidRecord = pastDiff && futureDiff
-            ? (pastDiff > futureDiff ? validRecords.past : validRecords.future)
+            ? pastDiff > futureDiff
+                ? validRecords.future
+                : validRecords.past
             : undefined;
         return validRecords.equal || closestValidRecord;
     }
@@ -344,8 +374,9 @@ class DefiPrices extends DefiTransactions_1.default {
             const times = [];
             const prices = [];
             const requests = [];
+            const fiatLower = values_1.FIAT_CURRENCY.toLowerCase();
             for (const daysOut of daysOutList) {
-                requests.push(this.getCoinGeckoEndpoint('coinGeckoPrices', { $id: tokenId }, { vs_currency: 'usd', days: daysOut }));
+                requests.push(this.getCoinGeckoEndpoint('coinGeckoPrices', { $id: tokenId }, { vs_currency: fiatLower, days: daysOut }));
             }
             const res = yield Promise.all(requests);
             for (const result of res) {
@@ -375,32 +406,37 @@ class DefiPrices extends DefiTransactions_1.default {
         const secondCutoff = values_1.coinGeckoDayCutoffs[1];
         const secondCutoffMs = secondCutoff * values_1.ONE_DAY;
         // Get Days Out
-        const getDaysOut = (diff) => Math.floor(diff / values_1.ONE_DAY) + 1;
+        const getDaysOut = (diff) => Math.ceil(diff / values_1.ONE_DAY) + 1;
         let firstDaysSearch = 0;
         let secondDaysSearch = 0;
+        let secondDaysMaxDiff = 0;
         // Iterate Times
         for (const time of times) {
             const diff = nowMs - time;
             if (!firstDaysSearch && diff <= firstCutoffMs) {
                 firstDaysSearch = firstCutoff;
             }
-            else if (!secondDaysSearch &&
-                diff > firstCutoffMs &&
-                diff <= secondCutoffMs) {
+            else if (diff > firstCutoffMs &&
+                diff <= secondCutoffMs &&
+                diff > secondDaysMaxDiff) {
+                secondDaysMaxDiff = diff;
                 secondDaysSearch = getDaysOut(diff);
-                break;
+                if (secondDaysSearch >= secondCutoff) {
+                    secondDaysSearch = secondCutoff;
+                    break;
+                }
             }
         }
-        // Get Maxes
-        const maxMs = times.length ? Math.max(...times) : 0;
-        const maxDiff = maxMs ? Math.abs(nowMs - maxMs) : 0;
+        // Get Max Days Out
+        const minMs = times.length ? Math.min(...times) : 0;
+        const maxDiff = minMs ? Math.abs(nowMs - minMs) : 0;
         const maxDays = maxDiff ? getDaysOut(maxDiff) : 0;
         // Add Days Out
         if (firstDaysSearch)
             daysOutList.push(firstDaysSearch);
         if (secondDaysSearch)
             daysOutList.push(secondDaysSearch);
-        if (maxDays)
+        if (maxDays && maxDays > secondCutoff)
             daysOutList.push(maxDays);
         return daysOutList;
     }
@@ -424,13 +460,14 @@ class DefiPrices extends DefiTransactions_1.default {
                 return yield this.getEndpoint('coinGecko', url, params);
             });
             // Manage API Limits
-            if (!this.nextApiCallMs) {
+            const nowMs = this.getTimeMs();
+            const diffMs = this.nextApiCallMs - nowMs;
+            if (diffMs <= 0) {
                 return yield getUrl();
             }
             else {
-                const nowMs = this.getTimeMs();
-                const diffMs = nowMs - this.nextApiCallMs;
-                return setTimeout(getUrl, diffMs);
+                yield misc_1.waitMs(diffMs);
+                return yield this.getCoinGeckoEndpoint(endpoint, replaceArgs, params);
             }
         });
     }

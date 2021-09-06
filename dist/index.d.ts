@@ -1,2 +1,2 @@
-import DefiInfo from './utils/DefiTransactions';
+import DefiInfo from './utils/DefiPrices';
 export default DefiInfo;

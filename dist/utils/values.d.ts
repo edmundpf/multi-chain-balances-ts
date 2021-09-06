@@ -1,5 +1,9 @@
 import { Chains, HistoryRecord } from './types';
 /**
+ * Fiat Currency
+ */
+export declare const FIAT_CURRENCY = "USD";
+/**
  * Crypto Info
  */
 export declare const NATIVE_TOKENS: {

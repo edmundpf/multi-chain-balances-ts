@@ -1,6 +1,12 @@
 import { Chain, Chains, HistoryRecord } from './types'
 
 /**
+ * Fiat Currency
+ */
+
+export const FIAT_CURRENCY = 'USD'
+
+/**
  * Crypto Info
  */
 
@@ -95,7 +101,7 @@ export const defaultHistoryRecord: HistoryRecord = {
 	id: '',
 	date: '',
 	quoteSymbol: '',
-	baseSymbol: 'USD',
+	baseSymbol: FIAT_CURRENCY,
 	feeSymbol: '',
 	ticker: '',
 	type: 'failure',

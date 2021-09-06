@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ONE_DAY = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = void 0;
+exports.ONE_DAY = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+/**
+ * Fiat Currency
+ */
+exports.FIAT_CURRENCY = 'USD';
 /**
  * Crypto Info
  */
@@ -39,7 +43,7 @@ exports.APIS = {
     apeBoard: 'https://api.apeboard.finance',
     debank: 'https://openapi.debank.com/v1/user',
     debankPrivate: 'https://api.debank.com',
-    coinGecko: 'https://api.coingecko.com/api/v3'
+    coinGecko: 'https://api.coingecko.com/api/v3',
 };
 // Endpoints
 exports.ENDPOINTS = {
@@ -73,7 +77,7 @@ exports.defaultHistoryRecord = {
     id: '',
     date: '',
     quoteSymbol: '',
-    baseSymbol: 'USD',
+    baseSymbol: exports.FIAT_CURRENCY,
     feeSymbol: '',
     ticker: '',
     type: 'failure',

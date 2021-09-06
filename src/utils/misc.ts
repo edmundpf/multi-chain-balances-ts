@@ -12,3 +12,10 @@ export const titleCase = (str: string) => startCase(camelCase(str))
  */
 
 export const hasNumber = (str: string) => /\d/.test(str)
+
+/**
+ * Wait ms
+ */
+
+export const waitMs = (ms: number) =>
+	new Promise((resolve) => setTimeout(resolve, ms))
