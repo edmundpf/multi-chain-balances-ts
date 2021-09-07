@@ -36,6 +36,7 @@ class DefiBalances {
         this.chains = values_1.initChains();
         this.assets = {};
         this.tokenNames = [];
+        this.unknownTokens = [];
         this.chainNames = Object.keys(this.chains);
     }
     /**
@@ -62,7 +63,7 @@ class DefiBalances {
      * Get Endpoint
      */
     getEndpoint(api, endpoint, params, headers) {
-        var _a, _b;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const apiUrl = values_1.APIS[api];
@@ -75,7 +76,7 @@ class DefiBalances {
                     {});
             }
             catch (err) {
-                return ((_b = err === null || err === void 0 ? void 0 : err.response) === null || _b === void 0 ? void 0 : _b.data) || {};
+                return ((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {};
             }
         });
     }
@@ -136,7 +137,9 @@ class DefiBalances {
                     if (symbol == values_1.NATIVE_TOKENS[chain]) {
                         chainInfo.nativeToken = tokenData;
                     }
-                    chainInfo.totalTokenValue += value;
+                    if (!this.isUnknownToken(tokenData, chain)) {
+                        chainInfo.totalTokenValue += value;
+                    }
                 }
             }
         }
@@ -317,15 +320,13 @@ class DefiBalances {
         const assetCounts = {};
         const assetIndexes = {};
         // Add Asset
-        const addAsset = (record, chainName, useBeefyVaultName = false) => {
+        const addAsset = (record, chainName, isVault = false) => {
             const { symbol, value } = record;
             const apy = record.apy || 0;
             const beefyVaultName = record.beefyVaultName || '';
             const url = record.platformUrl || values_1.DEFAULT_URLS[chainName];
-            let symbolStr = useBeefyVaultName && beefyVaultName
-                ? beefyVaultName.toUpperCase()
-                : symbol;
-            if (!beefyVaultName || !useBeefyVaultName) {
+            let symbolStr = isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol;
+            if (!beefyVaultName || !isVault) {
                 if (assetCounts[symbol] > 1) {
                     const symbolIndex = assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0;
                     symbolStr += `-${symbolIndex}`;
@@ -366,12 +367,15 @@ class DefiBalances {
             }
         }
         // Parse Data
-        for (const chainName in this.chains) {
+        for (const chainNm in this.chains) {
+            const chainName = chainNm;
             const chain = this.chains[chainName];
             // Update Chain Total Value
             chain.totalValue = chain.totalTokenValue + chain.totalVaultValue;
             // Update simplified assets
             for (const record of chain.tokens) {
+                if (this.isUnknownToken(record, chainName))
+                    continue;
                 addAsset(record, chainName);
                 addToken(record);
             }
@@ -380,6 +384,8 @@ class DefiBalances {
                     addAsset(record, chainName, true);
                 }
                 for (const token of record.tokens) {
+                    if (this.isUnknownToken(record, chainName))
+                        continue;
                     addToken(token);
                 }
             }
@@ -412,6 +418,64 @@ class DefiBalances {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getBeefyEndpoint('beefyApy');
         });
+    }
+    /**
+     * Is Stable Coin
+     */
+    isStableCoin(tokenName, price) {
+        const upperToken = tokenName.toUpperCase();
+        const isNormalStable = upperToken.includes(values_1.FIAT_CURRENCY);
+        const isOtherStable = values_1.stableCoinConfig.otherCoins.includes(tokenName);
+        const withinError = price >= 1 - values_1.stableCoinConfig.errorPercent &&
+            price <= 1 + values_1.stableCoinConfig.errorPercent;
+        return (isNormalStable || isOtherStable) && withinError;
+    }
+    /**
+     * Is Native Token
+     */
+    isNativeToken(tokenName) {
+        return Object.values(values_1.NATIVE_TOKENS).includes(tokenName);
+    }
+    /**
+     * Is Unknown Token
+     */
+    isUnknownToken(record, chainName) {
+        const { symbol, value, amount } = record;
+        const sterileSymbol = this.sterilizeTokenNameNoStub(symbol, chainName);
+        const isStableCoin = this.isStableCoin(symbol, value / (amount || 1));
+        const isUnknownToken = this.unknownTokens.includes(sterileSymbol);
+        return isUnknownToken && !isStableCoin;
+    }
+    /**
+     * Sterilize Token Name
+     */
+    sterilizeTokenName(token) {
+        return (token || '').replace(/ /g, '-').toUpperCase();
+    }
+    /**
+     * Remove Token Contract Stub
+     */
+    sterilizeTokenNameNoStub(tokenName, chainName) {
+        let curName = tokenName;
+        if (tokenName.includes('-')) {
+            const dashParts = tokenName.split('-');
+            const lastPart = dashParts[dashParts.length - 1];
+            const isPool = lastPart == 'Pool';
+            if (!isPool) {
+                const addressStub = this.getAddressStub(this.chains[chainName].tokenAddresses[tokenName]);
+                if (lastPart == addressStub) {
+                    dashParts.pop();
+                    curName = dashParts.join('-');
+                }
+            }
+        }
+        return this.sterilizeTokenName(curName);
+    }
+    /**
+     * Get Address Stub
+     */
+    getAddressStub(address) {
+        return address.substring(2, 6).toUpperCase();
     }
 }
 exports.default = DefiBalances;

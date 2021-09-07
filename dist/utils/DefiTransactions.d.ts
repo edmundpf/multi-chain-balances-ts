@@ -36,6 +36,10 @@ export default class DefiTransactions extends DefiBalances {
      */
     private sterilizeTransactionType;
     /**
+     * Get Unknown Tokens
+     */
+    getUnknownTokens(): void;
+    /**
      * Get Private Debank Endpoint
      */
     private getPrivateDebankEndpoint;
@@ -43,8 +47,4 @@ export default class DefiTransactions extends DefiBalances {
      * Is Contract
      */
     private isContract;
-    /**
-     * Get Address Stub
-     */
-    getAddressStub(address: string): string;
 }

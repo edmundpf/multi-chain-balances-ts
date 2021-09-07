@@ -9,6 +9,8 @@ import {
 	initChains,
 	apeBoardCredentials,
 	EXCHANGE_ALIASES,
+	FIAT_CURRENCY,
+	stableCoinConfig,
 } from './values'
 import {
 	Token,
@@ -42,6 +44,7 @@ export default class DefiBalances {
 	assets: Assets = {}
 	chainNames: Array<keyof Chains>
 	tokenNames: string[] = []
+	unknownTokens: string[] = []
 
 	/**
 	 * Constructor
@@ -92,7 +95,7 @@ export default class DefiBalances {
 				{}
 			)
 		} catch (err) {
-			return err?.response?.data || {}
+			return (err as any)?.response?.data || {}
 		}
 	}
 
@@ -162,7 +165,9 @@ export default class DefiBalances {
 					if (symbol == NATIVE_TOKENS[chain]) {
 						chainInfo.nativeToken = tokenData
 					}
-					chainInfo.totalTokenValue += value
+					if (!this.isUnknownToken(tokenData, chain)) {
+						chainInfo.totalTokenValue += value
+					}
 				}
 			}
 		}
@@ -391,17 +396,15 @@ export default class DefiBalances {
 		const addAsset = (
 			record: TokenData | VaultData,
 			chainName: keyof Chains,
-			useBeefyVaultName = false
+			isVault = false
 		) => {
 			const { symbol, value } = record
 			const apy: number = (record as any).apy || 0
 			const beefyVaultName: string = (record as any).beefyVaultName || ''
 			const url: string = (record as any).platformUrl || DEFAULT_URLS[chainName]
 			let symbolStr =
-				useBeefyVaultName && beefyVaultName
-					? beefyVaultName.toUpperCase()
-					: symbol
-			if (!beefyVaultName || !useBeefyVaultName) {
+				isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol
+			if (!beefyVaultName || !isVault) {
 				if (assetCounts[symbol] > 1) {
 					const symbolIndex =
 						assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0
@@ -445,22 +448,25 @@ export default class DefiBalances {
 		}
 
 		// Parse Data
-		for (const chainName in this.chains) {
-			const chain = this.chains[chainName as keyof Chains]
+		for (const chainNm in this.chains) {
+			const chainName = chainNm as keyof Chains
+			const chain = this.chains[chainName]
 
 			// Update Chain Total Value
 			chain.totalValue = chain.totalTokenValue + chain.totalVaultValue
 
 			// Update simplified assets
 			for (const record of chain.tokens) {
-				addAsset(record, chainName as keyof Chains)
+				if (this.isUnknownToken(record, chainName)) continue
+				addAsset(record, chainName)
 				addToken(record)
 			}
 			for (const record of chain.vaults) {
 				if (record.beefyReceiptName && record.beefyVaultName) {
-					addAsset(record, chainName as keyof Chains, true)
+					addAsset(record, chainName, true)
 				}
 				for (const token of record.tokens) {
+					if (this.isUnknownToken(record, chainName)) continue
 					addToken(token)
 				}
 			}
@@ -494,5 +500,78 @@ export default class DefiBalances {
 
 	private async getBeefyApy() {
 		return await this.getBeefyEndpoint('beefyApy')
+	}
+
+	/**
+	 * Is Stable Coin
+	 */
+
+	isStableCoin(tokenName: string, price: number) {
+		const upperToken = tokenName.toUpperCase()
+		const isNormalStable = upperToken.includes(FIAT_CURRENCY)
+		const isOtherStable = stableCoinConfig.otherCoins.includes(tokenName)
+		const withinError =
+			price >= 1 - stableCoinConfig.errorPercent &&
+			price <= 1 + stableCoinConfig.errorPercent
+		return (isNormalStable || isOtherStable) && withinError
+	}
+
+	/**
+	 * Is Native Token
+	 */
+
+	isNativeToken(tokenName: string) {
+		return Object.values(NATIVE_TOKENS).includes(tokenName)
+	}
+
+	/**
+	 * Is Unknown Token
+	 */
+
+	isUnknownToken(record: TokenData, chainName: keyof Chains) {
+		const { symbol, value, amount } = record
+		const sterileSymbol = this.sterilizeTokenNameNoStub(symbol, chainName)
+		const isStableCoin = this.isStableCoin(symbol, value / (amount || 1))
+		const isUnknownToken = this.unknownTokens.includes(sterileSymbol)
+		return isUnknownToken && !isStableCoin
+	}
+
+	/**
+	 * Sterilize Token Name
+	 */
+
+	sterilizeTokenName(token: string) {
+		return (token || '').replace(/ /g, '-').toUpperCase()
+	}
+
+	/**
+	 * Remove Token Contract Stub
+	 */
+
+	sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains) {
+		let curName = tokenName
+		if (tokenName.includes('-')) {
+			const dashParts = tokenName.split('-')
+			const lastPart = dashParts[dashParts.length - 1]
+			const isPool = lastPart == 'Pool'
+			if (!isPool) {
+				const addressStub = this.getAddressStub(
+					this.chains[chainName].tokenAddresses[tokenName]
+				)
+				if (lastPart == addressStub) {
+					dashParts.pop()
+					curName = dashParts.join('-')
+				}
+			}
+		}
+		return this.sterilizeTokenName(curName)
+	}
+
+	/**
+	 * Get Address Stub
+	 */
+
+	getAddressStub(address: string) {
+		return address.substring(2, 6).toUpperCase()
 	}
 }

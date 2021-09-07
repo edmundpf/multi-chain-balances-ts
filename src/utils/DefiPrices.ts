@@ -1,5 +1,6 @@
 import DefiTransactions from './DefiTransactions'
 import { waitMs } from './misc'
+import { writeFileSync, readFileSync } from 'fs'
 import { prepareDB, selectPrices, insertPrice } from './priceData'
 import {
 	CoinGeckoToken,
@@ -10,6 +11,7 @@ import {
 	TokenTimes,
 	TokenPrices,
 	LocalPriceData,
+	HistoryRecord,
 } from './types'
 import {
 	ENDPOINTS,
@@ -17,6 +19,9 @@ import {
 	coinGeckoDayCutoffs,
 	ONE_DAY,
 	FIAT_CURRENCY,
+	defaultDriverArgs,
+	slippageConfig,
+	TEMP_TRANSACTION_FILE,
 } from './values'
 
 /**
@@ -30,30 +35,89 @@ export default class DefiPrices extends DefiTransactions {
 	private recentApiCalls: number[] = []
 
 	/**
+	 * Driver
+	 */
+
+	async driver(args?: typeof defaultDriverArgs) {
+		const {
+			useDebank,
+			getTransactions,
+			getPrices,
+			getBalances,
+			filterUnknownTokens,
+			useTempTransactions,
+		} = {
+			...defaultDriverArgs,
+			...args,
+		}
+		if (getTransactions && !useTempTransactions) {
+			await this.getTransactions(useDebank)
+		}
+		if (filterUnknownTokens) this.getUnknownTokens()
+		if (getPrices) await this.getPriceData(useTempTransactions)
+		if (getBalances) await this.getBalances()
+	}
+
+	/**
 	 * Get Price Data
 	 */
 
-	async getPriceData() {
-		await prepareDB()
-		const supportedTokens = await this.getSupportedTokens()
-		const supportedTokenNames = Object.keys(supportedTokens)
-		const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames)
-		const transTokenNames = Object.keys(transTokenTimes)
-		const localPrices = await this.getLocalPrices(transTokenNames)
-		const { transPrices, missingTimes } = this.linkLocalPrices(
-			transTokenTimes,
-			localPrices
-		)
-		const daysOutLists = this.getAllDaysOutLists(missingTimes)
-		const apiPrices = await this.getAllTokenPrices(
-			daysOutLists,
-			supportedTokens
-		)
-		const insertRecords = this.getInsertRecords(localPrices, apiPrices)
-		const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
-		this.linkMergedPrices(transPrices, mergedPrices)
-		this.updateTransactionData(transPrices)
-		await this.syncMissingPrices(insertRecords)
+	private async getPriceData(useTempTransactions = false) {
+		if (!useTempTransactions || !this.readTempFile()) {
+			await prepareDB()
+			const supportedTokens = await this.getSupportedTokens()
+			const supportedTokenNames = Object.keys(supportedTokens)
+			const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames)
+			const transTokenNames = Object.keys(transTokenTimes)
+			const localPrices = await this.getLocalPrices(transTokenNames)
+			const { transPrices, missingTimes } = this.linkLocalPrices(
+				transTokenTimes,
+				localPrices
+			)
+			const daysOutLists = this.getAllDaysOutLists(missingTimes)
+			const apiPrices = await this.getAllTokenPrices(
+				daysOutLists,
+				supportedTokens
+			)
+			const insertRecords = this.getInsertRecords(localPrices, apiPrices)
+			const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
+			this.linkMergedPrices(transPrices, mergedPrices)
+			this.updateTransactionData(transPrices)
+			this.inferTransactionPrices()
+			await this.syncMissingPrices(insertRecords)
+			this.writeTempFile()
+		} else {
+			this.inferTransactionPrices()
+		}
+	}
+
+	/**
+	 * Read Temp File
+	 */
+
+	private readTempFile() {
+		try {
+			const data = JSON.parse(readFileSync(TEMP_TRANSACTION_FILE, 'utf-8'))
+			for (const chainNm in data) {
+				const chainName = chainNm as keyof Chains
+				this.chains[chainName].transactions = data[chainName] as HistoryRecord[]
+			}
+			return true
+		} catch (err) {
+			return false
+		}
+	}
+
+	/**
+	 * Write Temp File
+	 */
+
+	private writeTempFile() {
+		const data: { [index: string]: HistoryRecord[] } = {}
+		for (const chainName of this.chainNames) {
+			data[chainName] = this.chains[chainName].transactions
+		}
+		writeFileSync(TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2))
 	}
 
 	/**
@@ -332,6 +396,26 @@ export default class DefiPrices extends DefiTransactions {
 			return { price, value }
 		}
 
+		// Set Price And Value
+		const setPriceAndValue = (
+			transaction: HistoryRecord,
+			info: ReturnType<typeof getPriceAndValue>,
+			type: 'quote' | 'base'
+		) => {
+			const { price, value } = info
+			if (type == 'quote') {
+				transaction.quotePriceUSD = price
+				transaction.quoteValueUSD = value
+				if (transaction.baseSymbol == FIAT_CURRENCY) {
+					transaction.baseValueUSD = transaction.quoteValueUSD * -1
+					transaction.baseQuantity = transaction.baseValueUSD
+				}
+			} else if (type == 'base') {
+				transaction.basePriceUSD = price
+				transaction.baseValueUSD = value
+			}
+		}
+
 		// Iterate Prices
 		for (const tokenName in transPrices) {
 			// Iterate Chains
@@ -365,47 +449,248 @@ export default class DefiPrices extends DefiTransactions {
 					if (!quoteFeeMatch && quoteTokenMatch) {
 						const priceMatch = getMatchingPrice(transPrices[tokenName], time)
 						if (priceMatch && priceMatch.price) {
-							const { price, value } = getPriceAndValue(
-								priceMatch,
-								quoteQuantity
-							)
-							transaction.quotePriceUSD = price
-							transaction.quoteValueUSD = value
+							const info = getPriceAndValue(priceMatch, quoteQuantity)
+							setPriceAndValue(transaction, info, 'quote')
 						}
 					}
 
 					// Quote Token is Fee Token
 					else if (quoteFeeMatch) {
-						const { price, value } = getPriceAndValue(
+						const info = getPriceAndValue(
 							{ price: feePriceUSD } as PriceData,
 							quoteQuantity
 						)
-						transaction.quotePriceUSD = price
-						transaction.quoteValueUSD = value
+						setPriceAndValue(transaction, info, 'quote')
 					}
 
 					// Base Token
 					else if (!baseFeeMatch && baseTokenMatch) {
 						const priceMatch = getMatchingPrice(transPrices[tokenName], time)
 						if (priceMatch && priceMatch.price) {
-							const { price, value } = getPriceAndValue(
-								priceMatch,
-								baseQuantity
-							)
-							transaction.basePriceUSD = price
-							transaction.baseValueUSD = value
+							const info = getPriceAndValue(priceMatch, baseQuantity)
+							setPriceAndValue(transaction, info, 'base')
 						}
 					}
 
 					// Base Token is Fee Token
 					else if (baseFeeMatch) {
-						const { price, value } = getPriceAndValue(
+						const info = getPriceAndValue(
 							{ price: feePriceUSD } as PriceData,
 							baseQuantity
 						)
-						transaction.basePriceUSD = price
-						transaction.baseValueUSD = value
+						setPriceAndValue(transaction, info, 'base')
 					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Infer Transaction Prices
+	 */
+
+	private inferTransactionPrices() {
+		// Set Value And Price
+		const setValueAndPrice = (
+			record: HistoryRecord,
+			value: number,
+			type: 'base' | 'quote'
+		) => {
+			if (type == 'quote') {
+				const priceUSD = Math.abs(value / record.quoteQuantity)
+				record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1
+				record.quotePriceUSD = priceUSD
+				if (record.quoteSymbol == record.feeSymbol) {
+					record.feePriceUSD = record.quotePriceUSD
+					record.feeValueUSD = record.feeQuantity * record.feePriceUSD
+				}
+			} else {
+				const priceUSD = Math.abs(value / record.baseQuantity)
+				record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1
+				record.basePriceUSD = priceUSD
+				if (record.baseSymbol == record.feeSymbol) {
+					record.feePriceUSD = record.basePriceUSD
+					record.feeValueUSD = record.feeQuantity * record.feePriceUSD
+				}
+			}
+		}
+
+		// Iterate Chains
+		for (const chainName of this.chainNames) {
+			const transRecs: {
+				[index: string]: {
+					recs: HistoryRecord[]
+					quoteSymbols: string[]
+					baseSymbols: string[]
+				}
+			} = {}
+			const transactions = this.chains[chainName].transactions
+
+			// Iterate Transactions
+			for (const record of transactions) {
+				const { id, quoteSymbol, baseSymbol, type } = record
+				if (type == 'swap') {
+					if (!transRecs[id]) {
+						transRecs[id] = {
+							recs: [],
+							quoteSymbols: [],
+							baseSymbols: [],
+						}
+					}
+					transRecs[id].recs.push(record)
+					if (!transRecs[id].quoteSymbols.includes(quoteSymbol)) {
+						transRecs[id].quoteSymbols.push(quoteSymbol)
+					}
+					if (!transRecs[id].baseSymbols.includes(baseSymbol)) {
+						transRecs[id].baseSymbols.push(baseSymbol)
+					}
+				}
+			}
+
+			// Iterate by Transaction Hash
+			for (const id in transRecs) {
+				const { recs, quoteSymbols, baseSymbols } = transRecs[id]
+
+				// Single Coin Swap
+				if (quoteSymbols.length == baseSymbols.length) {
+					const record = recs[0]
+					const {
+						quoteSymbol,
+						quoteValueUSD,
+						quotePriceUSD,
+						baseSymbol,
+						baseValueUSD,
+						basePriceUSD,
+					} = record
+					const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD)
+					const baseIsStable = this.isStableCoin(baseSymbol, basePriceUSD)
+					let absQuoteValueUSD = Math.abs(quoteValueUSD)
+					let absBaseValueUSD = Math.abs(baseValueUSD)
+
+					// Missing Quote
+					if (absBaseValueUSD && !absQuoteValueUSD) {
+						absQuoteValueUSD = Math.max(
+							absBaseValueUSD * (1 - slippageConfig.low),
+							0
+						)
+						setValueAndPrice(record, absQuoteValueUSD, 'quote')
+					}
+
+					// Missing Base
+					else if (absQuoteValueUSD && !absBaseValueUSD) {
+						absBaseValueUSD = Math.max(
+							absQuoteValueUSD * (1 + slippageConfig.low),
+							0
+						)
+						setValueAndPrice(record, absBaseValueUSD, 'base')
+					}
+
+					// Has Both Prices
+					else if (
+						absQuoteValueUSD &&
+						absBaseValueUSD &&
+						!(quoteIsStable && baseIsStable)
+					) {
+						// Calculate Slippage
+						const lowerQuote = absQuoteValueUSD <= absBaseValueUSD
+						const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD
+						const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD
+						const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD)
+						const mid = min + diff / 2
+						const slippageAmount = diff / absBaseValueUSD
+						const hasMediumSlippage =
+							slippageAmount > slippageConfig.low &&
+							slippageAmount <= slippageConfig.high
+						const hasHighSlippage = slippageAmount > slippageConfig.high
+
+						// Modify Slippage if not within low range and not stablecoins
+						if (
+							!(quoteIsStable && baseIsStable) &&
+							(hasMediumSlippage || hasHighSlippage)
+						) {
+							let upperUSD = 0
+							let lowerUSD = 0
+							const slippageAdjust = hasMediumSlippage
+								? slippageConfig.low
+								: slippageConfig.high
+							if (!quoteIsStable && !baseIsStable) {
+								upperUSD = mid + slippageConfig.low / 2
+								lowerUSD = Math.max(mid - slippageConfig.low / 2, 0)
+							} else if (
+								(quoteIsStable && lowerQuote) ||
+								(baseIsStable && !lowerQuote)
+							) {
+								upperUSD = min + slippageAdjust
+								lowerUSD = min
+							} else if (
+								(quoteIsStable && !lowerQuote) ||
+								(baseIsStable && lowerQuote)
+							) {
+								upperUSD = max
+								lowerUSD = Math.max(max - slippageAdjust, 0)
+							}
+
+							// Quote is lower
+							if (lowerQuote) {
+								setValueAndPrice(record, lowerUSD, 'quote')
+								setValueAndPrice(record, upperUSD, 'base')
+							}
+
+							// Base is lower
+							else {
+								setValueAndPrice(record, upperUSD, 'quote')
+								setValueAndPrice(record, lowerUSD, 'base')
+							}
+						}
+					}
+					// console.log(quoteSymbol, record.quoteValueUSD, record.quotePriceUSD)
+					// console.log(baseSymbol, record.baseValueUSD, record.basePriceUSD, '\n')
+				}
+
+				// Multi Coin Swap
+				else if (quoteSymbols.length != baseSymbols.length) {
+					const compIsBase = quoteSymbols.length > baseSymbols.length
+					const missingIndexes: number[] = []
+					const eligibleIndexes: number[] = []
+
+					// Iterate Records
+					for (const i in recs) {
+						const index = Number(i)
+						const record = recs[index]
+						const { quoteSymbol, quotePriceUSD, baseSymbol, basePriceUSD } =
+							record
+
+						// Single Base Token
+						if (compIsBase) {
+							if (!quotePriceUSD) {
+								missingIndexes.push(index)
+							} else {
+								const isStableCoin = this.isStableCoin(
+									quoteSymbol,
+									quotePriceUSD
+								)
+								if (!isStableCoin) {
+									eligibleIndexes.push(index)
+								}
+							}
+						}
+
+						// Single Quote Token
+						else {
+							if (!basePriceUSD) {
+								missingIndexes.push(Number(index))
+							} else {
+								const isStableCoin = this.isStableCoin(baseSymbol, basePriceUSD)
+								if (!isStableCoin) {
+									eligibleIndexes.push(index)
+								}
+							}
+						}
+					}
+
+					// console.log(id)
+					// console.log('Missing', missingIndexes)
+					// console.log('Eligible', eligibleIndexes)
 				}
 			}
 		}
@@ -608,34 +893,6 @@ export default class DefiPrices extends DefiTransactions {
 			// Set Next API Call Time
 			this.nextApiCallMs = this.recentApiCalls[0] + coinGeckoLimits.ms
 		}
-	}
-
-	/**
-	 * Sterilize Token Name
-	 */
-
-	private sterilizeTokenName(token: string) {
-		return (token || '').replace(/ /g, '-').toUpperCase()
-	}
-
-	/**
-	 * Remove Token Contract Stub
-	 */
-
-	private sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains) {
-		let curName = tokenName
-		if (tokenName.includes('-')) {
-			const dashParts = tokenName.split('-')
-			const lastPart = dashParts[dashParts.length - 1]
-			const addressStub = this.getAddressStub(
-				this.chains[chainName].tokenAddresses[tokenName]
-			)
-			if (lastPart == addressStub) {
-				dashParts.pop()
-				curName = dashParts.join('-')
-			}
-		}
-		return this.sterilizeTokenName(curName)
 	}
 
 	/**

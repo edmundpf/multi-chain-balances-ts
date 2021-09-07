@@ -1,4 +1,5 @@
 import DefiTransactions from './DefiTransactions';
+import { defaultDriverArgs } from './values';
 /**
  * DefiPrices Class
  */
@@ -6,9 +7,21 @@ export default class DefiPrices extends DefiTransactions {
     private nextApiCallMs;
     private recentApiCalls;
     /**
+     * Driver
+     */
+    driver(args?: typeof defaultDriverArgs): Promise<void>;
+    /**
      * Get Price Data
      */
-    getPriceData(): Promise<void>;
+    private getPriceData;
+    /**
+     * Read Temp File
+     */
+    private readTempFile;
+    /**
+     * Write Temp File
+     */
+    private writeTempFile;
     /**
      * Get Supported Tokens
      */
@@ -54,6 +67,10 @@ export default class DefiPrices extends DefiTransactions {
      */
     private updateTransactionData;
     /**
+     * Infer Transaction Prices
+     */
+    private inferTransactionPrices;
+    /**
      * Get Valid Price Record
      */
     private getValidPriceRecord;
@@ -73,14 +90,6 @@ export default class DefiPrices extends DefiTransactions {
      * Manage API Limits
      */
     private manageApiLimits;
-    /**
-     * Sterilize Token Name
-     */
-    private sterilizeTokenName;
-    /**
-     * Remove Token Contract Stub
-     */
-    private sterilizeTokenNameNoStub;
     /**
      * Add Token Time
      */

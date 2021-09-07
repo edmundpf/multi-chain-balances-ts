@@ -230,7 +230,7 @@ class DefiTransactions extends DefiBalances_1.default {
                     const feeValueUSD = getFees(feeQuantity, record.feePriceUSD);
                     const ticker = getTicker(quote, base);
                     const splitRecord = Object.assign(Object.assign({}, record), { ticker, quoteSymbol: quote, baseSymbol: base, quoteQuantity,
-                        baseQuantity, basePriceUSD: 0, feeValueUSD,
+                        baseQuantity, basePriceUSD: base == values_1.FIAT_CURRENCY ? 1 : 0, feeValueUSD,
                         feeQuantity });
                     delete splitRecord.tokens;
                     splitRecords.push(splitRecord);
@@ -320,7 +320,7 @@ class DefiTransactions extends DefiBalances_1.default {
         const upperChain = chainName.toUpperCase();
         const lowerAddress = (address || '').toLowerCase();
         // Capitalize Native Tokens
-        const isNativeToken = Object.values(values_1.NATIVE_TOKENS).includes(upperSymbol);
+        const isNativeToken = this.isNativeToken(upperSymbol);
         if (isNativeToken)
             newSymbol = upperSymbol;
         // Rename Duplicate Symbols
@@ -399,6 +399,50 @@ class DefiTransactions extends DefiBalances_1.default {
         return newType;
     }
     /**
+     * Get Unknown Tokens
+     */
+    getUnknownTokens() {
+        const initInfo = {
+            firstTransIsReceive: false,
+            hasSwapOrSend: false,
+        };
+        const tokenInfo = {};
+        for (const chainNm in this.chains) {
+            const chainName = chainNm;
+            const chain = this.chains[chainName];
+            for (let i = chain.transactions.length - 1; i >= 0; i--) {
+                const transaction = chain.transactions[i];
+                const { quoteSymbol, baseSymbol, type } = transaction;
+                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
+                const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
+                const quoteIsNative = this.isNativeToken(quoteName);
+                const isReceive = type == 'receive';
+                const isSwapOrSend = ['swap', 'send'].includes(type);
+                if (!quoteIsNative && !tokenInfo[quoteName]) {
+                    tokenInfo[quoteName] = Object.assign(Object.assign({}, initInfo), { firstTransIsReceive: isReceive });
+                }
+                if (tokenInfo[quoteName] &&
+                    tokenInfo[quoteName].firstTransIsReceive &&
+                    isSwapOrSend &&
+                    !tokenInfo[quoteName].hasSwapOrSend) {
+                    tokenInfo[quoteName].hasSwapOrSend = true;
+                }
+                else if (tokenInfo[baseName] &&
+                    tokenInfo[baseName].firstTransIsReceive &&
+                    isSwapOrSend &&
+                    !tokenInfo[baseName].hasSwapOrSend) {
+                    tokenInfo[baseName].hasSwapOrSend = true;
+                }
+            }
+        }
+        for (const tokenName in tokenInfo) {
+            const token = tokenInfo[tokenName];
+            if (token.firstTransIsReceive && !token.hasSwapOrSend) {
+                this.unknownTokens.push(tokenName);
+            }
+        }
+    }
+    /**
      * Get Private Debank Endpoint
      */
     getPrivateDebankEndpoint(endpoint, params) {
@@ -411,12 +455,6 @@ class DefiTransactions extends DefiBalances_1.default {
      */
     isContract(address) {
         return address.startsWith('0x');
-    }
-    /**
-     * Get Address Stub
-     */
-    getAddressStub(address) {
-        return address.substring(2, 6).toUpperCase();
     }
 }
 exports.default = DefiTransactions;

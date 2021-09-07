@@ -1,4 +1,4 @@
-import { Chains, HistoryRecord } from './types';
+import { Chains, HistoryRecord, DriverArgs } from './types';
 /**
  * Fiat Currency
  */
@@ -61,4 +61,17 @@ export declare const coinGeckoDayCutoffs: number[];
  */
 export declare const defaultHistoryRecord: HistoryRecord;
 export declare const initChains: () => Chains;
+/**
+ * Misc
+ */
+export declare const defaultDriverArgs: DriverArgs;
+export declare const stableCoinConfig: {
+    otherCoins: string[];
+    errorPercent: number;
+};
+export declare const slippageConfig: {
+    low: number;
+    high: number;
+};
 export declare const ONE_DAY: number;
+export declare const TEMP_TRANSACTION_FILE = "transactions.json";

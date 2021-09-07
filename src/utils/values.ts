@@ -1,4 +1,4 @@
-import { Chain, Chains, HistoryRecord } from './types'
+import { Chain, Chains, HistoryRecord, DriverArgs } from './types'
 
 /**
  * Fiat Currency
@@ -159,14 +159,46 @@ export const initChains = () => {
  * Misc
  */
 
+// Default Driver Args
+
+export const defaultDriverArgs: DriverArgs = {
+	useDebank: true,
+	getTransactions: true,
+	getPrices: true,
+	getBalances: true,
+	filterUnknownTokens: true,
+	useTempTransactions: false,
+}
+
+// Stablecoin Config
+
+export const stableCoinConfig = {
+	otherCoins: ['DAI'],
+	errorPercent: 0.03,
+}
+
+// Slippage Config
+
+export const slippageConfig = {
+	low: 0.002,
+	high: 0.01,
+}
+
 // One Second
+
 const ONE_SECOND = 1000
 
 // One Minute
+
 const ONE_MINUTE = 60 * ONE_SECOND
 
 // One Hour
 const ONE_HOUR = 60 * ONE_MINUTE
 
 // One Day
+
 export const ONE_DAY = 24 * ONE_HOUR
+
+// Temp Transaction File
+
+export const TEMP_TRANSACTION_FILE = 'transactions.json'

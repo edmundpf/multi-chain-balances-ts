@@ -135,6 +135,17 @@ export type HistoryRecord = {
 
 export type MainRequest = Token[] | Protocol[] | NumDict | void
 
+// Driver Args Type
+
+export type DriverArgs = {
+	useDebank?: boolean
+	getTransactions?: boolean
+	getPrices?: boolean
+	getBalances?: boolean
+	filterUnknownTokens?: boolean
+	useTempTransactions?: boolean
+}
+
 /**
  * Debank Types
  */

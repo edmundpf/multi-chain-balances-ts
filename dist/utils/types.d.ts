@@ -89,6 +89,14 @@ export declare type HistoryRecord = {
     tokens?: TokenRecords;
 };
 export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
+export declare type DriverArgs = {
+    useDebank?: boolean;
+    getTransactions?: boolean;
+    getPrices?: boolean;
+    getBalances?: boolean;
+    filterUnknownTokens?: boolean;
+    useTempTransactions?: boolean;
+};
 /**
  * Debank Types
  */

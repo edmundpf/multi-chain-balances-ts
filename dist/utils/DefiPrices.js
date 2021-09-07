@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiTransactions_1 = __importDefault(require("./DefiTransactions"));
 const misc_1 = require("./misc");
+const fs_1 = require("fs");
 const priceData_1 = require("./priceData");
 const values_1 = require("./values");
 /**
@@ -27,25 +28,75 @@ class DefiPrices extends DefiTransactions_1.default {
         this.recentApiCalls = [];
     }
     /**
+     * Driver
+     */
+    driver(args) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
+            if (getTransactions && !useTempTransactions) {
+                yield this.getTransactions(useDebank);
+            }
+            if (filterUnknownTokens)
+                this.getUnknownTokens();
+            if (getPrices)
+                yield this.getPriceData(useTempTransactions);
+            if (getBalances)
+                yield this.getBalances();
+        });
+    }
+    /**
      * Get Price Data
      */
-    getPriceData() {
+    getPriceData(useTempTransactions = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield priceData_1.prepareDB();
-            const supportedTokens = yield this.getSupportedTokens();
-            const supportedTokenNames = Object.keys(supportedTokens);
-            const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames);
-            const transTokenNames = Object.keys(transTokenTimes);
-            const localPrices = yield this.getLocalPrices(transTokenNames);
-            const { transPrices, missingTimes } = this.linkLocalPrices(transTokenTimes, localPrices);
-            const daysOutLists = this.getAllDaysOutLists(missingTimes);
-            const apiPrices = yield this.getAllTokenPrices(daysOutLists, supportedTokens);
-            const insertRecords = this.getInsertRecords(localPrices, apiPrices);
-            const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
-            this.linkMergedPrices(transPrices, mergedPrices);
-            this.updateTransactionData(transPrices);
-            yield this.syncMissingPrices(insertRecords);
+            if (!useTempTransactions || !this.readTempFile()) {
+                yield priceData_1.prepareDB();
+                const supportedTokens = yield this.getSupportedTokens();
+                const supportedTokenNames = Object.keys(supportedTokens);
+                const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames);
+                const transTokenNames = Object.keys(transTokenTimes);
+                const localPrices = yield this.getLocalPrices(transTokenNames);
+                const { transPrices, missingTimes } = this.linkLocalPrices(transTokenTimes, localPrices);
+                const daysOutLists = this.getAllDaysOutLists(missingTimes);
+                const apiPrices = yield this.getAllTokenPrices(daysOutLists, supportedTokens);
+                const insertRecords = this.getInsertRecords(localPrices, apiPrices);
+                const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
+                this.linkMergedPrices(transPrices, mergedPrices);
+                this.updateTransactionData(transPrices);
+                this.inferTransactionPrices();
+                yield this.syncMissingPrices(insertRecords);
+                this.writeTempFile();
+            }
+            else {
+                this.inferTransactionPrices();
+            }
         });
+    }
+    /**
+     * Read Temp File
+     */
+    readTempFile() {
+        try {
+            const data = JSON.parse(fs_1.readFileSync(values_1.TEMP_TRANSACTION_FILE, 'utf-8'));
+            for (const chainNm in data) {
+                const chainName = chainNm;
+                this.chains[chainName].transactions = data[chainName];
+            }
+            return true;
+        }
+        catch (err) {
+            return false;
+        }
+    }
+    /**
+     * Write Temp File
+     */
+    writeTempFile() {
+        const data = {};
+        for (const chainName of this.chainNames) {
+            data[chainName] = this.chains[chainName].transactions;
+        }
+        fs_1.writeFileSync(values_1.TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2));
     }
     /**
      * Get Supported Tokens
@@ -278,6 +329,22 @@ class DefiPrices extends DefiTransactions_1.default {
             const value = price * quantity;
             return { price, value };
         };
+        // Set Price And Value
+        const setPriceAndValue = (transaction, info, type) => {
+            const { price, value } = info;
+            if (type == 'quote') {
+                transaction.quotePriceUSD = price;
+                transaction.quoteValueUSD = value;
+                if (transaction.baseSymbol == values_1.FIAT_CURRENCY) {
+                    transaction.baseValueUSD = transaction.quoteValueUSD * -1;
+                    transaction.baseQuantity = transaction.baseValueUSD;
+                }
+            }
+            else if (type == 'base') {
+                transaction.basePriceUSD = price;
+                transaction.baseValueUSD = value;
+            }
+        };
         // Iterate Prices
         for (const tokenName in transPrices) {
             // Iterate Chains
@@ -286,7 +353,7 @@ class DefiPrices extends DefiTransactions_1.default {
                 const chain = this.chains[chainName];
                 // Iterate Transactions
                 for (const transaction of chain.transactions) {
-                    const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, date } = transaction;
+                    const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, date, } = transaction;
                     const time = this.getTimeMs(date);
                     const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
                     const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
@@ -298,32 +365,191 @@ class DefiPrices extends DefiTransactions_1.default {
                     if (!quoteFeeMatch && quoteTokenMatch) {
                         const priceMatch = getMatchingPrice(transPrices[tokenName], time);
                         if (priceMatch && priceMatch.price) {
-                            const { price, value } = getPriceAndValue(priceMatch, quoteQuantity);
-                            transaction.quotePriceUSD = price;
-                            transaction.quoteValueUSD = value;
+                            const info = getPriceAndValue(priceMatch, quoteQuantity);
+                            setPriceAndValue(transaction, info, 'quote');
                         }
                     }
                     // Quote Token is Fee Token
                     else if (quoteFeeMatch) {
-                        const { price, value } = getPriceAndValue({ price: feePriceUSD }, quoteQuantity);
-                        transaction.quotePriceUSD = price;
-                        transaction.quoteValueUSD = value;
+                        const info = getPriceAndValue({ price: feePriceUSD }, quoteQuantity);
+                        setPriceAndValue(transaction, info, 'quote');
                     }
                     // Base Token
                     else if (!baseFeeMatch && baseTokenMatch) {
                         const priceMatch = getMatchingPrice(transPrices[tokenName], time);
                         if (priceMatch && priceMatch.price) {
-                            const { price, value } = getPriceAndValue(priceMatch, baseQuantity);
-                            transaction.basePriceUSD = price;
-                            transaction.baseValueUSD = value;
+                            const info = getPriceAndValue(priceMatch, baseQuantity);
+                            setPriceAndValue(transaction, info, 'base');
                         }
                     }
                     // Base Token is Fee Token
                     else if (baseFeeMatch) {
-                        const { price, value } = getPriceAndValue({ price: feePriceUSD }, baseQuantity);
-                        transaction.basePriceUSD = price;
-                        transaction.baseValueUSD = value;
+                        const info = getPriceAndValue({ price: feePriceUSD }, baseQuantity);
+                        setPriceAndValue(transaction, info, 'base');
                     }
+                }
+            }
+        }
+    }
+    /**
+     * Infer Transaction Prices
+     */
+    inferTransactionPrices() {
+        // Set Value And Price
+        const setValueAndPrice = (record, value, type) => {
+            if (type == 'quote') {
+                const priceUSD = Math.abs(value / record.quoteQuantity);
+                record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1;
+                record.quotePriceUSD = priceUSD;
+                if (record.quoteSymbol == record.feeSymbol) {
+                    record.feePriceUSD = record.quotePriceUSD;
+                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
+                }
+            }
+            else {
+                const priceUSD = Math.abs(value / record.baseQuantity);
+                record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1;
+                record.basePriceUSD = priceUSD;
+                if (record.baseSymbol == record.feeSymbol) {
+                    record.feePriceUSD = record.basePriceUSD;
+                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
+                }
+            }
+        };
+        // Iterate Chains
+        for (const chainName of this.chainNames) {
+            const transRecs = {};
+            const transactions = this.chains[chainName].transactions;
+            // Iterate Transactions
+            for (const record of transactions) {
+                const { id, quoteSymbol, baseSymbol, type } = record;
+                if (type == 'swap') {
+                    if (!transRecs[id]) {
+                        transRecs[id] = {
+                            recs: [],
+                            quoteSymbols: [],
+                            baseSymbols: [],
+                        };
+                    }
+                    transRecs[id].recs.push(record);
+                    if (!transRecs[id].quoteSymbols.includes(quoteSymbol)) {
+                        transRecs[id].quoteSymbols.push(quoteSymbol);
+                    }
+                    if (!transRecs[id].baseSymbols.includes(baseSymbol)) {
+                        transRecs[id].baseSymbols.push(baseSymbol);
+                    }
+                }
+            }
+            // Iterate by Transaction Hash
+            for (const id in transRecs) {
+                const { recs, quoteSymbols, baseSymbols } = transRecs[id];
+                // Single Coin Swap
+                if (quoteSymbols.length == baseSymbols.length) {
+                    const record = recs[0];
+                    const { quoteSymbol, quoteValueUSD, quotePriceUSD, baseSymbol, baseValueUSD, basePriceUSD, } = record;
+                    const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD);
+                    const baseIsStable = this.isStableCoin(baseSymbol, basePriceUSD);
+                    let absQuoteValueUSD = Math.abs(quoteValueUSD);
+                    let absBaseValueUSD = Math.abs(baseValueUSD);
+                    // Missing Quote
+                    if (absBaseValueUSD && !absQuoteValueUSD) {
+                        absQuoteValueUSD = Math.max(absBaseValueUSD * (1 - values_1.slippageConfig.low), 0);
+                        setValueAndPrice(record, absQuoteValueUSD, 'quote');
+                    }
+                    // Missing Base
+                    else if (absQuoteValueUSD && !absBaseValueUSD) {
+                        absBaseValueUSD = Math.max(absQuoteValueUSD * (1 + values_1.slippageConfig.low), 0);
+                        setValueAndPrice(record, absBaseValueUSD, 'base');
+                    }
+                    // Has Both Prices
+                    else if (absQuoteValueUSD &&
+                        absBaseValueUSD &&
+                        !(quoteIsStable && baseIsStable)) {
+                        // Calculate Slippage
+                        const lowerQuote = absQuoteValueUSD <= absBaseValueUSD;
+                        const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD;
+                        const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD;
+                        const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD);
+                        const mid = min + diff / 2;
+                        const slippageAmount = diff / absBaseValueUSD;
+                        const hasMediumSlippage = slippageAmount > values_1.slippageConfig.low &&
+                            slippageAmount <= values_1.slippageConfig.high;
+                        const hasHighSlippage = slippageAmount > values_1.slippageConfig.high;
+                        // Modify Slippage if not within low range and not stablecoins
+                        if (!(quoteIsStable && baseIsStable) &&
+                            (hasMediumSlippage || hasHighSlippage)) {
+                            let upperUSD = 0;
+                            let lowerUSD = 0;
+                            const slippageAdjust = hasMediumSlippage
+                                ? values_1.slippageConfig.low
+                                : values_1.slippageConfig.high;
+                            if (!quoteIsStable && !baseIsStable) {
+                                upperUSD = mid + values_1.slippageConfig.low / 2;
+                                lowerUSD = Math.max(mid - values_1.slippageConfig.low / 2, 0);
+                            }
+                            else if ((quoteIsStable && lowerQuote) ||
+                                (baseIsStable && !lowerQuote)) {
+                                upperUSD = min + slippageAdjust;
+                                lowerUSD = min;
+                            }
+                            else if ((quoteIsStable && !lowerQuote) ||
+                                (baseIsStable && lowerQuote)) {
+                                upperUSD = max;
+                                lowerUSD = Math.max(max - slippageAdjust, 0);
+                            }
+                            // Quote is lower
+                            if (lowerQuote) {
+                                setValueAndPrice(record, lowerUSD, 'quote');
+                                setValueAndPrice(record, upperUSD, 'base');
+                            }
+                            // Base is lower
+                            else {
+                                setValueAndPrice(record, upperUSD, 'quote');
+                                setValueAndPrice(record, lowerUSD, 'base');
+                            }
+                        }
+                    }
+                    // console.log(quoteSymbol, record.quoteValueUSD, record.quotePriceUSD)
+                    // console.log(baseSymbol, record.baseValueUSD, record.basePriceUSD, '\n')
+                }
+                // Multi Coin Swap
+                else if (quoteSymbols.length != baseSymbols.length) {
+                    const compIsBase = quoteSymbols.length > baseSymbols.length;
+                    const missingIndexes = [];
+                    const eligibleIndexes = [];
+                    // Iterate Records
+                    for (const i in recs) {
+                        const index = Number(i);
+                        const record = recs[index];
+                        const { quoteSymbol, quotePriceUSD, baseSymbol, basePriceUSD } = record;
+                        // Single Base Token
+                        if (compIsBase) {
+                            if (!quotePriceUSD) {
+                                missingIndexes.push(index);
+                            }
+                            else {
+                                const isStableCoin = this.isStableCoin(quoteSymbol, quotePriceUSD);
+                                if (!isStableCoin) {
+                                    eligibleIndexes.push(index);
+                                }
+                            }
+                        }
+                        // Single Quote Token
+                        else {
+                            if (!basePriceUSD) {
+                                missingIndexes.push(Number(index));
+                            }
+                            else {
+                                const isStableCoin = this.isStableCoin(baseSymbol, basePriceUSD);
+                                if (!isStableCoin) {
+                                    eligibleIndexes.push(index);
+                                }
+                            }
+                        }
+                    }
+                    // console.log(id)
+                    // console.log('Missing', missingIndexes)
+                    // console.log('Eligible', eligibleIndexes)
                 }
             }
         }
@@ -499,28 +725,6 @@ class DefiPrices extends DefiTransactions_1.default {
             // Set Next API Call Time
             this.nextApiCallMs = this.recentApiCalls[0] + values_1.coinGeckoLimits.ms;
         }
-    }
-    /**
-     * Sterilize Token Name
-     */
-    sterilizeTokenName(token) {
-        return (token || '').replace(/ /g, '-').toUpperCase();
-    }
-    /**
-     * Remove Token Contract Stub
-     */
-    sterilizeTokenNameNoStub(tokenName, chainName) {
-        let curName = tokenName;
-        if (tokenName.includes('-')) {
-            const dashParts = tokenName.split('-');
-            const lastPart = dashParts[dashParts.length - 1];
-            const addressStub = this.getAddressStub(this.chains[chainName].tokenAddresses[tokenName]);
-            if (lastPart == addressStub) {
-                dashParts.pop();
-                curName = dashParts.join('-');
-            }
-        }
-        return this.sterilizeTokenName(curName);
     }
     /**
      * Add Token Time

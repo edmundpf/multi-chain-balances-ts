@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ONE_DAY = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.TEMP_TRANSACTION_FILE = exports.ONE_DAY = exports.slippageConfig = exports.stableCoinConfig = exports.defaultDriverArgs = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -129,6 +129,25 @@ exports.initChains = initChains;
 /**
  * Misc
  */
+// Default Driver Args
+exports.defaultDriverArgs = {
+    useDebank: true,
+    getTransactions: true,
+    getPrices: true,
+    getBalances: true,
+    filterUnknownTokens: true,
+    useTempTransactions: false,
+};
+// Stablecoin Config
+exports.stableCoinConfig = {
+    otherCoins: ['DAI'],
+    errorPercent: 0.03,
+};
+// Slippage Config
+exports.slippageConfig = {
+    low: 0.002,
+    high: 0.01,
+};
 // One Second
 const ONE_SECOND = 1000;
 // One Minute
@@ -137,3 +156,5 @@ const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 // One Day
 exports.ONE_DAY = 24 * ONE_HOUR;
+// Temp Transaction File
+exports.TEMP_TRANSACTION_FILE = 'transactions.json';

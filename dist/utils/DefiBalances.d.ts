@@ -1,5 +1,5 @@
 import { APIS, ENDPOINTS } from './values';
-import { Chains, Assets } from './types';
+import { Chains, TokenData, Assets } from './types';
 /**
  * DefiBalances Class
  */
@@ -12,6 +12,7 @@ export default class DefiBalances {
     assets: Assets;
     chainNames: Array<keyof Chains>;
     tokenNames: string[];
+    unknownTokens: string[];
     /**
      * Constructor
      */
@@ -64,4 +65,28 @@ export default class DefiBalances {
      * Get Beefy APY
      */
     private getBeefyApy;
+    /**
+     * Is Stable Coin
+     */
+    isStableCoin(tokenName: string, price: number): boolean;
+    /**
+     * Is Native Token
+     */
+    isNativeToken(tokenName: string): boolean;
+    /**
+     * Is Unknown Token
+     */
+    isUnknownToken(record: TokenData, chainName: keyof Chains): boolean;
+    /**
+     * Sterilize Token Name
+     */
+    sterilizeTokenName(token: string): string;
+    /**
+     * Remove Token Contract Stub
+     */
+    sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains): string;
+    /**
+     * Get Address Stub
+     */
+    getAddressStub(address: string): string;
 }
