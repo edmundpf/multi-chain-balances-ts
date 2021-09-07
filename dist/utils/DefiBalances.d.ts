@@ -16,7 +16,7 @@ export default class DefiBalances {
     /**
      * Constructor
      */
-    constructor();
+    constructor(address?: string);
     /**
      * Get All Balances
      */

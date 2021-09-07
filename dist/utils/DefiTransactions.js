@@ -447,7 +447,7 @@ class DefiTransactions extends DefiBalances_1.default {
      */
     getPrivateDebankEndpoint(endpoint, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, params), { user_addr: this.address.toLowerCase() }));
+            return yield this.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, params), { user_addr: this.address }));
         });
     }
     /**

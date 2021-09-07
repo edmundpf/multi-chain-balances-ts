@@ -184,6 +184,10 @@ export const slippageConfig = {
 	high: 0.01,
 }
 
+// Default Minimum Value
+
+export const DEFAULT_MIN_VALUE = 0.05
+
 // One Second
 
 const ONE_SECOND = 1000

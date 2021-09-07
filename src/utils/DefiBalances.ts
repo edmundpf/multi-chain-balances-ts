@@ -11,6 +11,7 @@ import {
 	EXCHANGE_ALIASES,
 	FIAT_CURRENCY,
 	stableCoinConfig,
+	DEFAULT_MIN_VALUE,
 } from './values'
 import {
 	Token,
@@ -27,7 +28,7 @@ import {
 
 dotenv.config()
 const ADDRESS = process.env.ADDRESS || ''
-const MIN_VALUE = Number(process.env.MIN_VALUE) || 0.05
+const MIN_VALUE = Number(process.env.MIN_VALUE) || DEFAULT_MIN_VALUE
 
 /**
  * DefiBalances Class
@@ -36,7 +37,7 @@ const MIN_VALUE = Number(process.env.MIN_VALUE) || 0.05
 export default class DefiBalances {
 	// Properties
 
-	address = ADDRESS
+	address = ''
 	totalValue = 0
 	totalTokenValue = 0
 	totalVaultValue = 0
@@ -50,7 +51,22 @@ export default class DefiBalances {
 	 * Constructor
 	 */
 
-	constructor() {
+	constructor(address?: string) {
+		if (address) {
+			this.address = address /* Address Argument */
+		} else {
+			// First Address from Environment Array
+			if (ADDRESS.includes('[')) {
+				try {
+					this.address = JSON.parse(ADDRESS)?.[0] || ''
+				} catch (err) {
+					// Do Nothing
+				}
+			} else {
+				this.address = ADDRESS /* Single Environment Address */
+			}
+		}
+		this.address = this.address.toLowerCase()
 		this.chainNames = Object.keys(this.chains) as Array<keyof Chains>
 	}
 

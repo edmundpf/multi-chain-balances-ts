@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEMP_TRANSACTION_FILE = exports.ONE_DAY = exports.slippageConfig = exports.stableCoinConfig = exports.defaultDriverArgs = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.TEMP_TRANSACTION_FILE = exports.ONE_DAY = exports.DEFAULT_MIN_VALUE = exports.slippageConfig = exports.stableCoinConfig = exports.defaultDriverArgs = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -148,6 +148,8 @@ exports.slippageConfig = {
     low: 0.002,
     high: 0.01,
 };
+// Default Minimum Value
+exports.DEFAULT_MIN_VALUE = 0.05;
 // One Second
 const ONE_SECOND = 1000;
 // One Minute

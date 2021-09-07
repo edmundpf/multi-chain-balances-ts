@@ -73,5 +73,6 @@ export declare const slippageConfig: {
     low: number;
     high: number;
 };
+export declare const DEFAULT_MIN_VALUE = 0.05;
 export declare const ONE_DAY: number;
 export declare const TEMP_TRANSACTION_FILE = "transactions.json";

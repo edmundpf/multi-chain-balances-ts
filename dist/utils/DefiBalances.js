@@ -19,7 +19,7 @@ const values_1 = require("./values");
 // Init
 dotenv_1.default.config();
 const ADDRESS = process.env.ADDRESS || '';
-const MIN_VALUE = Number(process.env.MIN_VALUE) || 0.05;
+const MIN_VALUE = Number(process.env.MIN_VALUE) || values_1.DEFAULT_MIN_VALUE;
 /**
  * DefiBalances Class
  */
@@ -27,9 +27,10 @@ class DefiBalances {
     /**
      * Constructor
      */
-    constructor() {
+    constructor(address) {
+        var _a;
         // Properties
-        this.address = ADDRESS;
+        this.address = '';
         this.totalValue = 0;
         this.totalTokenValue = 0;
         this.totalVaultValue = 0;
@@ -37,6 +38,24 @@ class DefiBalances {
         this.assets = {};
         this.tokenNames = [];
         this.unknownTokens = [];
+        if (address) {
+            this.address = address; /* Address Argument */
+        }
+        else {
+            // First Address from Environment Array
+            if (ADDRESS.includes('[')) {
+                try {
+                    this.address = ((_a = JSON.parse(ADDRESS)) === null || _a === void 0 ? void 0 : _a[0]) || '';
+                }
+                catch (err) {
+                    // Do Nothing
+                }
+            }
+            else {
+                this.address = ADDRESS; /* Single Environment Address */
+            }
+        }
+        this.address = this.address.toLowerCase();
         this.chainNames = Object.keys(this.chains);
     }
     /**

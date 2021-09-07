@@ -588,7 +588,7 @@ export default class DefiTransactions extends DefiBalances {
 	) {
 		return await this.getEndpoint('debankPrivate', endpoint, {
 			...params,
-			user_addr: this.address.toLowerCase(),
+			user_addr: this.address,
 		})
 	}
 
