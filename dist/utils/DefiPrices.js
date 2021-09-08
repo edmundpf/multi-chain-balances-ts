@@ -395,32 +395,11 @@ class DefiPrices extends DefiTransactions_1.default {
      * Infer Transaction Prices
      */
     inferTransactionPrices() {
-        // Set Value And Price
-        const setValueAndPrice = (record, value, type) => {
-            if (type == 'quote') {
-                const priceUSD = Math.abs(value / record.quoteQuantity);
-                record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1;
-                record.quotePriceUSD = priceUSD;
-                if (record.quoteSymbol == record.feeSymbol) {
-                    record.feePriceUSD = record.quotePriceUSD;
-                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
-                }
-            }
-            else {
-                const priceUSD = Math.abs(value / record.baseQuantity);
-                record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1;
-                record.basePriceUSD = priceUSD;
-                if (record.baseSymbol == record.feeSymbol) {
-                    record.feePriceUSD = record.basePriceUSD;
-                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
-                }
-            }
-        };
         // Iterate Chains
         for (const chainName of this.chainNames) {
             const transRecs = {};
             const transactions = this.chains[chainName].transactions;
-            // Iterate Transactions
+            // Get Transactions by Hash
             for (const record of transactions) {
                 const { id, quoteSymbol, baseSymbol, type } = record;
                 if (type == 'swap') {
@@ -443,113 +422,171 @@ class DefiPrices extends DefiTransactions_1.default {
             // Iterate by Transaction Hash
             for (const id in transRecs) {
                 const { recs, quoteSymbols, baseSymbols } = transRecs[id];
+                const transCount = recs.length;
                 // Single Coin Swap
                 if (quoteSymbols.length == baseSymbols.length) {
-                    const record = recs[0];
-                    const { quoteSymbol, quoteValueUSD, quotePriceUSD, baseSymbol, baseValueUSD, basePriceUSD, } = record;
-                    const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD);
-                    const baseIsStable = this.isStableCoin(baseSymbol, basePriceUSD);
-                    let absQuoteValueUSD = Math.abs(quoteValueUSD);
-                    let absBaseValueUSD = Math.abs(baseValueUSD);
-                    // Missing Quote
-                    if (absBaseValueUSD && !absQuoteValueUSD) {
-                        absQuoteValueUSD = Math.max(absBaseValueUSD * (1 - values_1.slippageConfig.low), 0);
-                        setValueAndPrice(record, absQuoteValueUSD, 'quote');
-                    }
-                    // Missing Base
-                    else if (absQuoteValueUSD && !absBaseValueUSD) {
-                        absBaseValueUSD = Math.max(absQuoteValueUSD * (1 + values_1.slippageConfig.low), 0);
-                        setValueAndPrice(record, absBaseValueUSD, 'base');
-                    }
-                    // Has Both Prices
-                    else if (absQuoteValueUSD &&
-                        absBaseValueUSD &&
-                        !(quoteIsStable && baseIsStable)) {
-                        // Calculate Slippage
-                        const lowerQuote = absQuoteValueUSD <= absBaseValueUSD;
-                        const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD;
-                        const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD;
-                        const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD);
-                        const mid = min + diff / 2;
-                        const slippageAmount = diff / absBaseValueUSD;
-                        const hasMediumSlippage = slippageAmount > values_1.slippageConfig.low &&
-                            slippageAmount <= values_1.slippageConfig.high;
-                        const hasHighSlippage = slippageAmount > values_1.slippageConfig.high;
-                        // Modify Slippage if not within low range and not stablecoins
-                        if (!(quoteIsStable && baseIsStable) &&
-                            (hasMediumSlippage || hasHighSlippage)) {
-                            let upperUSD = 0;
-                            let lowerUSD = 0;
-                            const slippageAdjust = hasMediumSlippage
-                                ? values_1.slippageConfig.low
-                                : values_1.slippageConfig.high;
-                            if (!quoteIsStable && !baseIsStable) {
-                                upperUSD = mid + values_1.slippageConfig.low / 2;
-                                lowerUSD = Math.max(mid - values_1.slippageConfig.low / 2, 0);
-                            }
-                            else if ((quoteIsStable && lowerQuote) ||
-                                (baseIsStable && !lowerQuote)) {
-                                upperUSD = min + slippageAdjust;
-                                lowerUSD = min;
-                            }
-                            else if ((quoteIsStable && !lowerQuote) ||
-                                (baseIsStable && lowerQuote)) {
-                                upperUSD = max;
-                                lowerUSD = Math.max(max - slippageAdjust, 0);
-                            }
-                            // Quote is lower
-                            if (lowerQuote) {
-                                setValueAndPrice(record, lowerUSD, 'quote');
-                                setValueAndPrice(record, upperUSD, 'base');
-                            }
-                            // Base is lower
-                            else {
-                                setValueAndPrice(record, upperUSD, 'quote');
-                                setValueAndPrice(record, lowerUSD, 'base');
-                            }
-                        }
-                    }
-                    // console.log(quoteSymbol, record.quoteValueUSD, record.quotePriceUSD)
-                    // console.log(baseSymbol, record.baseValueUSD, record.basePriceUSD, '\n')
+                    this.inferSingleSwap(recs[0]);
                 }
                 // Multi Coin Swap
                 else if (quoteSymbols.length != baseSymbols.length) {
                     const compIsBase = quoteSymbols.length > baseSymbols.length;
-                    const missingIndexes = [];
-                    const eligibleIndexes = [];
-                    // Iterate Records
+                    const multiInfo = {
+                        completeIndexes: [],
+                        missingIndexes: [],
+                        eligibleIndexes: [],
+                        ineligibleIndexes: [],
+                        eligibleTotal: 0,
+                        ineligibleTotal: 0,
+                        completeCount: 0,
+                        missingCount: 0,
+                        eligibleCount: 0,
+                        ineligibleCount: 0,
+                    };
+                    let absCompValueUSD = 0;
+                    // Set Multi Info
+                    const setMultiInfo = (symbol, price, compValue, index) => {
+                        if (!price) {
+                            multiInfo.missingIndexes.push(index);
+                        }
+                        else {
+                            const isStableCoin = this.isStableCoin(symbol, price);
+                            const absRecValueUSD = Math.abs(compValue);
+                            multiInfo.completeIndexes.push(index);
+                            absCompValueUSD += absRecValueUSD;
+                            if (!isStableCoin) {
+                                multiInfo.eligibleIndexes.push(index);
+                                multiInfo.eligibleTotal += absRecValueUSD;
+                            }
+                            else {
+                                multiInfo.ineligibleIndexes.push(index);
+                                multiInfo.ineligibleTotal += absRecValueUSD;
+                            }
+                        }
+                    };
+                    // Get Missing Indexes and Eligible Indexes
                     for (const i in recs) {
                         const index = Number(i);
                         const record = recs[index];
-                        const { quoteSymbol, quotePriceUSD, baseSymbol, basePriceUSD } = record;
+                        const { quoteSymbol, quotePriceUSD, quoteValueUSD, baseSymbol, basePriceUSD, baseValueUSD, } = record;
                         // Single Base Token
                         if (compIsBase) {
-                            if (!quotePriceUSD) {
-                                missingIndexes.push(index);
-                            }
-                            else {
-                                const isStableCoin = this.isStableCoin(quoteSymbol, quotePriceUSD);
-                                if (!isStableCoin) {
-                                    eligibleIndexes.push(index);
-                                }
-                            }
+                            setMultiInfo(quoteSymbol, quotePriceUSD, baseValueUSD, index);
                         }
                         // Single Quote Token
                         else {
-                            if (!basePriceUSD) {
-                                missingIndexes.push(Number(index));
-                            }
-                            else {
-                                const isStableCoin = this.isStableCoin(baseSymbol, basePriceUSD);
-                                if (!isStableCoin) {
-                                    eligibleIndexes.push(index);
-                                }
-                            }
+                            setMultiInfo(baseSymbol, basePriceUSD, quoteValueUSD, index);
                         }
                     }
-                    // console.log(id)
-                    // console.log('Missing', missingIndexes)
-                    // console.log('Eligible', eligibleIndexes)
+                    // Set Counts
+                    multiInfo.completeCount = multiInfo.completeIndexes.length;
+                    multiInfo.missingCount = multiInfo.missingIndexes.length;
+                    multiInfo.eligibleCount = multiInfo.eligibleIndexes.length;
+                    multiInfo.ineligibleCount = multiInfo.ineligibleIndexes.length;
+                    // Single Token has Price
+                    if (absCompValueUSD) {
+                        // Base is Single Token
+                        if (compIsBase) {
+                            // To-Do
+                        }
+                        // Quote is Single Token
+                        else {
+                            // To-Do
+                        }
+                    }
+                    // Infer Single Token from Multi Prices
+                    else if (multiInfo.missingCount < transCount) {
+                        // To-Do
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * Infer Single Swap
+     */
+    inferSingleSwap(record) {
+        // Set Value And Price
+        const setValueAndPrice = (record, value, type) => {
+            if (type == 'quote') {
+                const priceUSD = Math.abs(value / record.quoteQuantity);
+                record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1;
+                record.quotePriceUSD = priceUSD;
+                if (record.quoteSymbol == record.feeSymbol) {
+                    record.feePriceUSD = record.quotePriceUSD;
+                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
+                }
+            }
+            else {
+                const priceUSD = Math.abs(value / record.baseQuantity);
+                record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1;
+                record.basePriceUSD = priceUSD;
+                if (record.baseSymbol == record.feeSymbol) {
+                    record.feePriceUSD = record.basePriceUSD;
+                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
+                }
+            }
+        };
+        // Sterilize Swap
+        const { quoteSymbol, quoteValueUSD, quotePriceUSD, baseSymbol, baseValueUSD, basePriceUSD, } = record;
+        const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD);
+        const baseIsStable = this.isStableCoin(baseSymbol, basePriceUSD);
+        let absQuoteValueUSD = Math.abs(quoteValueUSD);
+        let absBaseValueUSD = Math.abs(baseValueUSD);
+        // Missing Quote
+        if (absBaseValueUSD && !absQuoteValueUSD) {
+            absQuoteValueUSD = Math.max(absBaseValueUSD * (1 - values_1.slippageConfig.low), 0);
+            setValueAndPrice(record, absQuoteValueUSD, 'quote');
+        }
+        // Missing Base
+        else if (absQuoteValueUSD && !absBaseValueUSD) {
+            absBaseValueUSD = Math.max(absQuoteValueUSD * (1 + values_1.slippageConfig.low), 0);
+            setValueAndPrice(record, absBaseValueUSD, 'base');
+        }
+        // Has Both Prices
+        else if (absQuoteValueUSD &&
+            absBaseValueUSD &&
+            !(quoteIsStable && baseIsStable)) {
+            // Calculate Slippage
+            const lowerQuote = absQuoteValueUSD <= absBaseValueUSD;
+            const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD;
+            const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD;
+            const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD);
+            const mid = min + diff / 2;
+            const slippageAmount = diff / absBaseValueUSD;
+            const hasMediumSlippage = slippageAmount > values_1.slippageConfig.low &&
+                slippageAmount <= values_1.slippageConfig.high;
+            const hasHighSlippage = slippageAmount > values_1.slippageConfig.high;
+            // Modify Slippage if not within low range and not stablecoins
+            if (!(quoteIsStable && baseIsStable) &&
+                (hasMediumSlippage || hasHighSlippage)) {
+                let upperUSD = 0;
+                let lowerUSD = 0;
+                const slippageAdjust = hasMediumSlippage
+                    ? values_1.slippageConfig.low
+                    : values_1.slippageConfig.high;
+                if (!quoteIsStable && !baseIsStable) {
+                    upperUSD = mid + values_1.slippageConfig.low / 2;
+                    lowerUSD = Math.max(mid - values_1.slippageConfig.low / 2, 0);
+                }
+                else if ((quoteIsStable && lowerQuote) ||
+                    (baseIsStable && !lowerQuote)) {
+                    upperUSD = min + slippageAdjust;
+                    lowerUSD = min;
+                }
+                else if ((quoteIsStable && !lowerQuote) ||
+                    (baseIsStable && lowerQuote)) {
+                    upperUSD = max;
+                    lowerUSD = Math.max(max - slippageAdjust, 0);
+                }
+                // Quote is lower
+                if (lowerQuote) {
+                    setValueAndPrice(record, lowerUSD, 'quote');
+                    setValueAndPrice(record, upperUSD, 'base');
+                }
+                // Base is lower
+                else {
+                    setValueAndPrice(record, upperUSD, 'quote');
+                    setValueAndPrice(record, lowerUSD, 'base');
                 }
             }
         }

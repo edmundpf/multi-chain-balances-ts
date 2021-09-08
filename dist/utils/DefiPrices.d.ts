@@ -71,6 +71,10 @@ export default class DefiPrices extends DefiTransactions {
      */
     private inferTransactionPrices;
     /**
+     * Infer Single Swap
+     */
+    private inferSingleSwap;
+    /**
      * Get Valid Price Record
      */
     private getValidPriceRecord;
