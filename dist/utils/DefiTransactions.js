@@ -477,7 +477,8 @@ class DefiTransactions extends DefiBalances_1.default {
      */
     getTransactionID(record) {
         return (record.id ||
-            record.hash || '').toLowerCase();
+            record.hash ||
+            '').toLowerCase();
     }
     /**
      * Is Contract

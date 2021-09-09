@@ -33,7 +33,7 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, priorTransactions } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
+            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
             const tempData = this.readTempFile();
             const fetchTransactions = getPrices && (!useTempTransactions || !tempData);
             this.filterUnknownTokens = filterUnknownTokens ? true : false;
