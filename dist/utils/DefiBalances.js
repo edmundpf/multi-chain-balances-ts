@@ -30,7 +30,6 @@ class DefiBalances {
         this.totalValue = 0;
         this.totalTokenValue = 0;
         this.totalVaultValue = 0;
-        this.totalDeposits = 0;
         this.chains = values_1.initChains();
         this.assets = {};
         this.tokenNames = [];
@@ -72,8 +71,90 @@ class DefiBalances {
             this.parseTokenData(tokenData);
             this.parseProtocolData(protocolData);
             this.parseApyData(apyData);
-            this.parseChainData();
+            this.getAssetsAndTotalValues();
         });
+    }
+    /**
+     * Get Assets & Total Values
+     */
+    getAssetsAndTotalValues() {
+        const assetCounts = {};
+        const assetIndexes = {};
+        // Add Asset
+        const addAsset = (record, chainName, isVault = false) => {
+            const { symbol, value } = record;
+            const apy = record.apy || 0;
+            const beefyVaultName = record.beefyVaultName || '';
+            const url = record.platformUrl || values_1.DEFAULT_URLS[chainName];
+            let symbolStr = isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol;
+            if (!beefyVaultName || !isVault) {
+                if (assetCounts[symbol] > 1) {
+                    const symbolIndex = assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0;
+                    symbolStr += `-${symbolIndex}`;
+                    assetIndexes[symbol] = symbolIndex;
+                }
+            }
+            symbolStr += ` (${chainName.toUpperCase()})`;
+            this.assets[symbolStr] = {
+                desc: symbol,
+                value,
+                apy,
+                url,
+            };
+        };
+        // Add Token
+        const addToken = (token) => {
+            const { symbol } = token;
+            if (!this.tokenNames.includes(symbol)) {
+                this.tokenNames.push(symbol);
+            }
+        };
+        // Update Asset Count
+        const updateAssetCount = (record) => {
+            const symbol = record.symbol;
+            if (!assetCounts[symbol])
+                assetCounts[symbol] = 1;
+            else
+                assetCounts[symbol] += 1;
+        };
+        // Get Duplicate Assets Counts
+        for (const chainName in this.chains) {
+            const chain = this.chains[chainName];
+            for (const record of chain.tokens) {
+                updateAssetCount(record);
+            }
+            for (const record of chain.vaults) {
+                updateAssetCount(record);
+            }
+        }
+        // Parse Data
+        for (const chainNm in this.chains) {
+            const chainName = chainNm;
+            const chain = this.chains[chainName];
+            // Update Chain Total Value
+            chain.totalValue = chain.totalTokenValue + chain.totalVaultValue;
+            // Update simplified assets
+            for (const record of chain.tokens) {
+                if (this.isUnknownToken(record.symbol, chainName))
+                    continue;
+                addAsset(record, chainName);
+                addToken(record);
+            }
+            for (const record of chain.vaults) {
+                if (record.beefyReceiptName && record.beefyVaultName) {
+                    addAsset(record, chainName, true);
+                }
+                for (const token of record.tokens) {
+                    if (this.isUnknownToken(record.symbol, chainName))
+                        continue;
+                    addToken(token);
+                }
+            }
+            // Update Totals from all chains
+            this.totalTokenValue += chain.totalTokenValue;
+            this.totalVaultValue += chain.totalVaultValue;
+        }
+        this.totalValue = this.totalTokenValue + this.totalVaultValue;
     }
     /**
      * Get Endpoint
@@ -92,7 +173,7 @@ class DefiBalances {
                     {});
             }
             catch (err) {
-                return ((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {};
+                return Object.assign(Object.assign({}, (((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {})), { hasError: true });
             }
         });
     }
@@ -106,6 +187,63 @@ class DefiBalances {
                 'ape-secret': values_1.apeBoardCredentials.secret,
             });
         });
+    }
+    /**
+     * Is Stable Coin
+     */
+    isStableCoin(tokenName, price) {
+        const upperToken = tokenName.toUpperCase();
+        const isNormalStable = upperToken.includes(values_1.FIAT_CURRENCY);
+        const isOtherStable = values_1.stableCoinConfig.otherCoins.includes(tokenName);
+        const withinError = price >= 1 - values_1.stableCoinConfig.errorPercent &&
+            price <= 1 + values_1.stableCoinConfig.errorPercent;
+        return (isNormalStable || isOtherStable) && withinError;
+    }
+    /**
+     * Is Native Token
+     */
+    isNativeToken(tokenName) {
+        return Object.values(values_1.NATIVE_TOKENS).includes(tokenName);
+    }
+    /**
+     * Is Unknown Token
+     */
+    isUnknownToken(symbol, chainName) {
+        const sterileSymbol = chainName
+            ? this.sterilizeTokenNameNoStub(symbol, chainName)
+            : this.sterilizeTokenName(symbol);
+        return this.unknownTokens.includes(sterileSymbol);
+    }
+    /**
+     * Sterilize Token Name
+     */
+    sterilizeTokenName(token) {
+        return (token || '').replace(/ /g, '-').toUpperCase();
+    }
+    /**
+     * Remove Token Contract Stub
+     */
+    sterilizeTokenNameNoStub(tokenName, chainName) {
+        let curName = tokenName;
+        if (tokenName.includes('-')) {
+            const dashParts = tokenName.split('-');
+            const lastPart = dashParts[dashParts.length - 1];
+            const isPool = lastPart == 'Pool';
+            if (!isPool) {
+                const addressStub = this.getAddressStub(this.chains[chainName].tokenAddresses[tokenName]);
+                if (lastPart == addressStub) {
+                    dashParts.pop();
+                    curName = dashParts.join('-');
+                }
+            }
+        }
+        return this.sterilizeTokenName(curName);
+    }
+    /**
+     * Get Address Stub
+     */
+    getAddressStub(address) {
+        return address.substring(2, 6).toUpperCase();
     }
     /**
      * Get Beefy Endpoint
@@ -153,7 +291,7 @@ class DefiBalances {
                     if (symbol == values_1.NATIVE_TOKENS[chain]) {
                         chainInfo.nativeToken = tokenData;
                     }
-                    if (!this.isUnknownToken(tokenData, chain)) {
+                    if (!this.isUnknownToken(symbol, chain)) {
                         chainInfo.totalTokenValue += value;
                     }
                 }
@@ -330,88 +468,6 @@ class DefiBalances {
         }
     }
     /**
-     * Parse Chain Data
-     */
-    parseChainData() {
-        const assetCounts = {};
-        const assetIndexes = {};
-        // Add Asset
-        const addAsset = (record, chainName, isVault = false) => {
-            const { symbol, value } = record;
-            const apy = record.apy || 0;
-            const beefyVaultName = record.beefyVaultName || '';
-            const url = record.platformUrl || values_1.DEFAULT_URLS[chainName];
-            let symbolStr = isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol;
-            if (!beefyVaultName || !isVault) {
-                if (assetCounts[symbol] > 1) {
-                    const symbolIndex = assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0;
-                    symbolStr += `-${symbolIndex}`;
-                    assetIndexes[symbol] = symbolIndex;
-                }
-            }
-            symbolStr += ` (${chainName.toUpperCase()})`;
-            this.assets[symbolStr] = {
-                desc: symbol,
-                value,
-                apy,
-                url,
-            };
-        };
-        // Add Token
-        const addToken = (token) => {
-            const { symbol } = token;
-            if (!this.tokenNames.includes(symbol)) {
-                this.tokenNames.push(symbol);
-            }
-        };
-        // Update Asset Count
-        const updateAssetCount = (record) => {
-            const symbol = record.symbol;
-            if (!assetCounts[symbol])
-                assetCounts[symbol] = 1;
-            else
-                assetCounts[symbol] += 1;
-        };
-        // Get Duplicate Assets Counts
-        for (const chainName in this.chains) {
-            const chain = this.chains[chainName];
-            for (const record of chain.tokens) {
-                updateAssetCount(record);
-            }
-            for (const record of chain.vaults) {
-                updateAssetCount(record);
-            }
-        }
-        // Parse Data
-        for (const chainNm in this.chains) {
-            const chainName = chainNm;
-            const chain = this.chains[chainName];
-            // Update Chain Total Value
-            chain.totalValue = chain.totalTokenValue + chain.totalVaultValue;
-            // Update simplified assets
-            for (const record of chain.tokens) {
-                if (this.isUnknownToken(record, chainName))
-                    continue;
-                addAsset(record, chainName);
-                addToken(record);
-            }
-            for (const record of chain.vaults) {
-                if (record.beefyReceiptName && record.beefyVaultName) {
-                    addAsset(record, chainName, true);
-                }
-                for (const token of record.tokens) {
-                    if (this.isUnknownToken(record, chainName))
-                        continue;
-                    addToken(token);
-                }
-            }
-            // Update Totals from all chains
-            this.totalTokenValue += chain.totalTokenValue;
-            this.totalVaultValue += chain.totalVaultValue;
-        }
-        this.totalValue = this.totalTokenValue + this.totalVaultValue;
-    }
-    /**
      * Get Token List
      */
     getTokenList() {
@@ -434,64 +490,6 @@ class DefiBalances {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getBeefyEndpoint('beefyApy');
         });
-    }
-    /**
-     * Is Stable Coin
-     */
-    isStableCoin(tokenName, price) {
-        const upperToken = tokenName.toUpperCase();
-        const isNormalStable = upperToken.includes(values_1.FIAT_CURRENCY);
-        const isOtherStable = values_1.stableCoinConfig.otherCoins.includes(tokenName);
-        const withinError = price >= 1 - values_1.stableCoinConfig.errorPercent &&
-            price <= 1 + values_1.stableCoinConfig.errorPercent;
-        return (isNormalStable || isOtherStable) && withinError;
-    }
-    /**
-     * Is Native Token
-     */
-    isNativeToken(tokenName) {
-        return Object.values(values_1.NATIVE_TOKENS).includes(tokenName);
-    }
-    /**
-     * Is Unknown Token
-     */
-    isUnknownToken(record, chainName) {
-        const { symbol, value, amount } = record;
-        const sterileSymbol = this.sterilizeTokenNameNoStub(symbol, chainName);
-        const isStableCoin = this.isStableCoin(symbol, value / (amount || 1));
-        const isUnknownToken = this.unknownTokens.includes(sterileSymbol);
-        return isUnknownToken && !isStableCoin;
-    }
-    /**
-     * Sterilize Token Name
-     */
-    sterilizeTokenName(token) {
-        return (token || '').replace(/ /g, '-').toUpperCase();
-    }
-    /**
-     * Remove Token Contract Stub
-     */
-    sterilizeTokenNameNoStub(tokenName, chainName) {
-        let curName = tokenName;
-        if (tokenName.includes('-')) {
-            const dashParts = tokenName.split('-');
-            const lastPart = dashParts[dashParts.length - 1];
-            const isPool = lastPart == 'Pool';
-            if (!isPool) {
-                const addressStub = this.getAddressStub(this.chains[chainName].tokenAddresses[tokenName]);
-                if (lastPart == addressStub) {
-                    dashParts.pop();
-                    curName = dashParts.join('-');
-                }
-            }
-        }
-        return this.sterilizeTokenName(curName);
-    }
-    /**
-     * Get Address Stub
-     */
-    getAddressStub(address) {
-        return address.substring(2, 6).toUpperCase();
     }
 }
 exports.default = DefiBalances;

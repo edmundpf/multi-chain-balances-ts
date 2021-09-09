@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiBalances_1 = __importDefault(require("./DefiBalances"));
-const envValues_1 = require("./envValues");
 const values_1 = require("./values");
 /**
  * DefiTransactions Class
@@ -55,7 +54,7 @@ class DefiTransactions extends DefiBalances_1.default {
             });
             // Get Info from Ape Board
             const getInfoFromApeBoard = () => __awaiter(this, void 0, void 0, function* () {
-                var _d;
+                var _d, _e;
                 for (const index in this.chainNames) {
                     const chainName = this.chainNames[index];
                     const chainAlias = values_1.APEBOARD_CHAIN_ALIASES[chainName];
@@ -71,7 +70,9 @@ class DefiTransactions extends DefiBalances_1.default {
                 const isFilled = rawChains.length == this.chainNames.length;
                 for (const index in res) {
                     const result = res[index];
-                    if (result && !((_d = result) === null || _d === void 0 ? void 0 : _d.statusCode)) {
+                    if (result &&
+                        !((_d = result) === null || _d === void 0 ? void 0 : _d.statusCode)
+                        && !((_e = result) === null || _e === void 0 ? void 0 : _e.hasError)) {
                         rawChains[index] = result;
                     }
                     else if (!rawChains[index]) {
@@ -104,6 +105,53 @@ class DefiTransactions extends DefiBalances_1.default {
                 this.chains[chainName].transactions = historyRecords.sort((a, b) => a.date < b.date ? 1 : -1);
             }
         });
+    }
+    /**
+     * Get Unknown Tokens
+     */
+    getUnknownTokens() {
+        const initInfo = {
+            firstTransIsReceive: false,
+            hasSwapOrSend: false,
+            price: 0,
+        };
+        const tokenInfo = {};
+        for (const chainNm in this.chains) {
+            const chainName = chainNm;
+            const chain = this.chains[chainName];
+            for (let i = chain.transactions.length - 1; i >= 0; i--) {
+                const transaction = chain.transactions[i];
+                const { quoteSymbol, quotePriceUSD, baseSymbol, type } = transaction;
+                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
+                const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
+                const quoteIsNative = this.isNativeToken(quoteName);
+                const isReceive = type == 'receive';
+                const isSwapOrSend = ['swap', 'send'].includes(type);
+                if (!quoteIsNative && !tokenInfo[quoteName]) {
+                    tokenInfo[quoteName] = Object.assign(Object.assign({}, initInfo), { firstTransIsReceive: isReceive, price: quotePriceUSD });
+                }
+                if (tokenInfo[quoteName] &&
+                    tokenInfo[quoteName].firstTransIsReceive &&
+                    isSwapOrSend &&
+                    !tokenInfo[quoteName].hasSwapOrSend) {
+                    tokenInfo[quoteName].hasSwapOrSend = true;
+                }
+                else if (tokenInfo[baseName] &&
+                    tokenInfo[baseName].firstTransIsReceive &&
+                    isSwapOrSend &&
+                    !tokenInfo[baseName].hasSwapOrSend) {
+                    tokenInfo[baseName].hasSwapOrSend = true;
+                }
+            }
+        }
+        for (const tokenName in tokenInfo) {
+            const token = tokenInfo[tokenName];
+            if (token.firstTransIsReceive && !token.hasSwapOrSend) {
+                const isStableCoin = this.isStableCoin(tokenName, token.price || 1);
+                if (!isStableCoin)
+                    this.unknownTokens.push(tokenName);
+            }
+        }
     }
     /**
      * Sterilize History Record
@@ -400,77 +448,6 @@ class DefiTransactions extends DefiBalances_1.default {
             newType = 'failure';
         }
         return newType;
-    }
-    /**
-     * Get Unknown Tokens
-     */
-    getUnknownTokens() {
-        const initInfo = {
-            firstTransIsReceive: false,
-            hasSwapOrSend: false,
-        };
-        const tokenInfo = {};
-        for (const chainNm in this.chains) {
-            const chainName = chainNm;
-            const chain = this.chains[chainName];
-            for (let i = chain.transactions.length - 1; i >= 0; i--) {
-                const transaction = chain.transactions[i];
-                const { quoteSymbol, baseSymbol, type } = transaction;
-                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
-                const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
-                const quoteIsNative = this.isNativeToken(quoteName);
-                const isReceive = type == 'receive';
-                const isSwapOrSend = ['swap', 'send'].includes(type);
-                if (!quoteIsNative && !tokenInfo[quoteName]) {
-                    tokenInfo[quoteName] = Object.assign(Object.assign({}, initInfo), { firstTransIsReceive: isReceive });
-                }
-                if (tokenInfo[quoteName] &&
-                    tokenInfo[quoteName].firstTransIsReceive &&
-                    isSwapOrSend &&
-                    !tokenInfo[quoteName].hasSwapOrSend) {
-                    tokenInfo[quoteName].hasSwapOrSend = true;
-                }
-                else if (tokenInfo[baseName] &&
-                    tokenInfo[baseName].firstTransIsReceive &&
-                    isSwapOrSend &&
-                    !tokenInfo[baseName].hasSwapOrSend) {
-                    tokenInfo[baseName].hasSwapOrSend = true;
-                }
-            }
-        }
-        for (const tokenName in tokenInfo) {
-            const token = tokenInfo[tokenName];
-            if (token.firstTransIsReceive && !token.hasSwapOrSend) {
-                this.unknownTokens.push(tokenName);
-            }
-        }
-    }
-    /**
-     * Calculate Deposits
-     */
-    calculateDeposits() {
-        for (const chainName of this.chainNames) {
-            let deposits = 0;
-            const chain = this.chains[chainName];
-            const isDefaultDepositChain = chainName == envValues_1.ENV_DEPOSIT_CHAIN;
-            for (const transaction of chain.transactions) {
-                const { type, quoteSymbol, quoteValueUSD, quoteQuantity } = transaction;
-                if (type == 'receive') {
-                    const isNativeToken = this.isNativeToken(quoteSymbol);
-                    const isUnknownToken = this.isUnknownToken({
-                        symbol: quoteSymbol,
-                        value: quoteValueUSD,
-                        amount: quoteQuantity
-                    }, chainName);
-                    if ((!isDefaultDepositChain && !isUnknownToken) ||
-                        (isDefaultDepositChain && isNativeToken)) {
-                        deposits += quoteValueUSD;
-                    }
-                }
-            }
-            chain.deposits = deposits;
-            this.totalDeposits += deposits;
-        }
     }
     /**
      * Get Private Debank Endpoint

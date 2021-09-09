@@ -36,6 +36,7 @@ export default class DefiPrices extends DefiTransactions {
 
 	private nextApiCallMs = 0
 	private recentApiCalls: number[] = []
+	private filterUnknownTokens = false
 
 	/**
 	 * Driver
@@ -53,13 +54,14 @@ export default class DefiPrices extends DefiTransactions {
 			...defaultDriverArgs,
 			...args,
 		}
-		const fetchTransactions =
-			getPrices && (!useTempTransactions || !this.readTempFile())
+		const tempData = this.readTempFile()
+		const fetchTransactions = getPrices && (!useTempTransactions || !tempData)
+		this.filterUnknownTokens = filterUnknownTokens ? true : false
 		if (getTransactions || fetchTransactions) {
 			await this.getTransactions(useDebank)
+			if (this.filterUnknownTokens && !getPrices) this.getUnknownTokens()
 		}
-		if (filterUnknownTokens) this.getUnknownTokens()
-		if (getPrices) await this.getPriceData(!fetchTransactions)
+		if (getPrices) await this.getPriceData(!fetchTransactions, tempData)
 		if (getBalances) await this.getBalances()
 	}
 
@@ -67,7 +69,10 @@ export default class DefiPrices extends DefiTransactions {
 	 * Get Price Data
 	 */
 
-	private async getPriceData(useTempTransactions = false) {
+	private async getPriceData(
+		useTempTransactions = false,
+		tempData: ReturnType<DefiPrices['readTempFile']>
+	) {
 		if (!useTempTransactions) {
 			await prepareDB()
 			const supportedTokens = await this.getSupportedTokens()
@@ -90,9 +95,10 @@ export default class DefiPrices extends DefiTransactions {
 			this.updateTransactionData(transPrices)
 			await this.syncMissingPrices(insertRecords)
 			this.writeTempFile()
+		} else {
+			this.setTempData(tempData)
 		}
 		this.inferTransactionPrices()
-		this.calculateDeposits()
 	}
 
 	/**
@@ -101,18 +107,26 @@ export default class DefiPrices extends DefiTransactions {
 
 	private readTempFile() {
 		try {
-			const data: TransactionsFile = JSON.parse(
+			return JSON.parse(
 				readFileSync(TEMP_TRANSACTION_FILE, 'utf-8')
-			)
+			) as TransactionsFile
+		} catch (err) {
+			return false
+		}
+	}
+
+	/**
+	 * Set Temp Data
+	 */
+
+	private setTempData(data?: ReturnType<DefiPrices['readTempFile']>) {
+		if (data) {
 			for (const chainNm in data) {
 				const chainName = chainNm as keyof Chains
 				const { transactions, tokenAddresses } = data[chainName]
 				this.chains[chainName].transactions = transactions
 				this.chains[chainName].tokenAddresses = tokenAddresses
 			}
-			return true
-		} catch (err) {
-			return false
 		}
 	}
 
@@ -496,6 +510,54 @@ export default class DefiPrices extends DefiTransactions {
 						)
 						setPriceAndValue(transaction, info, 'base')
 					}
+				}
+			}
+		}
+		if (this.filterUnknownTokens) {
+			this.getUnknownTokens()
+			this.removeGarbagePriceInfo()
+		}
+	}
+
+	/**
+	 * Remove Garbage Price Info
+	 */
+
+	private removeGarbagePriceInfo() {
+		if (!this.unknownTokens.length) return false
+		let maxWhitelistValue = 0
+		for (const chainName of this.chainNames) {
+			const transactions = this.chains[chainName].transactions
+
+			// Get Max Whitelist Value
+			for (const transaction of transactions) {
+				const { type, quoteSymbol, quoteValueUSD, quotePriceUSD } = transaction
+				if (!quotePriceUSD) continue
+				if (['send', 'receive'].includes(type)) {
+					const isNativeToken = this.isNativeToken(quoteSymbol)
+					const isStableCoin = this.isStableCoin(quoteSymbol, quotePriceUSD)
+					if (isNativeToken || isStableCoin) {
+						if (quoteValueUSD > maxWhitelistValue) {
+							maxWhitelistValue = quoteValueUSD
+						}
+					}
+				}
+			}
+
+			// Remove Garbage Prices
+			for (const transaction of transactions) {
+				const { quoteSymbol, quoteValueUSD, baseSymbol, baseValueUSD } =
+					transaction
+				const quoteIsUnknown = this.isUnknownToken(quoteSymbol, chainName)
+				const baseIsUnknown = this.isUnknownToken(baseSymbol, chainName)
+				if (quoteIsUnknown && quoteValueUSD > maxWhitelistValue) {
+					transaction.quoteValueUSD = transaction.quotePriceUSD = 0
+					if (transaction.baseSymbol == FIAT_CURRENCY) {
+						transaction.baseValueUSD = transaction.baseQuantity = 0
+					}
+				}
+				if (baseIsUnknown && baseValueUSD > maxWhitelistValue) {
+					transaction.baseValueUSD = transaction.basePriceUSD = 0
 				}
 			}
 		}

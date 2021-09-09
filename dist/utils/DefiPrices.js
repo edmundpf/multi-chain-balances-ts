@@ -26,6 +26,7 @@ class DefiPrices extends DefiTransactions_1.default {
         super(...arguments);
         this.nextApiCallMs = 0;
         this.recentApiCalls = [];
+        this.filterUnknownTokens = false;
     }
     /**
      * Driver
@@ -33,14 +34,16 @@ class DefiPrices extends DefiTransactions_1.default {
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
             const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
-            const fetchTransactions = getPrices && (!useTempTransactions || !this.readTempFile());
+            const tempData = this.readTempFile();
+            const fetchTransactions = getPrices && (!useTempTransactions || !tempData);
+            this.filterUnknownTokens = filterUnknownTokens ? true : false;
             if (getTransactions || fetchTransactions) {
                 yield this.getTransactions(useDebank);
+                if (this.filterUnknownTokens && !getPrices)
+                    this.getUnknownTokens();
             }
-            if (filterUnknownTokens)
-                this.getUnknownTokens();
             if (getPrices)
-                yield this.getPriceData(!fetchTransactions);
+                yield this.getPriceData(!fetchTransactions, tempData);
             if (getBalances)
                 yield this.getBalances();
         });
@@ -48,7 +51,7 @@ class DefiPrices extends DefiTransactions_1.default {
     /**
      * Get Price Data
      */
-    getPriceData(useTempTransactions = false) {
+    getPriceData(useTempTransactions = false, tempData) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!useTempTransactions) {
                 yield priceData_1.prepareDB();
@@ -67,8 +70,10 @@ class DefiPrices extends DefiTransactions_1.default {
                 yield this.syncMissingPrices(insertRecords);
                 this.writeTempFile();
             }
+            else {
+                this.setTempData(tempData);
+            }
             this.inferTransactionPrices();
-            this.calculateDeposits();
         });
     }
     /**
@@ -76,17 +81,23 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     readTempFile() {
         try {
-            const data = JSON.parse(fs_1.readFileSync(values_1.TEMP_TRANSACTION_FILE, 'utf-8'));
+            return JSON.parse(fs_1.readFileSync(values_1.TEMP_TRANSACTION_FILE, 'utf-8'));
+        }
+        catch (err) {
+            return false;
+        }
+    }
+    /**
+     * Set Temp Data
+     */
+    setTempData(data) {
+        if (data) {
             for (const chainNm in data) {
                 const chainName = chainNm;
                 const { transactions, tokenAddresses } = data[chainName];
                 this.chains[chainName].transactions = transactions;
                 this.chains[chainName].tokenAddresses = tokenAddresses;
             }
-            return true;
-        }
-        catch (err) {
-            return false;
         }
     }
     /**
@@ -394,6 +405,51 @@ class DefiPrices extends DefiTransactions_1.default {
                         const info = getPriceAndValue({ price: feePriceUSD }, baseQuantity);
                         setPriceAndValue(transaction, info, 'base');
                     }
+                }
+            }
+        }
+        if (this.filterUnknownTokens) {
+            this.getUnknownTokens();
+            this.removeGarbagePriceInfo();
+        }
+    }
+    /**
+     * Remove Garbage Price Info
+     */
+    removeGarbagePriceInfo() {
+        if (!this.unknownTokens.length)
+            return false;
+        let maxWhitelistValue = 0;
+        for (const chainName of this.chainNames) {
+            const transactions = this.chains[chainName].transactions;
+            // Get Max Whitelist Value
+            for (const transaction of transactions) {
+                const { type, quoteSymbol, quoteValueUSD, quotePriceUSD, } = transaction;
+                if (!quotePriceUSD)
+                    continue;
+                if (['send', 'receive'].includes(type)) {
+                    const isNativeToken = this.isNativeToken(quoteSymbol);
+                    const isStableCoin = this.isStableCoin(quoteSymbol, quotePriceUSD);
+                    if (isNativeToken || isStableCoin) {
+                        if (quoteValueUSD > maxWhitelistValue) {
+                            maxWhitelistValue = quoteValueUSD;
+                        }
+                    }
+                }
+            }
+            // Remove Garbage Prices
+            for (const transaction of transactions) {
+                const { quoteSymbol, quoteValueUSD, baseSymbol, baseValueUSD, } = transaction;
+                const quoteIsUnknown = this.isUnknownToken(quoteSymbol, chainName);
+                const baseIsUnknown = this.isUnknownToken(baseSymbol, chainName);
+                if (quoteIsUnknown && quoteValueUSD > maxWhitelistValue) {
+                    transaction.quoteValueUSD = transaction.quotePriceUSD = 0;
+                    if (transaction.baseSymbol == values_1.FIAT_CURRENCY) {
+                        transaction.baseValueUSD = transaction.baseQuantity = 0;
+                    }
+                }
+                if (baseIsUnknown && baseValueUSD > maxWhitelistValue) {
+                    transaction.baseValueUSD = transaction.basePriceUSD = 0;
                 }
             }
         }

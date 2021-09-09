@@ -6,6 +6,7 @@ import { defaultDriverArgs } from './values';
 export default class DefiPrices extends DefiTransactions {
     private nextApiCallMs;
     private recentApiCalls;
+    private filterUnknownTokens;
     /**
      * Driver
      */
@@ -18,6 +19,10 @@ export default class DefiPrices extends DefiTransactions {
      * Read Temp File
      */
     private readTempFile;
+    /**
+     * Set Temp Data
+     */
+    private setTempData;
     /**
      * Write Temp File
      */
@@ -66,6 +71,10 @@ export default class DefiPrices extends DefiTransactions {
      * Update Transaction Data
      */
     private updateTransactionData;
+    /**
+     * Remove Garbage Price Info
+     */
+    private removeGarbagePriceInfo;
     /**
      * Infer Transaction Prices
      */

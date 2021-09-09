@@ -34,7 +34,6 @@ export default class DefiBalances {
 	totalValue = 0
 	totalTokenValue = 0
 	totalVaultValue = 0
-	totalDeposits = 0
 	chains = initChains()
 	assets: Assets = {}
 	chainNames: Array<keyof Chains>
@@ -81,7 +80,101 @@ export default class DefiBalances {
 		this.parseTokenData(tokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData)
-		this.parseChainData()
+		this.getAssetsAndTotalValues()
+	}
+
+	/**
+	 * Get Assets & Total Values
+	 */
+
+	getAssetsAndTotalValues() {
+		const assetCounts: NumDict = {}
+		const assetIndexes: NumDict = {}
+
+		// Add Asset
+		const addAsset = (
+			record: TokenData | VaultData,
+			chainName: keyof Chains,
+			isVault = false
+		) => {
+			const { symbol, value } = record
+			const apy: number = (record as any).apy || 0
+			const beefyVaultName: string = (record as any).beefyVaultName || ''
+			const url: string = (record as any).platformUrl || DEFAULT_URLS[chainName]
+			let symbolStr =
+				isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol
+			if (!beefyVaultName || !isVault) {
+				if (assetCounts[symbol] > 1) {
+					const symbolIndex =
+						assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0
+					symbolStr += `-${symbolIndex}`
+					assetIndexes[symbol] = symbolIndex
+				}
+			}
+			symbolStr += ` (${chainName.toUpperCase()})`
+			this.assets[symbolStr] = {
+				desc: symbol,
+				value,
+				apy,
+				url,
+			}
+		}
+
+		// Add Token
+		const addToken = (token: TokenData) => {
+			const { symbol } = token
+			if (!this.tokenNames.includes(symbol)) {
+				this.tokenNames.push(symbol)
+			}
+		}
+
+		// Update Asset Count
+		const updateAssetCount = (record: TokenData | VaultData) => {
+			const symbol = record.symbol
+			if (!assetCounts[symbol]) assetCounts[symbol] = 1
+			else assetCounts[symbol] += 1
+		}
+
+		// Get Duplicate Assets Counts
+		for (const chainName in this.chains) {
+			const chain = this.chains[chainName as keyof Chains]
+			for (const record of chain.tokens) {
+				updateAssetCount(record)
+			}
+			for (const record of chain.vaults) {
+				updateAssetCount(record)
+			}
+		}
+
+		// Parse Data
+		for (const chainNm in this.chains) {
+			const chainName = chainNm as keyof Chains
+			const chain = this.chains[chainName]
+
+			// Update Chain Total Value
+			chain.totalValue = chain.totalTokenValue + chain.totalVaultValue
+
+			// Update simplified assets
+			for (const record of chain.tokens) {
+				if (this.isUnknownToken(record.symbol, chainName)) continue
+				addAsset(record, chainName)
+				addToken(record)
+			}
+			for (const record of chain.vaults) {
+				if (record.beefyReceiptName && record.beefyVaultName) {
+					addAsset(record, chainName, true)
+				}
+				for (const token of record.tokens) {
+					if (this.isUnknownToken(record.symbol, chainName)) continue
+					addToken(token)
+				}
+			}
+
+			// Update Totals from all chains
+			this.totalTokenValue += chain.totalTokenValue
+			this.totalVaultValue += chain.totalVaultValue
+		}
+		this.totalValue = this.totalTokenValue + this.totalVaultValue
 	}
 
 	/**
@@ -105,7 +198,10 @@ export default class DefiBalances {
 				{}
 			)
 		} catch (err) {
-			return (err as any)?.response?.data || {}
+			return {
+				...((err as any)?.response?.data || {}),
+				hasError: true,
+			}
 		}
 	}
 
@@ -123,6 +219,78 @@ export default class DefiBalances {
 				'ape-secret': apeBoardCredentials.secret,
 			}
 		)
+	}
+
+	/**
+	 * Is Stable Coin
+	 */
+
+	isStableCoin(tokenName: string, price: number) {
+		const upperToken = tokenName.toUpperCase()
+		const isNormalStable = upperToken.includes(FIAT_CURRENCY)
+		const isOtherStable = stableCoinConfig.otherCoins.includes(tokenName)
+		const withinError =
+			price >= 1 - stableCoinConfig.errorPercent &&
+			price <= 1 + stableCoinConfig.errorPercent
+		return (isNormalStable || isOtherStable) && withinError
+	}
+
+	/**
+	 * Is Native Token
+	 */
+
+	isNativeToken(tokenName: string) {
+		return Object.values(NATIVE_TOKENS).includes(tokenName)
+	}
+
+	/**
+	 * Is Unknown Token
+	 */
+
+	isUnknownToken(symbol: string, chainName?: keyof Chains) {
+		const sterileSymbol = chainName
+			? this.sterilizeTokenNameNoStub(symbol, chainName)
+			: this.sterilizeTokenName(symbol)
+		return this.unknownTokens.includes(sterileSymbol)
+	}
+
+	/**
+	 * Sterilize Token Name
+	 */
+
+	sterilizeTokenName(token: string) {
+		return (token || '').replace(/ /g, '-').toUpperCase()
+	}
+
+	/**
+	 * Remove Token Contract Stub
+	 */
+
+	sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains) {
+		let curName = tokenName
+		if (tokenName.includes('-')) {
+			const dashParts = tokenName.split('-')
+			const lastPart = dashParts[dashParts.length - 1]
+			const isPool = lastPart == 'Pool'
+			if (!isPool) {
+				const addressStub = this.getAddressStub(
+					this.chains[chainName].tokenAddresses[tokenName]
+				)
+				if (lastPart == addressStub) {
+					dashParts.pop()
+					curName = dashParts.join('-')
+				}
+			}
+		}
+		return this.sterilizeTokenName(curName)
+	}
+
+	/**
+	 * Get Address Stub
+	 */
+
+	getAddressStub(address: string) {
+		return address.substring(2, 6).toUpperCase()
 	}
 
 	/**
@@ -175,7 +343,7 @@ export default class DefiBalances {
 					if (symbol == NATIVE_TOKENS[chain]) {
 						chainInfo.nativeToken = tokenData
 					}
-					if (!this.isUnknownToken(tokenData, chain)) {
+					if (!this.isUnknownToken(symbol, chain)) {
 						chainInfo.totalTokenValue += value
 					}
 				}
@@ -395,100 +563,6 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Parse Chain Data
-	 */
-
-	private parseChainData() {
-		const assetCounts: NumDict = {}
-		const assetIndexes: NumDict = {}
-
-		// Add Asset
-		const addAsset = (
-			record: TokenData | VaultData,
-			chainName: keyof Chains,
-			isVault = false
-		) => {
-			const { symbol, value } = record
-			const apy: number = (record as any).apy || 0
-			const beefyVaultName: string = (record as any).beefyVaultName || ''
-			const url: string = (record as any).platformUrl || DEFAULT_URLS[chainName]
-			let symbolStr =
-				isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol
-			if (!beefyVaultName || !isVault) {
-				if (assetCounts[symbol] > 1) {
-					const symbolIndex =
-						assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0
-					symbolStr += `-${symbolIndex}`
-					assetIndexes[symbol] = symbolIndex
-				}
-			}
-			symbolStr += ` (${chainName.toUpperCase()})`
-			this.assets[symbolStr] = {
-				desc: symbol,
-				value,
-				apy,
-				url,
-			}
-		}
-
-		// Add Token
-		const addToken = (token: TokenData) => {
-			const { symbol } = token
-			if (!this.tokenNames.includes(symbol)) {
-				this.tokenNames.push(symbol)
-			}
-		}
-
-		// Update Asset Count
-		const updateAssetCount = (record: TokenData | VaultData) => {
-			const symbol = record.symbol
-			if (!assetCounts[symbol]) assetCounts[symbol] = 1
-			else assetCounts[symbol] += 1
-		}
-
-		// Get Duplicate Assets Counts
-		for (const chainName in this.chains) {
-			const chain = this.chains[chainName as keyof Chains]
-			for (const record of chain.tokens) {
-				updateAssetCount(record)
-			}
-			for (const record of chain.vaults) {
-				updateAssetCount(record)
-			}
-		}
-
-		// Parse Data
-		for (const chainNm in this.chains) {
-			const chainName = chainNm as keyof Chains
-			const chain = this.chains[chainName]
-
-			// Update Chain Total Value
-			chain.totalValue = chain.totalTokenValue + chain.totalVaultValue
-
-			// Update simplified assets
-			for (const record of chain.tokens) {
-				if (this.isUnknownToken(record, chainName)) continue
-				addAsset(record, chainName)
-				addToken(record)
-			}
-			for (const record of chain.vaults) {
-				if (record.beefyReceiptName && record.beefyVaultName) {
-					addAsset(record, chainName, true)
-				}
-				for (const token of record.tokens) {
-					if (this.isUnknownToken(record, chainName)) continue
-					addToken(token)
-				}
-			}
-
-			// Update Totals from all chains
-			this.totalTokenValue += chain.totalTokenValue
-			this.totalVaultValue += chain.totalVaultValue
-		}
-		this.totalValue = this.totalTokenValue + this.totalVaultValue
-	}
-
-	/**
 	 * Get Token List
 	 */
 
@@ -510,78 +584,5 @@ export default class DefiBalances {
 
 	private async getBeefyApy() {
 		return await this.getBeefyEndpoint('beefyApy')
-	}
-
-	/**
-	 * Is Stable Coin
-	 */
-
-	isStableCoin(tokenName: string, price: number) {
-		const upperToken = tokenName.toUpperCase()
-		const isNormalStable = upperToken.includes(FIAT_CURRENCY)
-		const isOtherStable = stableCoinConfig.otherCoins.includes(tokenName)
-		const withinError =
-			price >= 1 - stableCoinConfig.errorPercent &&
-			price <= 1 + stableCoinConfig.errorPercent
-		return (isNormalStable || isOtherStable) && withinError
-	}
-
-	/**
-	 * Is Native Token
-	 */
-
-	isNativeToken(tokenName: string) {
-		return Object.values(NATIVE_TOKENS).includes(tokenName)
-	}
-
-	/**
-	 * Is Unknown Token
-	 */
-
-	isUnknownToken(record: TokenData, chainName: keyof Chains) {
-		const { symbol, value, amount } = record
-		const sterileSymbol = this.sterilizeTokenNameNoStub(symbol, chainName)
-		const isStableCoin = this.isStableCoin(symbol, value / (amount || 1))
-		const isUnknownToken = this.unknownTokens.includes(sterileSymbol)
-		return isUnknownToken && !isStableCoin
-	}
-
-	/**
-	 * Sterilize Token Name
-	 */
-
-	sterilizeTokenName(token: string) {
-		return (token || '').replace(/ /g, '-').toUpperCase()
-	}
-
-	/**
-	 * Remove Token Contract Stub
-	 */
-
-	sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains) {
-		let curName = tokenName
-		if (tokenName.includes('-')) {
-			const dashParts = tokenName.split('-')
-			const lastPart = dashParts[dashParts.length - 1]
-			const isPool = lastPart == 'Pool'
-			if (!isPool) {
-				const addressStub = this.getAddressStub(
-					this.chains[chainName].tokenAddresses[tokenName]
-				)
-				if (lastPart == addressStub) {
-					dashParts.pop()
-					curName = dashParts.join('-')
-				}
-			}
-		}
-		return this.sterilizeTokenName(curName)
-	}
-
-	/**
-	 * Get Address Stub
-	 */
-
-	getAddressStub(address: string) {
-		return address.substring(2, 6).toUpperCase()
 	}
 }

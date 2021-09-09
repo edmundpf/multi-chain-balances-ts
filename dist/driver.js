@@ -17,23 +17,14 @@ const _1 = __importDefault(require("./"));
 const info = new _1.default();
 // Main
 const main = (args) => __awaiter(void 0, void 0, void 0, function* () {
-    const { logTransactions, logChainDeposits, logAssets } = Object.assign({ logTransactions: false, logChainDeposits: false, logAssets: false }, args);
+    const { logTransactions, logAssets } = Object.assign({ logTransactions: false, logAssets: false }, args);
     yield info.driver(args);
     if (logTransactions)
         logTrans();
-    if (logChainDeposits)
-        logDeposits();
     if (logAssets)
         console.log(info.assets);
-    // Testing
+    // Test Logs
 });
-// Log Deposits
-const logDeposits = () => {
-    for (const chainName of info.chainNames) {
-        const deposits = info.chains[chainName].deposits;
-        console.log(chainName, deposits);
-    }
-};
 // Log Transactions
 const logTrans = () => {
     const priceDecimals = 4;
@@ -75,5 +66,4 @@ main({
     getPrices: true,
     logTransactions: true,
     logAssets: true,
-    logChainDeposits: true,
 });

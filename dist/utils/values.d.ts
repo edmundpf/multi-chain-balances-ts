@@ -4,10 +4,6 @@ import { Chains, HistoryRecord, DriverArgs } from './types';
  */
 export declare const FIAT_CURRENCY = "USD";
 /**
- * Default Deposit Chain
- */
-export declare const DEFAULT_DEPOSIT_CHAIN = "bsc";
-/**
  * Crypto Info
  */
 export declare const NATIVE_TOKENS: {
@@ -60,10 +56,14 @@ export declare const coinGeckoLimits: {
     ms: number;
 };
 export declare const coinGeckoDayCutoffs: number[];
-export declare const initChains: () => Chains;
-export declare const defaultHistoryRecord: HistoryRecord;
-export declare const ONE_DAY: number;
+/**
+ * Default Values
+ */
 export declare const defaultDriverArgs: DriverArgs;
+export declare const defaultHistoryRecord: HistoryRecord;
+export declare const DEFAULT_MIN_VALUE = 0.05;
+export declare const DEFAULT_DB_FILE = ".defi-prices.db";
+export declare const TEMP_TRANSACTION_FILE = "transactions.json";
 export declare const stableCoinConfig: {
     otherCoins: string[];
     errorPercent: number;
@@ -72,6 +72,5 @@ export declare const slippageConfig: {
     low: number;
     high: number;
 };
-export declare const TEMP_TRANSACTION_FILE = "transactions.json";
-export declare const DEFAULT_MIN_VALUE = 0.05;
-export declare const DEFAULT_DB_FILE = ".defi-prices.db";
+export declare const initChains: () => Chains;
+export declare const ONE_DAY: number;

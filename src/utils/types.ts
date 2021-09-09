@@ -31,6 +31,10 @@ export type NumDict = {
 	[index: string]: number
 }
 
+// Base Or Quote Type
+
+export type BaseOrQuote = 'base' | 'quote'
+
 // Token Data Type
 
 export type TokenData = {
@@ -88,7 +92,6 @@ export type Chain = {
 	totalValue: number
 	totalTokenValue: number
 	totalVaultValue: number
-	deposits: number
 	nativeToken: TokenData
 	tokens: TokenData[]
 	vaults: VaultData[]
@@ -132,10 +135,6 @@ export type HistoryRecord = {
 	tokens?: TokenRecords
 }
 
-// Main Request Type
-
-export type MainRequest = Token[] | Protocol[] | NumDict | void
-
 // Driver Args Type
 
 export type DriverArgs = {
@@ -160,10 +159,6 @@ export type InferMultiSwapArgs = {
 	transactions: HistoryRecord[]
 }
 
-// Base Or Quote Type
-
-export type BaseOrQuote = 'base' | 'quote'
-
 // Transactions File
 
 export type TransactionsFile = {
@@ -172,6 +167,10 @@ export type TransactionsFile = {
 		tokenAddresses: StringDict
 	}
 }
+
+// Main Request Type
+
+export type MainRequest = Token[] | Protocol[] | NumDict | void
 
 /**
  * Debank Types

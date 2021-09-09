@@ -8,6 +8,10 @@ export default class DefiTransactions extends DefiBalances {
      */
     getTransactions(useDebank?: boolean): Promise<void>;
     /**
+     * Get Unknown Tokens
+     */
+    getUnknownTokens(): void;
+    /**
      * Sterilize History Record
      */
     private sterilizeHistoryRecord;
@@ -35,14 +39,6 @@ export default class DefiTransactions extends DefiBalances {
      * Sterilize Transaction Type
      */
     private sterilizeTransactionType;
-    /**
-     * Get Unknown Tokens
-     */
-    getUnknownTokens(): void;
-    /**
-     * Calculate Deposits
-     */
-    calculateDeposits(): void;
     /**
      * Get Private Debank Endpoint
      */

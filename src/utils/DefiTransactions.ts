@@ -1,5 +1,4 @@
 import DefiBalances from './DefiBalances'
-import { ENV_DEPOSIT_CHAIN } from './envValues'
 import {
 	NATIVE_TOKENS,
 	ENDPOINTS,
@@ -76,7 +75,11 @@ export default class DefiTransactions extends DefiBalances {
 			const isFilled = rawChains.length == this.chainNames.length
 			for (const index in res) {
 				const result = res[index]
-				if (result && !(result as any)?.statusCode) {
+				if (
+					result &&
+					!(result as any)?.statusCode &&
+					!(result as any)?.hasError
+				) {
 					rawChains[index] = result
 				} else if (!rawChains[index]) {
 					rawChains[index] = isFilled ? [] : undefined
@@ -119,6 +122,61 @@ export default class DefiTransactions extends DefiBalances {
 			this.chains[chainName].transactions = historyRecords.sort((a, b) =>
 				a.date < b.date ? 1 : -1
 			)
+		}
+	}
+
+	/**
+	 * Get Unknown Tokens
+	 */
+
+	getUnknownTokens() {
+		const initInfo = {
+			firstTransIsReceive: false,
+			hasSwapOrSend: false,
+			price: 0,
+		}
+		const tokenInfo: { [index: string]: typeof initInfo } = {}
+		for (const chainNm in this.chains) {
+			const chainName = chainNm as keyof Chains
+			const chain = this.chains[chainName]
+			for (let i = chain.transactions.length - 1; i >= 0; i--) {
+				const transaction = chain.transactions[i]
+				const { quoteSymbol, quotePriceUSD, baseSymbol, type } = transaction
+				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName)
+				const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName)
+				const quoteIsNative = this.isNativeToken(quoteName)
+				const isReceive = type == 'receive'
+				const isSwapOrSend = ['swap', 'send'].includes(type)
+				if (!quoteIsNative && !tokenInfo[quoteName]) {
+					tokenInfo[quoteName] = {
+						...initInfo,
+						firstTransIsReceive: isReceive,
+						price: quotePriceUSD,
+					}
+				}
+				if (
+					tokenInfo[quoteName] &&
+					tokenInfo[quoteName].firstTransIsReceive &&
+					isSwapOrSend &&
+					!tokenInfo[quoteName].hasSwapOrSend
+				) {
+					tokenInfo[quoteName].hasSwapOrSend = true
+				} else if (
+					tokenInfo[baseName] &&
+					tokenInfo[baseName].firstTransIsReceive &&
+					isSwapOrSend &&
+					!tokenInfo[baseName].hasSwapOrSend
+				) {
+					tokenInfo[baseName].hasSwapOrSend = true
+				}
+			}
+		}
+		for (const tokenName in tokenInfo) {
+			const token = tokenInfo[tokenName]
+			if (token.firstTransIsReceive && !token.hasSwapOrSend) {
+				const isStableCoin = this.isStableCoin(tokenName, token.price || 1)
+				if (!isStableCoin) this.unknownTokens.push(tokenName)
+			}
 		}
 	}
 
@@ -526,92 +584,6 @@ export default class DefiTransactions extends DefiBalances {
 			newType = 'failure'
 		}
 		return newType
-	}
-
-	/**
-	 * Get Unknown Tokens
-	 */
-
-	getUnknownTokens() {
-		const initInfo = {
-			firstTransIsReceive: false,
-			hasSwapOrSend: false,
-		}
-		const tokenInfo: { [index: string]: typeof initInfo } = {}
-		for (const chainNm in this.chains) {
-			const chainName = chainNm as keyof Chains
-			const chain = this.chains[chainName]
-			for (let i = chain.transactions.length - 1; i >= 0; i--) {
-				const transaction = chain.transactions[i]
-				const { quoteSymbol, baseSymbol, type } = transaction
-				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName)
-				const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName)
-				const quoteIsNative = this.isNativeToken(quoteName)
-				const isReceive = type == 'receive'
-				const isSwapOrSend = ['swap', 'send'].includes(type)
-				if (!quoteIsNative && !tokenInfo[quoteName]) {
-					tokenInfo[quoteName] = {
-						...initInfo,
-						firstTransIsReceive: isReceive,
-					}
-				}
-				if (
-					tokenInfo[quoteName] &&
-					tokenInfo[quoteName].firstTransIsReceive &&
-					isSwapOrSend &&
-					!tokenInfo[quoteName].hasSwapOrSend
-				) {
-					tokenInfo[quoteName].hasSwapOrSend = true
-				} else if (
-					tokenInfo[baseName] &&
-					tokenInfo[baseName].firstTransIsReceive &&
-					isSwapOrSend &&
-					!tokenInfo[baseName].hasSwapOrSend
-				) {
-					tokenInfo[baseName].hasSwapOrSend = true
-				}
-			}
-		}
-		for (const tokenName in tokenInfo) {
-			const token = tokenInfo[tokenName]
-			if (token.firstTransIsReceive && !token.hasSwapOrSend) {
-				this.unknownTokens.push(tokenName)
-			}
-		}
-	}
-
-	/**
-	 * Calculate Deposits
-	 */
-
-	calculateDeposits() {
-		for (const chainName of this.chainNames) {
-			let deposits = 0
-			const chain = this.chains[chainName]
-			const isDefaultDepositChain = chainName == ENV_DEPOSIT_CHAIN
-			for (const transaction of chain.transactions) {
-				const { type, quoteSymbol, quoteValueUSD, quoteQuantity } = transaction
-				if (type == 'receive') {
-					const isNativeToken = this.isNativeToken(quoteSymbol)
-					const isUnknownToken = this.isUnknownToken(
-						{
-							symbol: quoteSymbol,
-							value: quoteValueUSD,
-							amount: quoteQuantity,
-						},
-						chainName
-					)
-					if (
-						(!isDefaultDepositChain && !isUnknownToken) ||
-						(isDefaultDepositChain && isNativeToken)
-					) {
-						deposits += quoteValueUSD
-					}
-				}
-			}
-			chain.deposits = deposits
-			this.totalDeposits += deposits
-		}
 	}
 
 	/**

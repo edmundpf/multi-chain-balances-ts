@@ -18,6 +18,7 @@ export declare type StringDict = {
 export declare type NumDict = {
     [index: string]: number;
 };
+export declare type BaseOrQuote = 'base' | 'quote';
 export declare type TokenData = {
     symbol: string;
     value: number;
@@ -52,7 +53,6 @@ export declare type Chain = {
     totalValue: number;
     totalTokenValue: number;
     totalVaultValue: number;
-    deposits: number;
     nativeToken: TokenData;
     tokens: TokenData[];
     vaults: VaultData[];
@@ -89,7 +89,6 @@ export declare type HistoryRecord = {
     toAddress: string;
     tokens?: TokenRecords;
 };
-export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 export declare type DriverArgs = {
     useDebank?: boolean;
     getTransactions?: boolean;
@@ -108,13 +107,13 @@ export declare type InferMultiSwapArgs = {
     ineligibleIndexes: number[];
     transactions: HistoryRecord[];
 };
-export declare type BaseOrQuote = 'base' | 'quote';
 export declare type TransactionsFile = {
     [index: string]: {
         transactions: HistoryRecord[];
         tokenAddresses: StringDict;
     };
 };
+export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 /**
  * Debank Types
  */

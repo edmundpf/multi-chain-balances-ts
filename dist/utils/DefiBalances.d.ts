@@ -1,5 +1,5 @@
 import { APIS, ENDPOINTS } from './values';
-import { Chains, TokenData, Assets } from './types';
+import { Chains, Assets } from './types';
 /**
  * DefiBalances Class
  */
@@ -8,7 +8,6 @@ export default class DefiBalances {
     totalValue: number;
     totalTokenValue: number;
     totalVaultValue: number;
-    totalDeposits: number;
     chains: Chains;
     assets: Assets;
     chainNames: Array<keyof Chains>;
@@ -23,6 +22,10 @@ export default class DefiBalances {
      */
     getBalances(): Promise<void>;
     /**
+     * Get Assets & Total Values
+     */
+    getAssetsAndTotalValues(): void;
+    /**
      * Get Endpoint
      */
     getEndpoint(api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any): Promise<any>;
@@ -30,6 +33,30 @@ export default class DefiBalances {
      * Get Ape Board Endpoint
      */
     getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS): Promise<any>;
+    /**
+     * Is Stable Coin
+     */
+    isStableCoin(tokenName: string, price: number): boolean;
+    /**
+     * Is Native Token
+     */
+    isNativeToken(tokenName: string): boolean;
+    /**
+     * Is Unknown Token
+     */
+    isUnknownToken(symbol: string, chainName?: keyof Chains): boolean;
+    /**
+     * Sterilize Token Name
+     */
+    sterilizeTokenName(token: string): string;
+    /**
+     * Remove Token Contract Stub
+     */
+    sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains): string;
+    /**
+     * Get Address Stub
+     */
+    getAddressStub(address: string): string;
     /**
      * Get Beefy Endpoint
      */
@@ -51,10 +78,6 @@ export default class DefiBalances {
      */
     private parseApyData;
     /**
-     * Parse Chain Data
-     */
-    private parseChainData;
-    /**
      * Get Token List
      */
     private getTokenList;
@@ -66,28 +89,4 @@ export default class DefiBalances {
      * Get Beefy APY
      */
     private getBeefyApy;
-    /**
-     * Is Stable Coin
-     */
-    isStableCoin(tokenName: string, price: number): boolean;
-    /**
-     * Is Native Token
-     */
-    isNativeToken(tokenName: string): boolean;
-    /**
-     * Is Unknown Token
-     */
-    isUnknownToken(record: TokenData, chainName: keyof Chains): boolean;
-    /**
-     * Sterilize Token Name
-     */
-    sterilizeTokenName(token: string): string;
-    /**
-     * Remove Token Contract Stub
-     */
-    sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains): string;
-    /**
-     * Get Address Stub
-     */
-    getAddressStub(address: string): string;
 }
