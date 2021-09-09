@@ -141,9 +141,10 @@ export default class DefiTransactions extends DefiBalances {
 		) => {
 			const { token, quantity } = info
 			if (quantity != 0) {
+				const tokenQuantity = (tokens[token]?.quantity || 0) + quantity
 				tokens[token] = {
 					amount: 0,
-					quantity,
+					quantity: tokenQuantity,
 					price: 0,
 				}
 			}

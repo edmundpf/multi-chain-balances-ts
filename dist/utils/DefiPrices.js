@@ -33,13 +33,14 @@ class DefiPrices extends DefiTransactions_1.default {
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
             const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
-            if (getTransactions && !useTempTransactions) {
+            const fetchTransactions = getPrices && (!useTempTransactions || !this.readTempFile());
+            if (getTransactions || fetchTransactions) {
                 yield this.getTransactions(useDebank);
             }
             if (filterUnknownTokens)
                 this.getUnknownTokens();
             if (getPrices)
-                yield this.getPriceData(useTempTransactions);
+                yield this.getPriceData(!fetchTransactions);
             if (getBalances)
                 yield this.getBalances();
         });
@@ -49,7 +50,7 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     getPriceData(useTempTransactions = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!useTempTransactions || !this.readTempFile()) {
+            if (!useTempTransactions) {
                 yield priceData_1.prepareDB();
                 const supportedTokens = yield this.getSupportedTokens();
                 const supportedTokenNames = Object.keys(supportedTokens);
@@ -63,13 +64,10 @@ class DefiPrices extends DefiTransactions_1.default {
                 const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
                 this.linkMergedPrices(transPrices, mergedPrices);
                 this.updateTransactionData(transPrices);
-                this.inferTransactionPrices();
                 yield this.syncMissingPrices(insertRecords);
                 this.writeTempFile();
             }
-            else {
-                this.inferTransactionPrices();
-            }
+            this.inferTransactionPrices();
         });
     }
     /**
@@ -132,8 +130,10 @@ class DefiPrices extends DefiTransactions_1.default {
                 const hasFeePrice = feePriceUSD ? true : false;
                 const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
                 const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
-                const quoteSupported = supportedTokenNames.includes(quoteName);
-                const baseSupported = supportedTokenNames.includes(baseName);
+                const quoteIsLP = quoteName.endsWith('LP');
+                const baseIsLP = baseName.endsWith('LP');
+                const quoteSupported = supportedTokenNames.includes(quoteName) && !quoteIsLP;
+                const baseSupported = supportedTokenNames.includes(baseName) && !baseIsLP;
                 const quoteHasNativePrice = quoteSymbol == feeSymbol && hasFeePrice;
                 const baseHasNativePrice = baseSymbol == feeSymbol && hasFeePrice;
                 const baseIsFiat = baseSymbol == values_1.FIAT_CURRENCY;
@@ -375,7 +375,7 @@ class DefiPrices extends DefiTransactions_1.default {
                         setPriceAndValue(transaction, info, 'quote');
                     }
                     // Base Token
-                    else if (!baseFeeMatch && baseTokenMatch) {
+                    if (!baseFeeMatch && baseTokenMatch) {
                         const priceMatch = getMatchingPrice(transPrices[tokenName], time);
                         if (priceMatch && priceMatch.price) {
                             const info = getPriceAndValue(priceMatch, baseQuantity);
@@ -397,105 +397,149 @@ class DefiPrices extends DefiTransactions_1.default {
     inferTransactionPrices() {
         // Iterate Chains
         for (const chainName of this.chainNames) {
-            const transRecs = {};
+            const transactionsByHash = {};
             const transactions = this.chains[chainName].transactions;
             // Get Transactions by Hash
             for (const record of transactions) {
-                const { id, quoteSymbol, baseSymbol, type } = record;
+                const { id, type, quoteSymbol, baseSymbol } = record;
                 if (type == 'swap') {
-                    if (!transRecs[id]) {
-                        transRecs[id] = {
-                            recs: [],
+                    if (!transactionsByHash[id]) {
+                        transactionsByHash[id] = {
+                            transactions: [],
                             quoteSymbols: [],
                             baseSymbols: [],
                         };
                     }
-                    transRecs[id].recs.push(record);
-                    if (!transRecs[id].quoteSymbols.includes(quoteSymbol)) {
-                        transRecs[id].quoteSymbols.push(quoteSymbol);
+                    transactionsByHash[id].transactions.push(record);
+                    // Get Quote Symbols
+                    if (!transactionsByHash[id].quoteSymbols.includes(quoteSymbol)) {
+                        transactionsByHash[id].quoteSymbols.push(quoteSymbol);
                     }
-                    if (!transRecs[id].baseSymbols.includes(baseSymbol)) {
-                        transRecs[id].baseSymbols.push(baseSymbol);
+                    // Get Base Symbols
+                    if (!transactionsByHash[id].baseSymbols.includes(baseSymbol)) {
+                        transactionsByHash[id].baseSymbols.push(baseSymbol);
                     }
                 }
             }
             // Iterate by Transaction Hash
-            for (const id in transRecs) {
-                const { recs, quoteSymbols, baseSymbols } = transRecs[id];
-                const transCount = recs.length;
+            for (const id in transactionsByHash) {
+                const { transactions, quoteSymbols, baseSymbols } = transactionsByHash[id];
+                const transactionCount = transactions.length;
                 // Single Coin Swap
                 if (quoteSymbols.length == baseSymbols.length) {
-                    this.inferSingleSwap(recs[0]);
+                    this.inferSingleSwap(transactions[0]);
                 }
                 // Multi Coin Swap
                 else if (quoteSymbols.length != baseSymbols.length) {
-                    const compIsBase = quoteSymbols.length > baseSymbols.length;
-                    const multiInfo = {
-                        completeIndexes: [],
-                        missingIndexes: [],
-                        eligibleIndexes: [],
-                        ineligibleIndexes: [],
-                        eligibleTotal: 0,
-                        ineligibleTotal: 0,
-                        completeCount: 0,
-                        missingCount: 0,
-                        eligibleCount: 0,
-                        ineligibleCount: 0,
-                    };
-                    let absCompValueUSD = 0;
+                    const singleIsBase = quoteSymbols.length > baseSymbols.length;
+                    const missingIndexes = [];
+                    const eligibleIndexes = [];
+                    const ineligibleIndexes = [];
+                    let eligibleTotal = 0;
+                    let ineligibleTotal = 0;
+                    let absSingleValueUSD = 0;
                     // Set Multi Info
-                    const setMultiInfo = (symbol, price, compValue, index) => {
+                    const setMultiInfo = (record, index, type) => {
+                        const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD, quoteValueUSD, baseValueUSD, } = record;
+                        const symbol = type == 'quote' ? quoteSymbol : baseSymbol;
+                        const price = type == 'quote' ? quotePriceUSD : basePriceUSD;
+                        const value = type == 'quote' ? quoteValueUSD : baseValueUSD;
+                        // Set Missing Indexes
                         if (!price) {
-                            multiInfo.missingIndexes.push(index);
+                            missingIndexes.push(index);
                         }
+                        // Get Total Single Token Value
                         else {
                             const isStableCoin = this.isStableCoin(symbol, price);
-                            const absRecValueUSD = Math.abs(compValue);
-                            multiInfo.completeIndexes.push(index);
-                            absCompValueUSD += absRecValueUSD;
+                            const absRecordValueUSD = Math.abs(value);
+                            // Set Eligible Indexes
                             if (!isStableCoin) {
-                                multiInfo.eligibleIndexes.push(index);
-                                multiInfo.eligibleTotal += absRecValueUSD;
+                                eligibleIndexes.push(index);
+                                eligibleTotal += absRecordValueUSD;
                             }
+                            // Set Ineligible Indexes
                             else {
-                                multiInfo.ineligibleIndexes.push(index);
-                                multiInfo.ineligibleTotal += absRecValueUSD;
+                                ineligibleIndexes.push(index);
+                                ineligibleTotal += absRecordValueUSD;
                             }
                         }
                     };
                     // Get Missing Indexes and Eligible Indexes
-                    for (const i in recs) {
+                    for (const i in transactions) {
                         const index = Number(i);
-                        const record = recs[index];
-                        const { quoteSymbol, quotePriceUSD, quoteValueUSD, baseSymbol, basePriceUSD, baseValueUSD, } = record;
-                        // Single Base Token
-                        if (compIsBase) {
-                            setMultiInfo(quoteSymbol, quotePriceUSD, baseValueUSD, index);
+                        const record = transactions[index];
+                        // Add Single Token Value
+                        const { quoteValueUSD, baseValueUSD } = record;
+                        const absSingleRecordValueUSD = Math.abs(singleIsBase ? baseValueUSD : quoteValueUSD);
+                        absSingleValueUSD += absSingleRecordValueUSD;
+                        // Single Base Token Info
+                        if (singleIsBase) {
+                            setMultiInfo(record, index, 'quote');
                         }
-                        // Single Quote Token
+                        // Single Quote Token Info
                         else {
-                            setMultiInfo(baseSymbol, basePriceUSD, quoteValueUSD, index);
+                            setMultiInfo(record, index, 'base');
                         }
                     }
                     // Set Counts
-                    multiInfo.completeCount = multiInfo.completeIndexes.length;
-                    multiInfo.missingCount = multiInfo.missingIndexes.length;
-                    multiInfo.eligibleCount = multiInfo.eligibleIndexes.length;
-                    multiInfo.ineligibleCount = multiInfo.ineligibleIndexes.length;
+                    const missingCount = missingIndexes.length;
+                    const completeCount = transactionCount - missingCount;
+                    const ineligibleCount = ineligibleIndexes.length;
                     // Single Token has Price
-                    if (absCompValueUSD) {
-                        // Base is Single Token
-                        if (compIsBase) {
-                            // To-Do
+                    if (absSingleValueUSD) {
+                        // Has Missing Tokens
+                        if (missingCount) {
+                            // Get Total Multi Value & Get Average w/ Slippage
+                            const absMultiValueUSD = singleIsBase
+                                ? absSingleValueUSD * (1 - values_1.slippageConfig.low)
+                                : absSingleValueUSD * (1 + values_1.slippageConfig.low);
+                            const avgValueUSD = (absMultiValueUSD - ineligibleTotal) /
+                                (transactionCount - ineligibleCount);
+                            // Iterate Missing/Eligible Records
+                            for (const index of [...missingIndexes, eligibleIndexes]) {
+                                const transaction = transactions[Number(index)];
+                                // Modify Quote Tokens
+                                if (singleIsBase) {
+                                    this.setValueAndPrice(transaction, avgValueUSD, 'quote');
+                                }
+                                // Modify Base Tokens
+                                else {
+                                    this.setValueAndPrice(transaction, avgValueUSD, 'base');
+                                }
+                            }
                         }
-                        // Quote is Single Token
+                        // No Missing Tokens
                         else {
-                            // To-Do
+                            const absMultiValueUSD = eligibleTotal + ineligibleTotal;
+                            this.inferMultiSwap({
+                                absSingleValueUSD,
+                                absMultiValueUSD,
+                                singleIsBase,
+                                transactionCount,
+                                ineligibleCount,
+                                ineligibleTotal,
+                                ineligibleIndexes,
+                                transactions
+                            });
                         }
                     }
                     // Infer Single Token from Multi Prices
-                    else if (multiInfo.missingCount < transCount) {
-                        // To-Do
+                    else if (missingCount < transactionCount) {
+                        const avgMultiValueUSD = (eligibleTotal + ineligibleTotal) / completeCount;
+                        const absMultiValueUSD = avgMultiValueUSD * transactionCount;
+                        absSingleValueUSD = singleIsBase
+                            ? absMultiValueUSD * (1 - values_1.slippageConfig.low)
+                            : absMultiValueUSD * (1 + values_1.slippageConfig.low);
+                        this.inferMultiSwap({
+                            absSingleValueUSD,
+                            absMultiValueUSD,
+                            singleIsBase,
+                            transactionCount,
+                            ineligibleCount,
+                            ineligibleTotal,
+                            ineligibleIndexes,
+                            transactions
+                        });
                     }
                 }
             }
@@ -505,27 +549,6 @@ class DefiPrices extends DefiTransactions_1.default {
      * Infer Single Swap
      */
     inferSingleSwap(record) {
-        // Set Value And Price
-        const setValueAndPrice = (record, value, type) => {
-            if (type == 'quote') {
-                const priceUSD = Math.abs(value / record.quoteQuantity);
-                record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1;
-                record.quotePriceUSD = priceUSD;
-                if (record.quoteSymbol == record.feeSymbol) {
-                    record.feePriceUSD = record.quotePriceUSD;
-                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
-                }
-            }
-            else {
-                const priceUSD = Math.abs(value / record.baseQuantity);
-                record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1;
-                record.basePriceUSD = priceUSD;
-                if (record.baseSymbol == record.feeSymbol) {
-                    record.feePriceUSD = record.basePriceUSD;
-                    record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
-                }
-            }
-        };
         // Sterilize Swap
         const { quoteSymbol, quoteValueUSD, quotePriceUSD, baseSymbol, baseValueUSD, basePriceUSD, } = record;
         const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD);
@@ -534,62 +557,166 @@ class DefiPrices extends DefiTransactions_1.default {
         let absBaseValueUSD = Math.abs(baseValueUSD);
         // Missing Quote
         if (absBaseValueUSD && !absQuoteValueUSD) {
-            absQuoteValueUSD = Math.max(absBaseValueUSD * (1 - values_1.slippageConfig.low), 0);
-            setValueAndPrice(record, absQuoteValueUSD, 'quote');
+            absQuoteValueUSD = absBaseValueUSD * (1 - values_1.slippageConfig.low);
+            this.setValueAndPrice(record, absQuoteValueUSD, 'quote');
         }
         // Missing Base
         else if (absQuoteValueUSD && !absBaseValueUSD) {
-            absBaseValueUSD = Math.max(absQuoteValueUSD * (1 + values_1.slippageConfig.low), 0);
-            setValueAndPrice(record, absBaseValueUSD, 'base');
+            absBaseValueUSD = absQuoteValueUSD * (1 + values_1.slippageConfig.low);
+            this.setValueAndPrice(record, absBaseValueUSD, 'base');
         }
         // Has Both Prices
         else if (absQuoteValueUSD &&
             absBaseValueUSD &&
             !(quoteIsStable && baseIsStable)) {
-            // Calculate Slippage
-            const lowerQuote = absQuoteValueUSD <= absBaseValueUSD;
-            const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD;
-            const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD;
-            const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD);
-            const mid = min + diff / 2;
-            const slippageAmount = diff / absBaseValueUSD;
-            const hasMediumSlippage = slippageAmount > values_1.slippageConfig.low &&
-                slippageAmount <= values_1.slippageConfig.high;
-            const hasHighSlippage = slippageAmount > values_1.slippageConfig.high;
-            // Modify Slippage if not within low range and not stablecoins
-            if (!(quoteIsStable && baseIsStable) &&
-                (hasMediumSlippage || hasHighSlippage)) {
-                let upperUSD = 0;
-                let lowerUSD = 0;
-                const slippageAdjust = hasMediumSlippage
-                    ? values_1.slippageConfig.low
-                    : values_1.slippageConfig.high;
-                if (!quoteIsStable && !baseIsStable) {
-                    upperUSD = mid + values_1.slippageConfig.low / 2;
-                    lowerUSD = Math.max(mid - values_1.slippageConfig.low / 2, 0);
-                }
-                else if ((quoteIsStable && lowerQuote) ||
-                    (baseIsStable && !lowerQuote)) {
-                    upperUSD = min + slippageAdjust;
-                    lowerUSD = min;
-                }
-                else if ((quoteIsStable && !lowerQuote) ||
-                    (baseIsStable && lowerQuote)) {
-                    upperUSD = max;
-                    lowerUSD = Math.max(max - slippageAdjust, 0);
-                }
+            // Calculate Values w/ Slippage
+            const { upperUSD, lowerUSD, lowerQuote } = this.calculateTotalsWithSlippage(absQuoteValueUSD, absBaseValueUSD, quoteIsStable, baseIsStable);
+            // Adjust Values w/ Slippage
+            if (upperUSD && lowerUSD) {
                 // Quote is lower
                 if (lowerQuote) {
-                    setValueAndPrice(record, lowerUSD, 'quote');
-                    setValueAndPrice(record, upperUSD, 'base');
+                    this.setValueAndPrice(record, lowerUSD, 'quote');
+                    this.setValueAndPrice(record, upperUSD, 'base');
                 }
                 // Base is lower
                 else {
-                    setValueAndPrice(record, upperUSD, 'quote');
-                    setValueAndPrice(record, lowerUSD, 'base');
+                    this.setValueAndPrice(record, upperUSD, 'quote');
+                    this.setValueAndPrice(record, lowerUSD, 'base');
                 }
             }
         }
+    }
+    /**
+     * Infer Multi Swap
+     */
+    inferMultiSwap(args) {
+        const { absSingleValueUSD, absMultiValueUSD, singleIsBase, transactionCount, ineligibleCount, ineligibleTotal, ineligibleIndexes, transactions } = args;
+        // Get Quote and Base Value, Check if Stablecoin
+        let absQuoteValueUSD = singleIsBase ? absMultiValueUSD : absSingleValueUSD;
+        let absBaseValueUSD = singleIsBase ? absSingleValueUSD : absMultiValueUSD;
+        let baseIsStable = singleIsBase
+            ? this.isStableCoin(transactions[0].baseSymbol, transactions[0].basePriceUSD)
+            : true;
+        let quoteIsStable = singleIsBase
+            ? true
+            : this.isStableCoin(transactions[0].quoteSymbol, transactions[0].quotePriceUSD);
+        // Iterate Transactions to check for Stablecoins
+        for (const record of transactions) {
+            const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD, } = record;
+            const isStableCoin = singleIsBase
+                ? this.isStableCoin(quoteSymbol, quotePriceUSD)
+                : this.isStableCoin(baseSymbol, basePriceUSD);
+            if (!isStableCoin) {
+                if (singleIsBase)
+                    quoteIsStable = false;
+                else
+                    baseIsStable = false;
+                break;
+            }
+        }
+        // Calculate Totals w/ Slippage
+        const { upperUSD, lowerUSD, lowerQuote } = this.calculateTotalsWithSlippage(absQuoteValueUSD, absBaseValueUSD, quoteIsStable, baseIsStable);
+        // Get Quote and Base Values
+        absQuoteValueUSD =
+            (lowerQuote ? lowerUSD : upperUSD) || absQuoteValueUSD;
+        absBaseValueUSD =
+            (lowerQuote ? upperUSD : lowerUSD) || absBaseValueUSD;
+        const avgQuoteValueUSD = singleIsBase
+            ? (absQuoteValueUSD - ineligibleTotal) /
+                (transactionCount - ineligibleCount)
+            : absQuoteValueUSD / transactionCount;
+        const avgBaseValueUSD = singleIsBase
+            ? absBaseValueUSD / transactionCount
+            : (absBaseValueUSD - ineligibleTotal) /
+                (transactionCount - ineligibleCount);
+        // Set Value and Price for Transactions
+        for (const i in transactions) {
+            const index = Number(i);
+            const record = transactions[index];
+            const isEligible = !ineligibleIndexes.includes(index);
+            // Base is Single Token
+            if (singleIsBase) {
+                this.setValueAndPrice(record, avgBaseValueUSD, 'base');
+                if (isEligible) {
+                    this.setValueAndPrice(record, avgQuoteValueUSD, 'quote');
+                }
+            }
+            // Quote is Single Token
+            else {
+                this.setValueAndPrice(record, avgQuoteValueUSD, 'quote');
+                if (isEligible) {
+                    this.setValueAndPrice(record, avgBaseValueUSD, 'base');
+                }
+            }
+        }
+    }
+    /**
+     * Set Value And Price
+     */
+    setValueAndPrice(record, value, type) {
+        if (type == 'quote') {
+            const priceUSD = Math.abs(value / record.quoteQuantity);
+            record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1;
+            record.quotePriceUSD = priceUSD;
+            if (record.quoteSymbol == record.feeSymbol) {
+                record.feePriceUSD = record.quotePriceUSD;
+                record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
+            }
+        }
+        else {
+            const priceUSD = Math.abs(value / record.baseQuantity);
+            record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1;
+            record.basePriceUSD = priceUSD;
+            if (record.baseSymbol == record.feeSymbol) {
+                record.feePriceUSD = record.basePriceUSD;
+                record.feeValueUSD = record.feeQuantity * record.feePriceUSD;
+            }
+        }
+    }
+    /**
+     * Calculate Totals w/ Slippage
+     */
+    calculateTotalsWithSlippage(absQuoteValueUSD, absBaseValueUSD, quoteIsStable, baseIsStable) {
+        const lowerQuote = absQuoteValueUSD <= absBaseValueUSD;
+        const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD;
+        const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD;
+        const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD);
+        const mid = min + (diff / 2);
+        const slippageAmount = diff / absBaseValueUSD;
+        const hasMediumSlippage = slippageAmount > values_1.slippageConfig.low &&
+            slippageAmount <= values_1.slippageConfig.high;
+        const hasHighSlippage = slippageAmount > values_1.slippageConfig.high;
+        let upperUSD = 0;
+        let lowerUSD = 0;
+        // Modify Slippage if not within low range and not stablecoins
+        if (hasMediumSlippage || hasHighSlippage) {
+            const slippageAdjust = hasMediumSlippage
+                ? values_1.slippageConfig.low
+                : values_1.slippageConfig.high;
+            if (!quoteIsStable && !baseIsStable) {
+                const upperMultiplier = 1 + (slippageAdjust / 2);
+                const lowerMultiplier = 1 - (slippageAdjust / 2);
+                upperUSD = mid * upperMultiplier;
+                lowerUSD = mid * lowerMultiplier;
+            }
+            else if ((quoteIsStable && lowerQuote) ||
+                (baseIsStable && !lowerQuote)) {
+                const upperMultiplier = 1 + slippageAdjust;
+                upperUSD = min * upperMultiplier;
+                lowerUSD = min;
+            }
+            else if ((quoteIsStable && !lowerQuote) ||
+                (baseIsStable && lowerQuote)) {
+                const lowerMultiplier = 1 - slippageAdjust;
+                upperUSD = max;
+                lowerUSD = max * lowerMultiplier;
+            }
+        }
+        return {
+            upperUSD,
+            lowerUSD,
+            lowerQuote
+        };
     }
     /**
      * Get Valid Price Record
@@ -659,7 +786,7 @@ class DefiPrices extends DefiTransactions_1.default {
         });
     }
     /**
-     * Get Days Out Lits
+     * Get Days Out List
      */
     getDaysOutList(times) {
         const nowMs = this.getTimeMs();

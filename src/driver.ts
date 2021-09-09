@@ -30,10 +30,39 @@ const main = async (args?: DriverArgs & Test) => {
 // Log Transactions
 
 const logTrans = () => {
+	const priceDecimals = 4
+	const valueDecimals = 10
+	const columnPadding = 20
+	const line = '-'.repeat(columnPadding * 4)
 	for (const chainNm in info.chains) {
 		const chainName = chainNm as keyof typeof info.chains
 		for (const transaction of info.chains[chainName].transactions) {
-			console.log(transaction)
+			const {
+				quoteSymbol,
+				quotePriceUSD,
+				quoteValueUSD,
+				baseSymbol,
+				basePriceUSD,
+				baseValueUSD,
+			} = transaction
+			const quote = quoteSymbol.padEnd(columnPadding, ' ')
+			const base = baseSymbol.padEnd(columnPadding, ' ')
+			const quoteVal = quoteValueUSD
+				.toFixed(valueDecimals)
+				.padEnd(columnPadding, ' ')
+			const quotePrice = quotePriceUSD
+				.toFixed(priceDecimals)
+				.padEnd(columnPadding, ' ')
+			const baseVal = baseValueUSD
+				.toFixed(valueDecimals)
+				.padEnd(columnPadding, ' ')
+			const basePrice = basePriceUSD
+				.toFixed(priceDecimals)
+				.padEnd(columnPadding, ' ')
+			console.log(line)
+			console.log(quote, '|', quoteVal, '|', quotePrice)
+			console.log(base, '|', baseVal, '|', basePrice)
+			console.log(line, '\n')
 		}
 	}
 }
@@ -42,11 +71,11 @@ const logTrans = () => {
 
 main({
 	useDebank: false,
-	getTransactions: true,
-	getPrices: false,
-	getBalances: true,
-	filterUnknownTokens: true,
-	useTempTransactions: false,
-	logTransactions: false,
-	logAssets: true,
+	getTransactions: false,
+	getPrices: true,
+	getBalances: false,
+	filterUnknownTokens: false,
+	useTempTransactions: true,
+	logTransactions: true,
+	logAssets: false,
 })

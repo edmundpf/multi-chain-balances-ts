@@ -114,11 +114,13 @@ class DefiTransactions extends DefiBalances_1.default {
         const tokens = {};
         // Add Token
         const addToken = (info) => {
+            var _a;
             const { token, quantity } = info;
             if (quantity != 0) {
+                const tokenQuantity = (((_a = tokens[token]) === null || _a === void 0 ? void 0 : _a.quantity) || 0) + quantity;
                 tokens[token] = {
                     amount: 0,
-                    quantity,
+                    quantity: tokenQuantity,
                     price: 0,
                 };
             }

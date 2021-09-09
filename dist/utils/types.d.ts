@@ -97,6 +97,17 @@ export declare type DriverArgs = {
     filterUnknownTokens?: boolean;
     useTempTransactions?: boolean;
 };
+export declare type InferMultiSwapArgs = {
+    absSingleValueUSD: number;
+    absMultiValueUSD: number;
+    singleIsBase: boolean;
+    transactionCount: number;
+    ineligibleCount: number;
+    ineligibleTotal: number;
+    ineligibleIndexes: number[];
+    transactions: HistoryRecord[];
+};
+export declare type BaseOrQuote = 'base' | 'quote';
 /**
  * Debank Types
  */

@@ -12,6 +12,8 @@ import {
 	TokenPrices,
 	LocalPriceData,
 	HistoryRecord,
+	InferMultiSwapArgs,
+	BaseOrQuote,
 } from './types'
 import {
 	ENDPOINTS,
@@ -50,11 +52,13 @@ export default class DefiPrices extends DefiTransactions {
 			...defaultDriverArgs,
 			...args,
 		}
-		if (getTransactions && !useTempTransactions) {
+		const fetchTransactions =
+			getPrices && (!useTempTransactions || !this.readTempFile())
+		if (getTransactions || fetchTransactions) {
 			await this.getTransactions(useDebank)
 		}
 		if (filterUnknownTokens) this.getUnknownTokens()
-		if (getPrices) await this.getPriceData(useTempTransactions)
+		if (getPrices) await this.getPriceData(!fetchTransactions)
 		if (getBalances) await this.getBalances()
 	}
 
@@ -63,7 +67,7 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private async getPriceData(useTempTransactions = false) {
-		if (!useTempTransactions || !this.readTempFile()) {
+		if (!useTempTransactions) {
 			await prepareDB()
 			const supportedTokens = await this.getSupportedTokens()
 			const supportedTokenNames = Object.keys(supportedTokens)
@@ -83,12 +87,10 @@ export default class DefiPrices extends DefiTransactions {
 			const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
 			this.linkMergedPrices(transPrices, mergedPrices)
 			this.updateTransactionData(transPrices)
-			this.inferTransactionPrices()
 			await this.syncMissingPrices(insertRecords)
 			this.writeTempFile()
-		} else {
-			this.inferTransactionPrices()
 		}
+		this.inferTransactionPrices()
 	}
 
 	/**
@@ -160,8 +162,12 @@ export default class DefiPrices extends DefiTransactions {
 				const hasFeePrice = feePriceUSD ? true : false
 				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName)
 				const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName)
-				const quoteSupported = supportedTokenNames.includes(quoteName)
-				const baseSupported = supportedTokenNames.includes(baseName)
+				const quoteIsLP = quoteName.endsWith('LP')
+				const baseIsLP = baseName.endsWith('LP')
+				const quoteSupported =
+					supportedTokenNames.includes(quoteName) && !quoteIsLP
+				const baseSupported =
+					supportedTokenNames.includes(baseName) && !baseIsLP
 				const quoteHasNativePrice = quoteSymbol == feeSymbol && hasFeePrice
 				const baseHasNativePrice = baseSymbol == feeSymbol && hasFeePrice
 				const baseIsFiat = baseSymbol == FIAT_CURRENCY
@@ -400,7 +406,7 @@ export default class DefiPrices extends DefiTransactions {
 		const setPriceAndValue = (
 			transaction: HistoryRecord,
 			info: ReturnType<typeof getPriceAndValue>,
-			type: 'quote' | 'base'
+			type: BaseOrQuote
 		) => {
 			const { price, value } = info
 			if (type == 'quote') {
@@ -464,7 +470,7 @@ export default class DefiPrices extends DefiTransactions {
 					}
 
 					// Base Token
-					else if (!baseFeeMatch && baseTokenMatch) {
+					if (!baseFeeMatch && baseTokenMatch) {
 						const priceMatch = getMatchingPrice(transPrices[tokenName], time)
 						if (priceMatch && priceMatch.price) {
 							const info = getPriceAndValue(priceMatch, baseQuantity)
@@ -492,9 +498,9 @@ export default class DefiPrices extends DefiTransactions {
 	private inferTransactionPrices() {
 		// Iterate Chains
 		for (const chainName of this.chainNames) {
-			const transRecs: {
+			const transactionsByHash: {
 				[index: string]: {
-					recs: HistoryRecord[]
+					transactions: HistoryRecord[]
 					quoteSymbols: string[]
 					baseSymbols: string[]
 				}
@@ -503,122 +509,184 @@ export default class DefiPrices extends DefiTransactions {
 
 			// Get Transactions by Hash
 			for (const record of transactions) {
-				const { id, quoteSymbol, baseSymbol, type } = record
+				const { id, type, quoteSymbol, baseSymbol } = record
 				if (type == 'swap') {
-					if (!transRecs[id]) {
-						transRecs[id] = {
-							recs: [],
+					if (!transactionsByHash[id]) {
+						transactionsByHash[id] = {
+							transactions: [],
 							quoteSymbols: [],
 							baseSymbols: [],
 						}
 					}
-					transRecs[id].recs.push(record)
-					if (!transRecs[id].quoteSymbols.includes(quoteSymbol)) {
-						transRecs[id].quoteSymbols.push(quoteSymbol)
+					transactionsByHash[id].transactions.push(record)
+
+					// Get Quote Symbols
+					if (!transactionsByHash[id].quoteSymbols.includes(quoteSymbol)) {
+						transactionsByHash[id].quoteSymbols.push(quoteSymbol)
 					}
-					if (!transRecs[id].baseSymbols.includes(baseSymbol)) {
-						transRecs[id].baseSymbols.push(baseSymbol)
+
+					// Get Base Symbols
+					if (!transactionsByHash[id].baseSymbols.includes(baseSymbol)) {
+						transactionsByHash[id].baseSymbols.push(baseSymbol)
 					}
 				}
 			}
 
 			// Iterate by Transaction Hash
-			for (const id in transRecs) {
-				const { recs, quoteSymbols, baseSymbols } = transRecs[id]
-				const transCount = recs.length
+			for (const id in transactionsByHash) {
+				const { transactions, quoteSymbols, baseSymbols } =
+					transactionsByHash[id]
+				const transactionCount = transactions.length
 
 				// Single Coin Swap
 				if (quoteSymbols.length == baseSymbols.length) {
-					this.inferSingleSwap(recs[0])
+					this.inferSingleSwap(transactions[0])
 				}
 
 				// Multi Coin Swap
 				else if (quoteSymbols.length != baseSymbols.length) {
-					const compIsBase = quoteSymbols.length > baseSymbols.length
-					const multiInfo = {
-						completeIndexes: [] as number[],
-						missingIndexes: [] as number[],
-						eligibleIndexes: [] as number[],
-						ineligibleIndexes: [] as number[],
-						eligibleTotal: 0,
-						ineligibleTotal: 0,
-						completeCount: 0,
-						missingCount: 0,
-						eligibleCount: 0,
-						ineligibleCount: 0,
-					}
-					let absCompValueUSD = 0
+					const singleIsBase = quoteSymbols.length > baseSymbols.length
+					const missingIndexes: number[] = []
+					const eligibleIndexes: number[] = []
+					const ineligibleIndexes: number[] = []
+					let eligibleTotal = 0
+					let ineligibleTotal = 0
+					let absSingleValueUSD = 0
 
 					// Set Multi Info
 					const setMultiInfo = (
-						symbol: string,
-						price: number,
-						compValue: number,
-						index: number
+						record: HistoryRecord,
+						index: number,
+						type: BaseOrQuote
 					) => {
+						const {
+							quoteSymbol,
+							baseSymbol,
+							quotePriceUSD,
+							basePriceUSD,
+							quoteValueUSD,
+							baseValueUSD,
+						} = record
+
+						const symbol = type == 'quote' ? quoteSymbol : baseSymbol
+						const price = type == 'quote' ? quotePriceUSD : basePriceUSD
+						const value = type == 'quote' ? quoteValueUSD : baseValueUSD
+
+						// Set Missing Indexes
 						if (!price) {
-							multiInfo.missingIndexes.push(index)
-						} else {
+							missingIndexes.push(index)
+						}
+
+						// Get Total Single Token Value
+						else {
 							const isStableCoin = this.isStableCoin(symbol, price)
-							const absRecValueUSD = Math.abs(compValue)
-							multiInfo.completeIndexes.push(index)
-							absCompValueUSD += absRecValueUSD
+							const absRecordValueUSD = Math.abs(value)
+
+							// Set Eligible Indexes
 							if (!isStableCoin) {
-								multiInfo.eligibleIndexes.push(index)
-								multiInfo.eligibleTotal += absRecValueUSD
-							} else {
-								multiInfo.ineligibleIndexes.push(index)
-								multiInfo.ineligibleTotal += absRecValueUSD
+								eligibleIndexes.push(index)
+								eligibleTotal += absRecordValueUSD
+							}
+
+							// Set Ineligible Indexes
+							else {
+								ineligibleIndexes.push(index)
+								ineligibleTotal += absRecordValueUSD
 							}
 						}
 					}
 
 					// Get Missing Indexes and Eligible Indexes
-					for (const i in recs) {
+					for (const i in transactions) {
 						const index = Number(i)
-						const record = recs[index]
-						const {
-							quoteSymbol,
-							quotePriceUSD,
-							quoteValueUSD,
-							baseSymbol,
-							basePriceUSD,
-							baseValueUSD,
-						} = record
+						const record = transactions[index]
 
-						// Single Base Token
-						if (compIsBase) {
-							setMultiInfo(quoteSymbol, quotePriceUSD, baseValueUSD, index)
+						// Add Single Token Value
+						const { quoteValueUSD, baseValueUSD } = record
+						const absSingleRecordValueUSD = Math.abs(
+							singleIsBase ? baseValueUSD : quoteValueUSD
+						)
+						absSingleValueUSD += absSingleRecordValueUSD
+
+						// Single Base Token Info
+						if (singleIsBase) {
+							setMultiInfo(record, index, 'quote')
 						}
 
-						// Single Quote Token
+						// Single Quote Token Info
 						else {
-							setMultiInfo(baseSymbol, basePriceUSD, quoteValueUSD, index)
+							setMultiInfo(record, index, 'base')
 						}
 					}
 
 					// Set Counts
-					multiInfo.completeCount = multiInfo.completeIndexes.length
-					multiInfo.missingCount = multiInfo.missingIndexes.length
-					multiInfo.eligibleCount = multiInfo.eligibleIndexes.length
-					multiInfo.ineligibleCount = multiInfo.ineligibleIndexes.length
+					const missingCount = missingIndexes.length
+					const completeCount = transactionCount - missingCount
+					const ineligibleCount = ineligibleIndexes.length
 
 					// Single Token has Price
-					if (absCompValueUSD) {
-						// Base is Single Token
-						if (compIsBase) {
-							// To-Do
+					if (absSingleValueUSD) {
+						// Has Missing Tokens
+						if (missingCount) {
+							// Get Total Multi Value & Get Average w/ Slippage
+							const absMultiValueUSD = singleIsBase
+								? absSingleValueUSD * (1 - slippageConfig.low)
+								: absSingleValueUSD * (1 + slippageConfig.low)
+							const avgValueUSD =
+								(absMultiValueUSD - ineligibleTotal) /
+								(transactionCount - ineligibleCount)
+
+							// Iterate Missing/Eligible Records
+							for (const index of [...missingIndexes, eligibleIndexes]) {
+								const transaction = transactions[Number(index)]
+
+								// Modify Quote Tokens
+								if (singleIsBase) {
+									this.setValueAndPrice(transaction, avgValueUSD, 'quote')
+								}
+
+								// Modify Base Tokens
+								else {
+									this.setValueAndPrice(transaction, avgValueUSD, 'base')
+								}
+							}
 						}
 
-						// Quote is Single Token
+						// No Missing Tokens
 						else {
-							// To-Do
+							const absMultiValueUSD = eligibleTotal + ineligibleTotal
+							this.inferMultiSwap({
+								absSingleValueUSD,
+								absMultiValueUSD,
+								singleIsBase,
+								transactionCount,
+								ineligibleCount,
+								ineligibleTotal,
+								ineligibleIndexes,
+								transactions,
+							})
 						}
 					}
 
 					// Infer Single Token from Multi Prices
-					else if (multiInfo.missingCount < transCount) {
-						// To-Do
+					else if (missingCount < transactionCount) {
+						const avgMultiValueUSD =
+							(eligibleTotal + ineligibleTotal) / completeCount
+						const absMultiValueUSD = avgMultiValueUSD * transactionCount
+						absSingleValueUSD = singleIsBase
+							? absMultiValueUSD * (1 - slippageConfig.low)
+							: absMultiValueUSD * (1 + slippageConfig.low)
+
+						this.inferMultiSwap({
+							absSingleValueUSD,
+							absMultiValueUSD,
+							singleIsBase,
+							transactionCount,
+							ineligibleCount,
+							ineligibleTotal,
+							ineligibleIndexes,
+							transactions,
+						})
 					}
 				}
 			}
@@ -630,31 +698,6 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private inferSingleSwap(record: HistoryRecord) {
-		// Set Value And Price
-		const setValueAndPrice = (
-			record: HistoryRecord,
-			value: number,
-			type: 'base' | 'quote'
-		) => {
-			if (type == 'quote') {
-				const priceUSD = Math.abs(value / record.quoteQuantity)
-				record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1
-				record.quotePriceUSD = priceUSD
-				if (record.quoteSymbol == record.feeSymbol) {
-					record.feePriceUSD = record.quotePriceUSD
-					record.feeValueUSD = record.feeQuantity * record.feePriceUSD
-				}
-			} else {
-				const priceUSD = Math.abs(value / record.baseQuantity)
-				record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1
-				record.basePriceUSD = priceUSD
-				if (record.baseSymbol == record.feeSymbol) {
-					record.feePriceUSD = record.basePriceUSD
-					record.feeValueUSD = record.feeQuantity * record.feePriceUSD
-				}
-			}
-		}
-
 		// Sterilize Swap
 		const {
 			quoteSymbol,
@@ -671,14 +714,14 @@ export default class DefiPrices extends DefiTransactions {
 
 		// Missing Quote
 		if (absBaseValueUSD && !absQuoteValueUSD) {
-			absQuoteValueUSD = Math.max(absBaseValueUSD * (1 - slippageConfig.low), 0)
-			setValueAndPrice(record, absQuoteValueUSD, 'quote')
+			absQuoteValueUSD = absBaseValueUSD * (1 - slippageConfig.low)
+			this.setValueAndPrice(record, absQuoteValueUSD, 'quote')
 		}
 
 		// Missing Base
 		else if (absQuoteValueUSD && !absBaseValueUSD) {
-			absBaseValueUSD = Math.max(absQuoteValueUSD * (1 + slippageConfig.low), 0)
-			setValueAndPrice(record, absBaseValueUSD, 'base')
+			absBaseValueUSD = absQuoteValueUSD * (1 + slippageConfig.low)
+			this.setValueAndPrice(record, absBaseValueUSD, 'base')
 		}
 
 		// Has Both Prices
@@ -687,57 +730,202 @@ export default class DefiPrices extends DefiTransactions {
 			absBaseValueUSD &&
 			!(quoteIsStable && baseIsStable)
 		) {
-			// Calculate Slippage
-			const lowerQuote = absQuoteValueUSD <= absBaseValueUSD
-			const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD
-			const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD
-			const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD)
-			const mid = min + diff / 2
-			const slippageAmount = diff / absBaseValueUSD
-			const hasMediumSlippage =
-				slippageAmount > slippageConfig.low &&
-				slippageAmount <= slippageConfig.high
-			const hasHighSlippage = slippageAmount > slippageConfig.high
+			// Calculate Values w/ Slippage
+			const { upperUSD, lowerUSD, lowerQuote } =
+				this.calculateTotalsWithSlippage(
+					absQuoteValueUSD,
+					absBaseValueUSD,
+					quoteIsStable,
+					baseIsStable
+				)
 
-			// Modify Slippage if not within low range and not stablecoins
-			if (
-				!(quoteIsStable && baseIsStable) &&
-				(hasMediumSlippage || hasHighSlippage)
-			) {
-				let upperUSD = 0
-				let lowerUSD = 0
-				const slippageAdjust = hasMediumSlippage
-					? slippageConfig.low
-					: slippageConfig.high
-				if (!quoteIsStable && !baseIsStable) {
-					upperUSD = mid + slippageConfig.low / 2
-					lowerUSD = Math.max(mid - slippageConfig.low / 2, 0)
-				} else if (
-					(quoteIsStable && lowerQuote) ||
-					(baseIsStable && !lowerQuote)
-				) {
-					upperUSD = min + slippageAdjust
-					lowerUSD = min
-				} else if (
-					(quoteIsStable && !lowerQuote) ||
-					(baseIsStable && lowerQuote)
-				) {
-					upperUSD = max
-					lowerUSD = Math.max(max - slippageAdjust, 0)
-				}
-
+			// Adjust Values w/ Slippage
+			if (upperUSD && lowerUSD) {
 				// Quote is lower
 				if (lowerQuote) {
-					setValueAndPrice(record, lowerUSD, 'quote')
-					setValueAndPrice(record, upperUSD, 'base')
+					this.setValueAndPrice(record, lowerUSD, 'quote')
+					this.setValueAndPrice(record, upperUSD, 'base')
 				}
 
 				// Base is lower
 				else {
-					setValueAndPrice(record, upperUSD, 'quote')
-					setValueAndPrice(record, lowerUSD, 'base')
+					this.setValueAndPrice(record, upperUSD, 'quote')
+					this.setValueAndPrice(record, lowerUSD, 'base')
 				}
 			}
+		}
+	}
+
+	/**
+	 * Infer Multi Swap
+	 */
+
+	private inferMultiSwap(args: InferMultiSwapArgs) {
+		const {
+			absSingleValueUSD,
+			absMultiValueUSD,
+			singleIsBase,
+			transactionCount,
+			ineligibleCount,
+			ineligibleTotal,
+			ineligibleIndexes,
+			transactions,
+		} = args
+
+		// Get Quote and Base Value, Check if Stablecoin
+		let absQuoteValueUSD = singleIsBase ? absMultiValueUSD : absSingleValueUSD
+		let absBaseValueUSD = singleIsBase ? absSingleValueUSD : absMultiValueUSD
+		let baseIsStable = singleIsBase
+			? this.isStableCoin(
+					transactions[0].baseSymbol,
+					transactions[0].basePriceUSD
+			  )
+			: true
+		let quoteIsStable = singleIsBase
+			? true
+			: this.isStableCoin(
+					transactions[0].quoteSymbol,
+					transactions[0].quotePriceUSD
+			  )
+
+		// Iterate Transactions to check for Stablecoins
+		for (const record of transactions) {
+			const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD } = record
+			const isStableCoin = singleIsBase
+				? this.isStableCoin(quoteSymbol, quotePriceUSD)
+				: this.isStableCoin(baseSymbol, basePriceUSD)
+			if (!isStableCoin) {
+				if (singleIsBase) quoteIsStable = false
+				else baseIsStable = false
+				break
+			}
+		}
+
+		// Calculate Totals w/ Slippage
+		const { upperUSD, lowerUSD, lowerQuote } = this.calculateTotalsWithSlippage(
+			absQuoteValueUSD,
+			absBaseValueUSD,
+			quoteIsStable,
+			baseIsStable
+		)
+
+		// Get Quote and Base Values
+		absQuoteValueUSD = (lowerQuote ? lowerUSD : upperUSD) || absQuoteValueUSD
+		absBaseValueUSD = (lowerQuote ? upperUSD : lowerUSD) || absBaseValueUSD
+		const avgQuoteValueUSD = singleIsBase
+			? (absQuoteValueUSD - ineligibleTotal) /
+			  (transactionCount - ineligibleCount)
+			: absQuoteValueUSD / transactionCount
+		const avgBaseValueUSD = singleIsBase
+			? absBaseValueUSD / transactionCount
+			: (absBaseValueUSD - ineligibleTotal) /
+			  (transactionCount - ineligibleCount)
+
+		// Set Value and Price for Transactions
+		for (const i in transactions) {
+			const index = Number(i)
+			const record = transactions[index]
+			const isEligible = !ineligibleIndexes.includes(index)
+
+			// Base is Single Token
+			if (singleIsBase) {
+				this.setValueAndPrice(record, avgBaseValueUSD, 'base')
+				if (isEligible) {
+					this.setValueAndPrice(record, avgQuoteValueUSD, 'quote')
+				}
+			}
+
+			// Quote is Single Token
+			else {
+				this.setValueAndPrice(record, avgQuoteValueUSD, 'quote')
+				if (isEligible) {
+					this.setValueAndPrice(record, avgBaseValueUSD, 'base')
+				}
+			}
+		}
+	}
+
+	/**
+	 * Set Value And Price
+	 */
+
+	private setValueAndPrice(
+		record: HistoryRecord,
+		value: number,
+		type: BaseOrQuote
+	) {
+		if (type == 'quote') {
+			const priceUSD = Math.abs(value / record.quoteQuantity)
+			record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1
+			record.quotePriceUSD = priceUSD
+			if (record.quoteSymbol == record.feeSymbol) {
+				record.feePriceUSD = record.quotePriceUSD
+				record.feeValueUSD = record.feeQuantity * record.feePriceUSD
+			}
+		} else {
+			const priceUSD = Math.abs(value / record.baseQuantity)
+			record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1
+			record.basePriceUSD = priceUSD
+			if (record.baseSymbol == record.feeSymbol) {
+				record.feePriceUSD = record.basePriceUSD
+				record.feeValueUSD = record.feeQuantity * record.feePriceUSD
+			}
+		}
+	}
+
+	/**
+	 * Calculate Totals w/ Slippage
+	 */
+
+	private calculateTotalsWithSlippage(
+		absQuoteValueUSD: number,
+		absBaseValueUSD: number,
+		quoteIsStable: boolean,
+		baseIsStable: boolean
+	) {
+		const lowerQuote = absQuoteValueUSD <= absBaseValueUSD
+		const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD
+		const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD
+		const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD)
+		const mid = min + diff / 2
+		const slippageAmount = diff / absBaseValueUSD
+		const hasMediumSlippage =
+			slippageAmount > slippageConfig.low &&
+			slippageAmount <= slippageConfig.high
+		const hasHighSlippage = slippageAmount > slippageConfig.high
+		let upperUSD = 0
+		let lowerUSD = 0
+
+		// Modify Slippage if not within low range and not stablecoins
+		if (hasMediumSlippage || hasHighSlippage) {
+			const slippageAdjust = hasMediumSlippage
+				? slippageConfig.low
+				: slippageConfig.high
+			if (!quoteIsStable && !baseIsStable) {
+				const upperMultiplier = 1 + slippageAdjust / 2
+				const lowerMultiplier = 1 - slippageAdjust / 2
+				upperUSD = mid * upperMultiplier
+				lowerUSD = mid * lowerMultiplier
+			} else if (
+				(quoteIsStable && lowerQuote) ||
+				(baseIsStable && !lowerQuote)
+			) {
+				const upperMultiplier = 1 + slippageAdjust
+				upperUSD = min * upperMultiplier
+				lowerUSD = min
+			} else if (
+				(quoteIsStable && !lowerQuote) ||
+				(baseIsStable && lowerQuote)
+			) {
+				const lowerMultiplier = 1 - slippageAdjust
+				upperUSD = max
+				lowerUSD = max * lowerMultiplier
+			}
+		}
+		return {
+			upperUSD,
+			lowerUSD,
+			lowerQuote,
 		}
 	}
 
@@ -816,7 +1004,7 @@ export default class DefiPrices extends DefiTransactions {
 	}
 
 	/**
-	 * Get Days Out Lits
+	 * Get Days Out List
 	 */
 
 	private getDaysOutList(times: number[]) {

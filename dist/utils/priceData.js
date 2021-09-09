@@ -127,18 +127,3 @@ const insertPrice = (record) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.insertPrice = insertPrice;
-// Main
-// const main = async () => {
-// 	const ready = await prepare()
-// 	if (ready) {
-// 		await insertPrice({
-// 			symbol: 'BTC',
-// 			time: 1630847991233,
-// 			price: 50000,
-// 		})
-// 		const prices = await selectPrices('BTC')
-// 		console.log(prices)
-// 	}
-// }
-// Run
-// main()

@@ -75,6 +75,18 @@ export default class DefiPrices extends DefiTransactions {
      */
     private inferSingleSwap;
     /**
+     * Infer Multi Swap
+     */
+    private inferMultiSwap;
+    /**
+     * Set Value And Price
+     */
+    private setValueAndPrice;
+    /**
+     * Calculate Totals w/ Slippage
+     */
+    private calculateTotalsWithSlippage;
+    /**
      * Get Valid Price Record
      */
     private getValidPriceRecord;
@@ -83,7 +95,7 @@ export default class DefiPrices extends DefiTransactions {
      */
     private getTokenPrices;
     /**
-     * Get Days Out Lits
+     * Get Days Out List
      */
     private getDaysOutList;
     /**

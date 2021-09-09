@@ -146,6 +146,23 @@ export type DriverArgs = {
 	useTempTransactions?: boolean
 }
 
+// Infer Multi Swap Args
+
+export type InferMultiSwapArgs = {
+	absSingleValueUSD: number
+	absMultiValueUSD: number
+	singleIsBase: boolean
+	transactionCount: number
+	ineligibleCount: number
+	ineligibleTotal: number
+	ineligibleIndexes: number[]
+	transactions: HistoryRecord[]
+}
+
+// Base Or Quote Type
+
+export type BaseOrQuote = 'base' | 'quote'
+
 /**
  * Debank Types
  */
