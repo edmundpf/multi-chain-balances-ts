@@ -135,7 +135,7 @@ class DefiBalances {
             chain.totalValue = chain.totalTokenValue + chain.totalVaultValue;
             // Update simplified assets
             for (const record of chain.tokens) {
-                if (this.isUnknownToken(record.symbol, chainName))
+                if (this.isUnknownToken(record.symbol))
                     continue;
                 addAsset(record, chainName);
                 addToken(record);
@@ -145,7 +145,7 @@ class DefiBalances {
                     addAsset(record, chainName, true);
                 }
                 for (const token of record.tokens) {
-                    if (this.isUnknownToken(record.symbol, chainName))
+                    if (this.isUnknownToken(record.symbol))
                         continue;
                     addToken(token);
                 }
@@ -208,10 +208,8 @@ class DefiBalances {
     /**
      * Is Unknown Token
      */
-    isUnknownToken(symbol, chainName) {
-        const sterileSymbol = chainName
-            ? this.sterilizeTokenNameNoStub(symbol, chainName)
-            : this.sterilizeTokenName(symbol);
+    isUnknownToken(symbol) {
+        const sterileSymbol = this.sterilizeTokenNameNoStub(symbol);
         return this.unknownTokens.includes(sterileSymbol);
     }
     /**
@@ -223,18 +221,16 @@ class DefiBalances {
     /**
      * Remove Token Contract Stub
      */
-    sterilizeTokenNameNoStub(tokenName, chainName) {
+    sterilizeTokenNameNoStub(tokenName) {
         let curName = tokenName;
         if (tokenName.includes('-')) {
             const dashParts = tokenName.split('-');
             const lastPart = dashParts[dashParts.length - 1];
             const isPool = lastPart == 'Pool';
-            if (!isPool) {
-                const addressStub = this.getAddressStub(this.chains[chainName].tokenAddresses[tokenName]);
-                if (lastPart == addressStub) {
-                    dashParts.pop();
-                    curName = dashParts.join('-');
-                }
+            const hasStub = lastPart.startsWith('0x') && lastPart.length == 6;
+            if (!isPool && hasStub) {
+                dashParts.pop();
+                curName = dashParts.join('-');
             }
         }
         return this.sterilizeTokenName(curName);
@@ -291,7 +287,7 @@ class DefiBalances {
                     if (symbol == values_1.NATIVE_TOKENS[chain]) {
                         chainInfo.nativeToken = tokenData;
                     }
-                    if (!this.isUnknownToken(symbol, chain)) {
+                    if (!this.isUnknownToken(symbol)) {
                         chainInfo.totalTokenValue += value;
                     }
                 }

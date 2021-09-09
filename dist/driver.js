@@ -35,20 +35,20 @@ const logTrans = () => {
         const chainName = chainNm;
         for (const transaction of info.chains[chainName].transactions) {
             const { quoteSymbol, quotePriceUSD, quoteValueUSD, baseSymbol, basePriceUSD, baseValueUSD, } = transaction;
-            const quote = quoteSymbol.padEnd(columnPadding, ' ');
-            const base = baseSymbol.padEnd(columnPadding, ' ');
+            const quote = quoteSymbol.padEnd(columnPadding * 1.5, ' ');
+            const base = baseSymbol.padEnd(columnPadding * 1.5, ' ');
             const quoteVal = quoteValueUSD
                 .toFixed(valueDecimals)
-                .padEnd(columnPadding, ' ');
+                .padStart(columnPadding, ' ');
             const quotePrice = quotePriceUSD
                 .toFixed(priceDecimals)
-                .padEnd(columnPadding, ' ');
+                .padStart(columnPadding, ' ');
             const baseVal = baseValueUSD
                 .toFixed(valueDecimals)
-                .padEnd(columnPadding, ' ');
+                .padStart(columnPadding, ' ');
             const basePrice = basePriceUSD
                 .toFixed(priceDecimals)
-                .padEnd(columnPadding, ' ');
+                .padStart(columnPadding, ' ');
             console.log(line);
             console.log(quote, '|', quoteVal, '|', quotePrice);
             console.log(base, '|', baseVal, '|', basePrice);
@@ -58,7 +58,7 @@ const logTrans = () => {
 };
 // Run
 main({
-    useDebank: false,
+    useDebank: true,
     useTempTransactions: false,
     filterUnknownTokens: true,
     getBalances: true,

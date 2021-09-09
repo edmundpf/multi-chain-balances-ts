@@ -144,6 +144,7 @@ export type DriverArgs = {
 	getBalances?: boolean
 	filterUnknownTokens?: boolean
 	useTempTransactions?: boolean
+	priorTransactions?: HistoryRecord[]
 }
 
 // Infer Multi Swap Args

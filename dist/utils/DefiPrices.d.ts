@@ -28,6 +28,10 @@ export default class DefiPrices extends DefiTransactions {
      */
     private writeTempFile;
     /**
+     * Import Prior Transactions
+     */
+    private importPriorTransactions;
+    /**
      * Get Supported Tokens
      */
     private getSupportedTokens;

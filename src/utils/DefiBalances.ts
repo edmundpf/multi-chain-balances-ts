@@ -156,7 +156,7 @@ export default class DefiBalances {
 
 			// Update simplified assets
 			for (const record of chain.tokens) {
-				if (this.isUnknownToken(record.symbol, chainName)) continue
+				if (this.isUnknownToken(record.symbol)) continue
 				addAsset(record, chainName)
 				addToken(record)
 			}
@@ -165,7 +165,7 @@ export default class DefiBalances {
 					addAsset(record, chainName, true)
 				}
 				for (const token of record.tokens) {
-					if (this.isUnknownToken(record.symbol, chainName)) continue
+					if (this.isUnknownToken(record.symbol)) continue
 					addToken(token)
 				}
 			}
@@ -247,10 +247,8 @@ export default class DefiBalances {
 	 * Is Unknown Token
 	 */
 
-	isUnknownToken(symbol: string, chainName?: keyof Chains) {
-		const sterileSymbol = chainName
-			? this.sterilizeTokenNameNoStub(symbol, chainName)
-			: this.sterilizeTokenName(symbol)
+	isUnknownToken(symbol: string) {
+		const sterileSymbol = this.sterilizeTokenNameNoStub(symbol)
 		return this.unknownTokens.includes(sterileSymbol)
 	}
 
@@ -266,20 +264,16 @@ export default class DefiBalances {
 	 * Remove Token Contract Stub
 	 */
 
-	sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains) {
+	sterilizeTokenNameNoStub(tokenName: string) {
 		let curName = tokenName
 		if (tokenName.includes('-')) {
 			const dashParts = tokenName.split('-')
 			const lastPart = dashParts[dashParts.length - 1]
 			const isPool = lastPart == 'Pool'
-			if (!isPool) {
-				const addressStub = this.getAddressStub(
-					this.chains[chainName].tokenAddresses[tokenName]
-				)
-				if (lastPart == addressStub) {
-					dashParts.pop()
-					curName = dashParts.join('-')
-				}
+			const hasStub = lastPart.startsWith('0x') && lastPart.length == 6
+			if (!isPool && hasStub) {
+				dashParts.pop()
+				curName = dashParts.join('-')
 			}
 		}
 		return this.sterilizeTokenName(curName)
@@ -343,7 +337,7 @@ export default class DefiBalances {
 					if (symbol == NATIVE_TOKENS[chain]) {
 						chainInfo.nativeToken = tokenData
 					}
-					if (!this.isUnknownToken(symbol, chain)) {
+					if (!this.isUnknownToken(symbol)) {
 						chainInfo.totalTokenValue += value
 					}
 				}

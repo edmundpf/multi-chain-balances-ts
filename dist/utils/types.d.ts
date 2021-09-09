@@ -96,6 +96,7 @@ export declare type DriverArgs = {
     getBalances?: boolean;
     filterUnknownTokens?: boolean;
     useTempTransactions?: boolean;
+    priorTransactions?: HistoryRecord[];
 };
 export declare type InferMultiSwapArgs = {
     absSingleValueUSD: number;

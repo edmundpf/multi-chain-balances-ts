@@ -44,7 +44,7 @@ export default class DefiBalances {
     /**
      * Is Unknown Token
      */
-    isUnknownToken(symbol: string, chainName?: keyof Chains): boolean;
+    isUnknownToken(symbol: string): boolean;
     /**
      * Sterilize Token Name
      */
@@ -52,7 +52,7 @@ export default class DefiBalances {
     /**
      * Remove Token Contract Stub
      */
-    sterilizeTokenNameNoStub(tokenName: string, chainName: keyof Chains): string;
+    sterilizeTokenNameNoStub(tokenName: string): string;
     /**
      * Get Address Stub
      */

@@ -100,7 +100,8 @@ export default class DefiTransactions extends DefiBalances {
 		for (const index in rawChains) {
 			const chainName = this.chainNames[index]
 			const records = rawChains[index] as ApeBoardHistory[] | DebankHistory[]
-			let historyRecords: HistoryRecord[] = []
+			const transactionHashes: string[] = []
+			let historyRecords: HistoryRecord[] = this.chains[chainName].transactions
 
 			// Get Token Addresses
 			const tokenAddresses = this.getTokenAddresses(
@@ -108,8 +109,25 @@ export default class DefiTransactions extends DefiBalances {
 				debankTokens[index]
 			)
 
+			// Get existing hashes from imported history records
+			if (historyRecords.length) {
+				for (const record of historyRecords) {
+					const { id } = record
+					if (!transactionHashes.includes(id)) transactionHashes.push(id)
+				}
+			}
+
 			// Iterate Records
 			for (const record of records) {
+				// Skip existing hashes
+				if (
+					transactionHashes.length &&
+					transactionHashes.includes(this.getTransactionID(record))
+				) {
+					continue
+				}
+
+				// Sterilize Records
 				const nestedRecord = this.sterilizeHistoryRecord(
 					record,
 					chainName,
@@ -142,8 +160,8 @@ export default class DefiTransactions extends DefiBalances {
 			for (let i = chain.transactions.length - 1; i >= 0; i--) {
 				const transaction = chain.transactions[i]
 				const { quoteSymbol, quotePriceUSD, baseSymbol, type } = transaction
-				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName)
-				const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName)
+				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol)
+				const baseName = this.sterilizeTokenNameNoStub(baseSymbol)
 				const quoteIsNative = this.isNativeToken(quoteName)
 				const isReceive = type == 'receive'
 				const isSwapOrSend = ['swap', 'send'].includes(type)
@@ -215,7 +233,7 @@ export default class DefiTransactions extends DefiBalances {
 			debankRec.tx?.name ||
 			apeBoardRec.interactions?.[0]?.function ||
 			''
-		const hash = (debankRec.id || apeBoardRec.hash || '').toLowerCase()
+		const hash = this.getTransactionID(record)
 		const date = new Date(
 			debankRec.time_at * 1000 || apeBoardRec.timestamp
 		).toISOString()
@@ -482,7 +500,7 @@ export default class DefiTransactions extends DefiBalances {
 		// Rename Duplicate Symbols
 		if (tokenAddresses[upperSymbol] && tokenAddresses[upperSymbol].length > 1) {
 			const addressStub = this.getAddressStub(lowerAddress)
-			newSymbol = `${newSymbol}-${upperChain}-${addressStub}`
+			newSymbol = `${newSymbol}-${upperChain}-0x${addressStub}`
 		}
 
 		// Add New Token Addresses
@@ -598,6 +616,18 @@ export default class DefiTransactions extends DefiBalances {
 			...params,
 			user_addr: this.address,
 		})
+	}
+
+	/**
+	 * Get Transaction ID
+	 */
+
+	private getTransactionID(record: DebankHistory | ApeBoardHistory) {
+		return (
+			(record as DebankHistory).id ||
+			(record as ApeBoardHistory).hash ||
+			''
+		).toLowerCase()
 	}
 
 	/**

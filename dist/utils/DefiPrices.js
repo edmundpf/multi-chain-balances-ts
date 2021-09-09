@@ -33,15 +33,20 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
+            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, priorTransactions } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
             const tempData = this.readTempFile();
             const fetchTransactions = getPrices && (!useTempTransactions || !tempData);
             this.filterUnknownTokens = filterUnknownTokens ? true : false;
+            if (priorTransactions === null || priorTransactions === void 0 ? void 0 : priorTransactions.length) {
+                this.importPriorTransactions(priorTransactions);
+            }
+            // Get Transactions
             if (getTransactions || fetchTransactions) {
                 yield this.getTransactions(useDebank);
                 if (this.filterUnknownTokens && !getPrices)
                     this.getUnknownTokens();
             }
+            // Get Prices and Balances
             if (getPrices)
                 yield this.getPriceData(!fetchTransactions, tempData);
             if (getBalances)
@@ -55,24 +60,30 @@ class DefiPrices extends DefiTransactions_1.default {
         return __awaiter(this, void 0, void 0, function* () {
             if (!useTempTransactions) {
                 yield priceData_1.prepareDB();
+                // Get Transaction Times for Supported Tokens
                 const supportedTokens = yield this.getSupportedTokens();
                 const supportedTokenNames = Object.keys(supportedTokens);
                 const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames);
                 const transTokenNames = Object.keys(transTokenTimes);
+                // Find Times w/ Missing Prices
                 const localPrices = yield this.getLocalPrices(transTokenNames);
                 const { transPrices, missingTimes } = this.linkLocalPrices(transTokenTimes, localPrices);
+                // Get Missing Prices from Coin Gecko API
                 const daysOutLists = this.getAllDaysOutLists(missingTimes);
                 const apiPrices = yield this.getAllTokenPrices(daysOutLists, supportedTokens);
                 const insertRecords = this.getInsertRecords(localPrices, apiPrices);
+                // Update Transactions w/ Prices
                 const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
                 this.linkMergedPrices(transPrices, mergedPrices);
                 this.updateTransactionData(transPrices);
+                // Insert Prices and Write Temp File
                 yield this.syncMissingPrices(insertRecords);
                 this.writeTempFile();
             }
             else {
-                this.setTempData(tempData);
+                this.setTempData(tempData); /* Use Temp File Data */
             }
+            // Infer Missing Transaction Prices
             this.inferTransactionPrices();
         });
     }
@@ -115,6 +126,15 @@ class DefiPrices extends DefiTransactions_1.default {
         fs_1.writeFileSync(values_1.TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2));
     }
     /**
+     * Import Prior Transactions
+     */
+    importPriorTransactions(records) {
+        for (const record of records) {
+            const chainName = record.chain;
+            this.chains[chainName].transactions.push(record);
+        }
+    }
+    /**
      * Get Supported Tokens
      */
     getSupportedTokens() {
@@ -146,8 +166,8 @@ class DefiPrices extends DefiTransactions_1.default {
                 const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, date } = transaction;
                 const time = this.getTimeMs(date);
                 const hasFeePrice = feePriceUSD ? true : false;
-                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
-                const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
+                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
+                const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
                 const quoteIsLP = quoteName.endsWith('LP');
                 const baseIsLP = baseName.endsWith('LP');
                 const quoteSupported = supportedTokenNames.includes(quoteName) && !quoteIsLP;
@@ -373,8 +393,8 @@ class DefiPrices extends DefiTransactions_1.default {
                 for (const transaction of chain.transactions) {
                     const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, date, } = transaction;
                     const time = this.getTimeMs(date);
-                    const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol, chainName);
-                    const baseName = this.sterilizeTokenNameNoStub(baseSymbol, chainName);
+                    const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
+                    const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
                     const quoteTokenMatch = tokenName == quoteName;
                     const baseTokenMatch = tokenName == baseName;
                     const quoteFeeMatch = quoteSymbol == feeSymbol && feePriceUSD;
@@ -424,7 +444,7 @@ class DefiPrices extends DefiTransactions_1.default {
             const transactions = this.chains[chainName].transactions;
             // Get Max Whitelist Value
             for (const transaction of transactions) {
-                const { type, quoteSymbol, quoteValueUSD, quotePriceUSD, } = transaction;
+                const { type, quoteSymbol, quoteValueUSD, quotePriceUSD } = transaction;
                 if (!quotePriceUSD)
                     continue;
                 if (['send', 'receive'].includes(type)) {
@@ -439,9 +459,9 @@ class DefiPrices extends DefiTransactions_1.default {
             }
             // Remove Garbage Prices
             for (const transaction of transactions) {
-                const { quoteSymbol, quoteValueUSD, baseSymbol, baseValueUSD, } = transaction;
-                const quoteIsUnknown = this.isUnknownToken(quoteSymbol, chainName);
-                const baseIsUnknown = this.isUnknownToken(baseSymbol, chainName);
+                const { quoteSymbol, quoteValueUSD, baseSymbol, baseValueUSD } = transaction;
+                const quoteIsUnknown = this.isUnknownToken(quoteSymbol);
+                const baseIsUnknown = this.isUnknownToken(baseSymbol);
                 if (quoteIsUnknown && quoteValueUSD > maxWhitelistValue) {
                     transaction.quoteValueUSD = transaction.quotePriceUSD = 0;
                     if (transaction.baseSymbol == values_1.FIAT_CURRENCY) {

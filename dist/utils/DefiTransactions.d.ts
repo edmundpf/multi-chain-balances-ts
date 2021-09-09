@@ -44,6 +44,10 @@ export default class DefiTransactions extends DefiBalances {
      */
     private getPrivateDebankEndpoint;
     /**
+     * Get Transaction ID
+     */
+    private getTransactionID;
+    /**
      * Is Contract
      */
     private isContract;
