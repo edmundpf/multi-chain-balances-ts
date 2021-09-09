@@ -16,18 +16,6 @@ export default class DefiPrices extends DefiTransactions {
      */
     private getPriceData;
     /**
-     * Read Temp File
-     */
-    private readTempFile;
-    /**
-     * Set Temp Data
-     */
-    private setTempData;
-    /**
-     * Write Temp File
-     */
-    private writeTempFile;
-    /**
      * Import Prior Transactions
      */
     private importPriorTransactions;

@@ -63,7 +63,6 @@ export declare const defaultDriverArgs: DriverArgs;
 export declare const defaultHistoryRecord: HistoryRecord;
 export declare const DEFAULT_MIN_VALUE = 0.05;
 export declare const DEFAULT_DB_FILE = ".defi-prices.db";
-export declare const TEMP_TRANSACTION_FILE = "transactions.json";
 export declare const stableCoinConfig: {
     otherCoins: string[];
     errorPercent: number;

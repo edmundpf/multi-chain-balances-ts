@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiTransactions_1 = __importDefault(require("./DefiTransactions"));
 const misc_1 = require("./misc");
-const fs_1 = require("fs");
 const priceData_1 = require("./priceData");
 const values_1 = require("./values");
 /**
@@ -33,22 +32,20 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, useTempTransactions, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
-            const tempData = this.readTempFile();
-            const fetchTransactions = getPrices && (!useTempTransactions || !tempData);
+            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
             this.filterUnknownTokens = filterUnknownTokens ? true : false;
             if (priorTransactions === null || priorTransactions === void 0 ? void 0 : priorTransactions.length) {
                 this.importPriorTransactions(priorTransactions);
             }
             // Get Transactions
-            if (getTransactions || fetchTransactions) {
+            if (getTransactions || getPrices) {
                 yield this.getTransactions(useDebank);
                 if (this.filterUnknownTokens && !getPrices)
                     this.getUnknownTokens();
             }
             // Get Prices and Balances
             if (getPrices)
-                yield this.getPriceData(!fetchTransactions, tempData);
+                yield this.getPriceData();
             if (getBalances)
                 yield this.getBalances();
         });
@@ -56,74 +53,30 @@ class DefiPrices extends DefiTransactions_1.default {
     /**
      * Get Price Data
      */
-    getPriceData(useTempTransactions = false, tempData) {
+    getPriceData() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!useTempTransactions) {
-                yield priceData_1.prepareDB();
-                // Get Transaction Times for Supported Tokens
-                const supportedTokens = yield this.getSupportedTokens();
-                const supportedTokenNames = Object.keys(supportedTokens);
-                const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames);
-                const transTokenNames = Object.keys(transTokenTimes);
-                // Find Times w/ Missing Prices
-                const localPrices = yield this.getLocalPrices(transTokenNames);
-                const { transPrices, missingTimes } = this.linkLocalPrices(transTokenTimes, localPrices);
-                // Get Missing Prices from Coin Gecko API
-                const daysOutLists = this.getAllDaysOutLists(missingTimes);
-                const apiPrices = yield this.getAllTokenPrices(daysOutLists, supportedTokens);
-                const insertRecords = this.getInsertRecords(localPrices, apiPrices);
-                // Update Transactions w/ Prices
-                const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
-                this.linkMergedPrices(transPrices, mergedPrices);
-                this.updateTransactionData(transPrices);
-                // Insert Prices and Write Temp File
-                yield this.syncMissingPrices(insertRecords);
-                this.writeTempFile();
-            }
-            else {
-                this.setTempData(tempData); /* Use Temp File Data */
-            }
+            yield priceData_1.prepareDB();
+            // Get Transaction Times for Supported Tokens
+            const supportedTokens = yield this.getSupportedTokens();
+            const supportedTokenNames = Object.keys(supportedTokens);
+            const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames);
+            const transTokenNames = Object.keys(transTokenTimes);
+            // Find Times w/ Missing Prices
+            const localPrices = yield this.getLocalPrices(transTokenNames);
+            const { transPrices, missingTimes } = this.linkLocalPrices(transTokenTimes, localPrices);
+            // Get Missing Prices from Coin Gecko API
+            const daysOutLists = this.getAllDaysOutLists(missingTimes);
+            const apiPrices = yield this.getAllTokenPrices(daysOutLists, supportedTokens);
+            const insertRecords = this.getInsertRecords(localPrices, apiPrices);
+            // Update Transactions w/ Prices
+            const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices);
+            this.linkMergedPrices(transPrices, mergedPrices);
+            this.updateTransactionData(transPrices);
             // Infer Missing Transaction Prices
             this.inferTransactionPrices();
+            // Add Missing Prices to DB
+            yield this.syncMissingPrices(insertRecords);
         });
-    }
-    /**
-     * Read Temp File
-     */
-    readTempFile() {
-        try {
-            return JSON.parse(fs_1.readFileSync(values_1.TEMP_TRANSACTION_FILE, 'utf-8'));
-        }
-        catch (err) {
-            return false;
-        }
-    }
-    /**
-     * Set Temp Data
-     */
-    setTempData(data) {
-        if (data) {
-            for (const chainNm in data) {
-                const chainName = chainNm;
-                const { transactions, tokenAddresses } = data[chainName];
-                this.chains[chainName].transactions = transactions;
-                this.chains[chainName].tokenAddresses = tokenAddresses;
-            }
-        }
-    }
-    /**
-     * Write Temp File
-     */
-    writeTempFile() {
-        const data = {};
-        for (const chainName of this.chainNames) {
-            const { transactions, tokenAddresses } = this.chains[chainName];
-            data[chainName] = {
-                transactions,
-                tokenAddresses,
-            };
-        }
-        fs_1.writeFileSync(values_1.TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2));
     }
     /**
      * Import Prior Transactions

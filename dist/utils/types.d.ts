@@ -95,7 +95,6 @@ export declare type DriverArgs = {
     getPrices?: boolean;
     getBalances?: boolean;
     filterUnknownTokens?: boolean;
-    useTempTransactions?: boolean;
     priorTransactions?: HistoryRecord[];
 };
 export declare type InferMultiSwapArgs = {
@@ -107,12 +106,6 @@ export declare type InferMultiSwapArgs = {
     ineligibleTotal: number;
     ineligibleIndexes: number[];
     transactions: HistoryRecord[];
-};
-export declare type TransactionsFile = {
-    [index: string]: {
-        transactions: HistoryRecord[];
-        tokenAddresses: StringDict;
-    };
 };
 export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 /**

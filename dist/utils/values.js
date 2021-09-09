@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.TEMP_TRANSACTION_FILE = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -79,7 +79,6 @@ exports.defaultDriverArgs = {
     getPrices: true,
     getBalances: true,
     filterUnknownTokens: true,
-    useTempTransactions: false,
 };
 // Default History Record
 exports.defaultHistoryRecord = {
@@ -108,8 +107,6 @@ exports.defaultHistoryRecord = {
 exports.DEFAULT_MIN_VALUE = 0.05;
 // Default Database File
 exports.DEFAULT_DB_FILE = '.defi-prices.db';
-// Temp Transaction File
-exports.TEMP_TRANSACTION_FILE = 'transactions.json';
 // Stablecoin Config
 exports.stableCoinConfig = {
     otherCoins: ['DAI'],

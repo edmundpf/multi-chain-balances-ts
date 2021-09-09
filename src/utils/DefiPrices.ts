@@ -1,6 +1,5 @@
 import DefiTransactions from './DefiTransactions'
 import { waitMs } from './misc'
-import { writeFileSync, readFileSync } from 'fs'
 import { prepareDB, selectPrices, insertPrice } from './priceData'
 import {
 	CoinGeckoToken,
@@ -14,7 +13,6 @@ import {
 	HistoryRecord,
 	InferMultiSwapArgs,
 	BaseOrQuote,
-	TransactionsFile,
 } from './types'
 import {
 	ENDPOINTS,
@@ -24,7 +22,6 @@ import {
 	FIAT_CURRENCY,
 	defaultDriverArgs,
 	slippageConfig,
-	TEMP_TRANSACTION_FILE,
 } from './values'
 
 /**
@@ -49,14 +46,11 @@ export default class DefiPrices extends DefiTransactions {
 			getPrices,
 			getBalances,
 			filterUnknownTokens,
-			useTempTransactions,
 			priorTransactions,
 		} = {
 			...defaultDriverArgs,
 			...args,
 		}
-		const tempData = this.readTempFile()
-		const fetchTransactions = getPrices && (!useTempTransactions || !tempData)
 		this.filterUnknownTokens = filterUnknownTokens ? true : false
 
 		if (priorTransactions?.length) {
@@ -64,13 +58,13 @@ export default class DefiPrices extends DefiTransactions {
 		}
 
 		// Get Transactions
-		if (getTransactions || fetchTransactions) {
+		if (getTransactions || getPrices) {
 			await this.getTransactions(useDebank)
 			if (this.filterUnknownTokens && !getPrices) this.getUnknownTokens()
 		}
 
 		// Get Prices and Balances
-		if (getPrices) await this.getPriceData(!fetchTransactions, tempData)
+		if (getPrices) await this.getPriceData()
 		if (getBalances) await this.getBalances()
 	}
 
@@ -78,93 +72,40 @@ export default class DefiPrices extends DefiTransactions {
 	 * Get Price Data
 	 */
 
-	private async getPriceData(
-		useTempTransactions = false,
-		tempData: ReturnType<DefiPrices['readTempFile']>
-	) {
-		if (!useTempTransactions) {
-			await prepareDB()
+	private async getPriceData() {
+		await prepareDB()
 
-			// Get Transaction Times for Supported Tokens
-			const supportedTokens = await this.getSupportedTokens()
-			const supportedTokenNames = Object.keys(supportedTokens)
-			const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames)
-			const transTokenNames = Object.keys(transTokenTimes)
+		// Get Transaction Times for Supported Tokens
+		const supportedTokens = await this.getSupportedTokens()
+		const supportedTokenNames = Object.keys(supportedTokens)
+		const transTokenTimes = this.getTokenTransactionTimes(supportedTokenNames)
+		const transTokenNames = Object.keys(transTokenTimes)
 
-			// Find Times w/ Missing Prices
-			const localPrices = await this.getLocalPrices(transTokenNames)
-			const { transPrices, missingTimes } = this.linkLocalPrices(
-				transTokenTimes,
-				localPrices
-			)
+		// Find Times w/ Missing Prices
+		const localPrices = await this.getLocalPrices(transTokenNames)
+		const { transPrices, missingTimes } = this.linkLocalPrices(
+			transTokenTimes,
+			localPrices
+		)
 
-			// Get Missing Prices from Coin Gecko API
-			const daysOutLists = this.getAllDaysOutLists(missingTimes)
-			const apiPrices = await this.getAllTokenPrices(
-				daysOutLists,
-				supportedTokens
-			)
-			const insertRecords = this.getInsertRecords(localPrices, apiPrices)
+		// Get Missing Prices from Coin Gecko API
+		const daysOutLists = this.getAllDaysOutLists(missingTimes)
+		const apiPrices = await this.getAllTokenPrices(
+			daysOutLists,
+			supportedTokens
+		)
+		const insertRecords = this.getInsertRecords(localPrices, apiPrices)
 
-			// Update Transactions w/ Prices
-			const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
-			this.linkMergedPrices(transPrices, mergedPrices)
-			this.updateTransactionData(transPrices)
-
-			// Insert Prices and Write Temp File
-			await this.syncMissingPrices(insertRecords)
-			this.writeTempFile()
-		} else {
-			this.setTempData(tempData) /* Use Temp File Data */
-		}
+		// Update Transactions w/ Prices
+		const mergedPrices = this.mergeApiAndLocalPrices(localPrices, apiPrices)
+		this.linkMergedPrices(transPrices, mergedPrices)
+		this.updateTransactionData(transPrices)
 
 		// Infer Missing Transaction Prices
 		this.inferTransactionPrices()
-	}
 
-	/**
-	 * Read Temp File
-	 */
-
-	private readTempFile() {
-		try {
-			return JSON.parse(
-				readFileSync(TEMP_TRANSACTION_FILE, 'utf-8')
-			) as TransactionsFile
-		} catch (err) {
-			return false
-		}
-	}
-
-	/**
-	 * Set Temp Data
-	 */
-
-	private setTempData(data?: ReturnType<DefiPrices['readTempFile']>) {
-		if (data) {
-			for (const chainNm in data) {
-				const chainName = chainNm as keyof Chains
-				const { transactions, tokenAddresses } = data[chainName]
-				this.chains[chainName].transactions = transactions
-				this.chains[chainName].tokenAddresses = tokenAddresses
-			}
-		}
-	}
-
-	/**
-	 * Write Temp File
-	 */
-
-	private writeTempFile() {
-		const data: TransactionsFile = {}
-		for (const chainName of this.chainNames) {
-			const { transactions, tokenAddresses } = this.chains[chainName]
-			data[chainName] = {
-				transactions,
-				tokenAddresses,
-			}
-		}
-		writeFileSync(TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2))
+		// Add Missing Prices to DB
+		await this.syncMissingPrices(insertRecords)
 	}
 
 	/**

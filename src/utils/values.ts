@@ -103,7 +103,6 @@ export const defaultDriverArgs: DriverArgs = {
 	getPrices: true,
 	getBalances: true,
 	filterUnknownTokens: true,
-	useTempTransactions: false,
 }
 
 // Default History Record
@@ -138,10 +137,6 @@ export const DEFAULT_MIN_VALUE = 0.05
 // Default Database File
 
 export const DEFAULT_DB_FILE = '.defi-prices.db'
-
-// Temp Transaction File
-
-export const TEMP_TRANSACTION_FILE = 'transactions.json'
 
 // Stablecoin Config
 

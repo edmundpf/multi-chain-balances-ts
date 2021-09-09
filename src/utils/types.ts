@@ -143,7 +143,6 @@ export type DriverArgs = {
 	getPrices?: boolean
 	getBalances?: boolean
 	filterUnknownTokens?: boolean
-	useTempTransactions?: boolean
 	priorTransactions?: HistoryRecord[]
 }
 
@@ -158,15 +157,6 @@ export type InferMultiSwapArgs = {
 	ineligibleTotal: number
 	ineligibleIndexes: number[]
 	transactions: HistoryRecord[]
-}
-
-// Transactions File
-
-export type TransactionsFile = {
-	[index: string]: {
-		transactions: HistoryRecord[]
-		tokenAddresses: StringDict
-	}
 }
 
 // Main Request Type

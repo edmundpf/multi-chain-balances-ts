@@ -59,7 +59,6 @@ const logTrans = () => {
 // Run
 main({
     useDebank: true,
-    useTempTransactions: false,
     filterUnknownTokens: true,
     getBalances: true,
     getTransactions: true,
