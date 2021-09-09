@@ -13,20 +13,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.insertPrice = exports.selectPrices = exports.prepareDB = void 0;
-const dotenv_1 = __importDefault(require("dotenv"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const path_1 = require("path");
 const os_1 = require("os");
+const values_1 = require("./values");
+const envValues_1 = require("./envValues");
 const sqlite_1 = require("sqlite");
 // Init
-dotenv_1.default.config();
 let db;
 /**
  * Constants
  */
-const DB_LOCATION = process.env.DB_LOCATION
-    ? path_1.resolve(process.env.DB_LOCATION)
-    : path_1.resolve(`${os_1.homedir()}/.defi-prices.db`);
+const DB_LOCATION = envValues_1.ENV_DB_LOCATION
+    ? path_1.resolve(envValues_1.ENV_DB_LOCATION)
+    : path_1.resolve(`${os_1.homedir()}/${values_1.DEFAULT_DB_FILE}`);
 const TABLE_NAME = 'prices';
 /**
  * Statements

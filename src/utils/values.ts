@@ -7,6 +7,12 @@ import { Chain, Chains, HistoryRecord, DriverArgs } from './types'
 export const FIAT_CURRENCY = 'USD'
 
 /**
+ * Default Deposit Chain
+ */
+
+export const DEFAULT_DEPOSIT_CHAIN = 'bsc'
+
+/**
  * Crypto Info
  */
 
@@ -95,6 +101,42 @@ export const coinGeckoDayCutoffs = [1, 90]
  * Default Values
  */
 
+/**
+ * Init Values
+ */
+
+// Init Chain
+
+const initChain = () => {
+	return {
+		totalValue: 0,
+		totalTokenValue: 0,
+		totalVaultValue: 0,
+		deposits: 0,
+		nativeToken: {
+			symbol: '',
+			amount: 0,
+			value: 0,
+		},
+		tokens: [],
+		vaults: [],
+		receipts: {},
+		transactions: [],
+		tokenAddresses: {},
+	} as Chain
+}
+
+// Init Chains
+
+export const initChains = () => {
+	return {
+		bsc: initChain(),
+		eth: initChain(),
+		ftm: initChain(),
+		matic: initChain(),
+	} as Chains
+}
+
 // Default History Record
 
 export const defaultHistoryRecord: HistoryRecord = {
@@ -121,43 +163,24 @@ export const defaultHistoryRecord: HistoryRecord = {
 }
 
 /**
- * Init Values
- */
-
-// Init Chain
-
-const initChain = () => {
-	return {
-		totalValue: 0,
-		totalTokenValue: 0,
-		totalVaultValue: 0,
-		nativeToken: {
-			symbol: '',
-			amount: 0,
-			value: 0,
-		},
-		tokens: [],
-		vaults: [],
-		receipts: {},
-		transactions: [],
-		tokenAddresses: {},
-	} as Chain
-}
-
-// Init Chains
-
-export const initChains = () => {
-	return {
-		bsc: initChain(),
-		eth: initChain(),
-		ftm: initChain(),
-		matic: initChain(),
-	} as Chains
-}
-
-/**
  * Misc
  */
+
+// One Second
+
+const ONE_SECOND = 1000
+
+// One Minute
+
+const ONE_MINUTE = 60 * ONE_SECOND
+
+// One Hour
+
+const ONE_HOUR = 60 * ONE_MINUTE
+
+// One Day
+
+export const ONE_DAY = 24 * ONE_HOUR
 
 // Default Driver Args
 
@@ -184,25 +207,14 @@ export const slippageConfig = {
 	high: 0.01,
 }
 
+// Temp Transaction File
+
+export const TEMP_TRANSACTION_FILE = 'transactions.json'
+
 // Default Minimum Value
 
 export const DEFAULT_MIN_VALUE = 0.05
 
-// One Second
+// Default Database File
 
-const ONE_SECOND = 1000
-
-// One Minute
-
-const ONE_MINUTE = 60 * ONE_SECOND
-
-// One Hour
-const ONE_HOUR = 60 * ONE_MINUTE
-
-// One Day
-
-export const ONE_DAY = 24 * ONE_HOUR
-
-// Temp Transaction File
-
-export const TEMP_TRANSACTION_FILE = 'transactions.json'
+export const DEFAULT_DB_FILE = '.defi-prices.db'

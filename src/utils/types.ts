@@ -88,6 +88,7 @@ export type Chain = {
 	totalValue: number
 	totalTokenValue: number
 	totalVaultValue: number
+	deposits: number
 	nativeToken: TokenData
 	tokens: TokenData[]
 	vaults: VaultData[]
@@ -162,6 +163,15 @@ export type InferMultiSwapArgs = {
 // Base Or Quote Type
 
 export type BaseOrQuote = 'base' | 'quote'
+
+// Transactions File
+
+export type TransactionsFile = {
+	[index: string]: {
+		transactions: HistoryRecord[]
+		tokenAddresses: StringDict
+	}
+}
 
 /**
  * Debank Types

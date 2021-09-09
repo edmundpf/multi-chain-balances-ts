@@ -1,6 +1,6 @@
-import dotenv from 'dotenv'
 import axios from 'axios'
 import { titleCase, hasNumber } from './misc'
+import { ENV_ADDRESS, ENV_MIN_VALUE } from './envValues'
 import {
 	APIS,
 	ENDPOINTS,
@@ -11,7 +11,6 @@ import {
 	EXCHANGE_ALIASES,
 	FIAT_CURRENCY,
 	stableCoinConfig,
-	DEFAULT_MIN_VALUE,
 } from './values'
 import {
 	Token,
@@ -24,12 +23,6 @@ import {
 	Assets,
 } from './types'
 
-// Init
-
-dotenv.config()
-const ADDRESS = process.env.ADDRESS || ''
-const MIN_VALUE = Number(process.env.MIN_VALUE) || DEFAULT_MIN_VALUE
-
 /**
  * DefiBalances Class
  */
@@ -41,6 +34,7 @@ export default class DefiBalances {
 	totalValue = 0
 	totalTokenValue = 0
 	totalVaultValue = 0
+	totalDeposits = 0
 	chains = initChains()
 	assets: Assets = {}
 	chainNames: Array<keyof Chains>
@@ -56,14 +50,14 @@ export default class DefiBalances {
 			this.address = address /* Address Argument */
 		} else {
 			// First Address from Environment Array
-			if (ADDRESS.includes('[')) {
+			if (ENV_ADDRESS.includes('[')) {
 				try {
-					this.address = JSON.parse(ADDRESS)?.[0] || ''
+					this.address = JSON.parse(ENV_ADDRESS)?.[0] || ''
 				} catch (err) {
 					// Do Nothing
 				}
 			} else {
-				this.address = ADDRESS /* Single Environment Address */
+				this.address = ENV_ADDRESS /* Single Environment Address */
 			}
 		}
 		this.address = this.address.toLowerCase()
@@ -168,7 +162,7 @@ export default class DefiBalances {
 				}
 
 				// Check for minimum value
-				else if (value >= MIN_VALUE) {
+				else if (value >= ENV_MIN_VALUE) {
 					const chainInfo = this.chains[chain]
 					const tokenData: TokenData = {
 						symbol,
@@ -212,7 +206,7 @@ export default class DefiBalances {
 					const value = vault?.stats?.net_usd_value || 0
 
 					// Check for minimum value
-					if (value >= MIN_VALUE) {
+					if (value >= ENV_MIN_VALUE) {
 						let vaultSymbol = ''
 						const tokens = vault?.detail?.supply_token_list || []
 						const tokenData: TokenData[] = []

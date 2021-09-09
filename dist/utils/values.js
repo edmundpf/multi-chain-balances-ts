@@ -1,10 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEMP_TRANSACTION_FILE = exports.ONE_DAY = exports.DEFAULT_MIN_VALUE = exports.slippageConfig = exports.stableCoinConfig = exports.defaultDriverArgs = exports.initChains = exports.defaultHistoryRecord = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.TEMP_TRANSACTION_FILE = exports.slippageConfig = exports.stableCoinConfig = exports.defaultDriverArgs = exports.ONE_DAY = exports.defaultHistoryRecord = exports.initChains = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.DEFAULT_DEPOSIT_CHAIN = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
 exports.FIAT_CURRENCY = 'USD';
+/**
+ * Default Deposit Chain
+ */
+exports.DEFAULT_DEPOSIT_CHAIN = 'bsc';
 /**
  * Crypto Info
  */
@@ -72,6 +76,38 @@ exports.coinGeckoDayCutoffs = [1, 90];
 /**
  * Default Values
  */
+/**
+ * Init Values
+ */
+// Init Chain
+const initChain = () => {
+    return {
+        totalValue: 0,
+        totalTokenValue: 0,
+        totalVaultValue: 0,
+        deposits: 0,
+        nativeToken: {
+            symbol: '',
+            amount: 0,
+            value: 0,
+        },
+        tokens: [],
+        vaults: [],
+        receipts: {},
+        transactions: [],
+        tokenAddresses: {},
+    };
+};
+// Init Chains
+const initChains = () => {
+    return {
+        bsc: initChain(),
+        eth: initChain(),
+        ftm: initChain(),
+        matic: initChain(),
+    };
+};
+exports.initChains = initChains;
 // Default History Record
 exports.defaultHistoryRecord = {
     id: '',
@@ -96,39 +132,16 @@ exports.defaultHistoryRecord = {
     toAddress: '',
 };
 /**
- * Init Values
- */
-// Init Chain
-const initChain = () => {
-    return {
-        totalValue: 0,
-        totalTokenValue: 0,
-        totalVaultValue: 0,
-        nativeToken: {
-            symbol: '',
-            amount: 0,
-            value: 0,
-        },
-        tokens: [],
-        vaults: [],
-        receipts: {},
-        transactions: [],
-        tokenAddresses: {},
-    };
-};
-// Init Chains
-const initChains = () => {
-    return {
-        bsc: initChain(),
-        eth: initChain(),
-        ftm: initChain(),
-        matic: initChain(),
-    };
-};
-exports.initChains = initChains;
-/**
  * Misc
  */
+// One Second
+const ONE_SECOND = 1000;
+// One Minute
+const ONE_MINUTE = 60 * ONE_SECOND;
+// One Hour
+const ONE_HOUR = 60 * ONE_MINUTE;
+// One Day
+exports.ONE_DAY = 24 * ONE_HOUR;
 // Default Driver Args
 exports.defaultDriverArgs = {
     useDebank: true,
@@ -148,15 +161,9 @@ exports.slippageConfig = {
     low: 0.002,
     high: 0.01,
 };
-// Default Minimum Value
-exports.DEFAULT_MIN_VALUE = 0.05;
-// One Second
-const ONE_SECOND = 1000;
-// One Minute
-const ONE_MINUTE = 60 * ONE_SECOND;
-// One Hour
-const ONE_HOUR = 60 * ONE_MINUTE;
-// One Day
-exports.ONE_DAY = 24 * ONE_HOUR;
 // Temp Transaction File
 exports.TEMP_TRANSACTION_FILE = 'transactions.json';
+// Default Minimum Value
+exports.DEFAULT_MIN_VALUE = 0.05;
+// Default Database File
+exports.DEFAULT_DB_FILE = '.defi-prices.db';

@@ -12,14 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const dotenv_1 = __importDefault(require("dotenv"));
 const axios_1 = __importDefault(require("axios"));
 const misc_1 = require("./misc");
+const envValues_1 = require("./envValues");
 const values_1 = require("./values");
-// Init
-dotenv_1.default.config();
-const ADDRESS = process.env.ADDRESS || '';
-const MIN_VALUE = Number(process.env.MIN_VALUE) || values_1.DEFAULT_MIN_VALUE;
 /**
  * DefiBalances Class
  */
@@ -34,6 +30,7 @@ class DefiBalances {
         this.totalValue = 0;
         this.totalTokenValue = 0;
         this.totalVaultValue = 0;
+        this.totalDeposits = 0;
         this.chains = values_1.initChains();
         this.assets = {};
         this.tokenNames = [];
@@ -43,16 +40,16 @@ class DefiBalances {
         }
         else {
             // First Address from Environment Array
-            if (ADDRESS.includes('[')) {
+            if (envValues_1.ENV_ADDRESS.includes('[')) {
                 try {
-                    this.address = ((_a = JSON.parse(ADDRESS)) === null || _a === void 0 ? void 0 : _a[0]) || '';
+                    this.address = ((_a = JSON.parse(envValues_1.ENV_ADDRESS)) === null || _a === void 0 ? void 0 : _a[0]) || '';
                 }
                 catch (err) {
                     // Do Nothing
                 }
             }
             else {
-                this.address = ADDRESS; /* Single Environment Address */
+                this.address = envValues_1.ENV_ADDRESS; /* Single Environment Address */
             }
         }
         this.address = this.address.toLowerCase();
@@ -144,7 +141,7 @@ class DefiBalances {
                     this.chains[chain].receipts[formattedSymbol] = amount;
                 }
                 // Check for minimum value
-                else if (value >= MIN_VALUE) {
+                else if (value >= envValues_1.ENV_MIN_VALUE) {
                     const chainInfo = this.chains[chain];
                     const tokenData = {
                         symbol,
@@ -178,7 +175,7 @@ class DefiBalances {
                 for (const vault of vaults) {
                     const value = ((_a = vault === null || vault === void 0 ? void 0 : vault.stats) === null || _a === void 0 ? void 0 : _a.net_usd_value) || 0;
                     // Check for minimum value
-                    if (value >= MIN_VALUE) {
+                    if (value >= envValues_1.ENV_MIN_VALUE) {
                         let vaultSymbol = '';
                         const tokens = ((_b = vault === null || vault === void 0 ? void 0 : vault.detail) === null || _b === void 0 ? void 0 : _b.supply_token_list) || [];
                         const tokenData = [];

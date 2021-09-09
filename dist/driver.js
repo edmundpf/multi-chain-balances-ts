@@ -17,14 +17,23 @@ const _1 = __importDefault(require("./"));
 const info = new _1.default();
 // Main
 const main = (args) => __awaiter(void 0, void 0, void 0, function* () {
-    const { logTransactions, logAssets } = Object.assign({ logTransactions: false, logAssets: false }, args);
+    const { logTransactions, logChainDeposits, logAssets } = Object.assign({ logTransactions: false, logChainDeposits: false, logAssets: false }, args);
     yield info.driver(args);
-    if (logAssets)
-        console.log(info.assets);
     if (logTransactions)
         logTrans();
+    if (logChainDeposits)
+        logDeposits();
+    if (logAssets)
+        console.log(info.assets);
     // Testing
 });
+// Log Deposits
+const logDeposits = () => {
+    for (const chainName of info.chainNames) {
+        const deposits = info.chains[chainName].deposits;
+        console.log(chainName, deposits);
+    }
+};
 // Log Transactions
 const logTrans = () => {
     const priceDecimals = 4;
@@ -37,10 +46,18 @@ const logTrans = () => {
             const { quoteSymbol, quotePriceUSD, quoteValueUSD, baseSymbol, basePriceUSD, baseValueUSD, } = transaction;
             const quote = quoteSymbol.padEnd(columnPadding, ' ');
             const base = baseSymbol.padEnd(columnPadding, ' ');
-            const quoteVal = quoteValueUSD.toFixed(valueDecimals).padEnd(columnPadding, ' ');
-            const quotePrice = quotePriceUSD.toFixed(priceDecimals).padEnd(columnPadding, ' ');
-            const baseVal = baseValueUSD.toFixed(valueDecimals).padEnd(columnPadding, ' ');
-            const basePrice = basePriceUSD.toFixed(priceDecimals).padEnd(columnPadding, ' ');
+            const quoteVal = quoteValueUSD
+                .toFixed(valueDecimals)
+                .padEnd(columnPadding, ' ');
+            const quotePrice = quotePriceUSD
+                .toFixed(priceDecimals)
+                .padEnd(columnPadding, ' ');
+            const baseVal = baseValueUSD
+                .toFixed(valueDecimals)
+                .padEnd(columnPadding, ' ');
+            const basePrice = basePriceUSD
+                .toFixed(priceDecimals)
+                .padEnd(columnPadding, ' ');
             console.log(line);
             console.log(quote, '|', quoteVal, '|', quotePrice);
             console.log(base, '|', baseVal, '|', basePrice);
@@ -51,11 +68,12 @@ const logTrans = () => {
 // Run
 main({
     useDebank: false,
-    getTransactions: false,
+    useTempTransactions: false,
+    filterUnknownTokens: true,
+    getBalances: true,
+    getTransactions: true,
     getPrices: true,
-    getBalances: false,
-    filterUnknownTokens: false,
-    useTempTransactions: true,
     logTransactions: true,
-    logAssets: false,
+    logAssets: true,
+    logChainDeposits: true,
 });

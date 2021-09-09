@@ -1,22 +1,22 @@
-import dotenv from 'dotenv'
 import sqlite3 from 'sqlite3'
 import { resolve } from 'path'
 import { homedir } from 'os'
+import { DEFAULT_DB_FILE } from './values'
+import { ENV_DB_LOCATION } from './envValues'
 import { LocalPriceData } from './types'
 import { open, Database } from 'sqlite'
 
 // Init
 
-dotenv.config()
 let db: Database<sqlite3.Database, sqlite3.Statement>
 
 /**
  * Constants
  */
 
-const DB_LOCATION = process.env.DB_LOCATION
-	? resolve(process.env.DB_LOCATION)
-	: resolve(`${homedir()}/.defi-prices.db`)
+const DB_LOCATION = ENV_DB_LOCATION
+	? resolve(ENV_DB_LOCATION)
+	: resolve(`${homedir()}/${DEFAULT_DB_FILE}`)
 const TABLE_NAME = 'prices'
 
 /**

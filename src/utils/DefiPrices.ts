@@ -14,6 +14,7 @@ import {
 	HistoryRecord,
 	InferMultiSwapArgs,
 	BaseOrQuote,
+	TransactionsFile,
 } from './types'
 import {
 	ENDPOINTS,
@@ -91,6 +92,7 @@ export default class DefiPrices extends DefiTransactions {
 			this.writeTempFile()
 		}
 		this.inferTransactionPrices()
+		this.calculateDeposits()
 	}
 
 	/**
@@ -99,10 +101,14 @@ export default class DefiPrices extends DefiTransactions {
 
 	private readTempFile() {
 		try {
-			const data = JSON.parse(readFileSync(TEMP_TRANSACTION_FILE, 'utf-8'))
+			const data: TransactionsFile = JSON.parse(
+				readFileSync(TEMP_TRANSACTION_FILE, 'utf-8')
+			)
 			for (const chainNm in data) {
 				const chainName = chainNm as keyof Chains
-				this.chains[chainName].transactions = data[chainName] as HistoryRecord[]
+				const { transactions, tokenAddresses } = data[chainName]
+				this.chains[chainName].transactions = transactions
+				this.chains[chainName].tokenAddresses = tokenAddresses
 			}
 			return true
 		} catch (err) {
@@ -115,9 +121,13 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private writeTempFile() {
-		const data: { [index: string]: HistoryRecord[] } = {}
+		const data: TransactionsFile = {}
 		for (const chainName of this.chainNames) {
-			data[chainName] = this.chains[chainName].transactions
+			const { transactions, tokenAddresses } = this.chains[chainName]
+			data[chainName] = {
+				transactions,
+				tokenAddresses,
+			}
 		}
 		writeFileSync(TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2))
 	}

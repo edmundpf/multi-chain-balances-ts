@@ -8,6 +8,7 @@ export default class DefiBalances {
     totalValue: number;
     totalTokenValue: number;
     totalVaultValue: number;
+    totalDeposits: number;
     chains: Chains;
     assets: Assets;
     chainNames: Array<keyof Chains>;

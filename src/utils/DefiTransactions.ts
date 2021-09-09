@@ -1,4 +1,5 @@
 import DefiBalances from './DefiBalances'
+import { ENV_DEPOSIT_CHAIN } from './envValues'
 import {
 	NATIVE_TOKENS,
 	ENDPOINTS,
@@ -576,6 +577,40 @@ export default class DefiTransactions extends DefiBalances {
 			if (token.firstTransIsReceive && !token.hasSwapOrSend) {
 				this.unknownTokens.push(tokenName)
 			}
+		}
+	}
+
+	/**
+	 * Calculate Deposits
+	 */
+
+	calculateDeposits() {
+		for (const chainName of this.chainNames) {
+			let deposits = 0
+			const chain = this.chains[chainName]
+			const isDefaultDepositChain = chainName == ENV_DEPOSIT_CHAIN
+			for (const transaction of chain.transactions) {
+				const { type, quoteSymbol, quoteValueUSD, quoteQuantity } = transaction
+				if (type == 'receive') {
+					const isNativeToken = this.isNativeToken(quoteSymbol)
+					const isUnknownToken = this.isUnknownToken(
+						{
+							symbol: quoteSymbol,
+							value: quoteValueUSD,
+							amount: quoteQuantity,
+						},
+						chainName
+					)
+					if (
+						(!isDefaultDepositChain && !isUnknownToken) ||
+						(isDefaultDepositChain && isNativeToken)
+					) {
+						deposits += quoteValueUSD
+					}
+				}
+			}
+			chain.deposits = deposits
+			this.totalDeposits += deposits
 		}
 	}
 

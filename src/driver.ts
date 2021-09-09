@@ -5,6 +5,7 @@ import { DriverArgs } from './utils/types'
 
 type Test = {
 	logTransactions?: boolean
+	logChainDeposits?: boolean
 	logAssets?: boolean
 }
 
@@ -15,16 +16,27 @@ const info = new DefiInfo()
 // Main
 
 const main = async (args?: DriverArgs & Test) => {
-	const { logTransactions, logAssets } = {
+	const { logTransactions, logChainDeposits, logAssets } = {
 		logTransactions: false,
+		logChainDeposits: false,
 		logAssets: false,
 		...args,
 	}
 	await info.driver(args)
-	if (logAssets) console.log(info.assets)
 	if (logTransactions) logTrans()
+	if (logChainDeposits) logDeposits()
+	if (logAssets) console.log(info.assets)
 
 	// Testing
+}
+
+// Log Deposits
+
+const logDeposits = () => {
+	for (const chainName of info.chainNames) {
+		const deposits = info.chains[chainName].deposits
+		console.log(chainName, deposits)
+	}
 }
 
 // Log Transactions
@@ -71,11 +83,12 @@ const logTrans = () => {
 
 main({
 	useDebank: false,
-	getTransactions: false,
+	useTempTransactions: false,
+	filterUnknownTokens: true,
+	getBalances: true,
+	getTransactions: true,
 	getPrices: true,
-	getBalances: false,
-	filterUnknownTokens: false,
-	useTempTransactions: true,
 	logTransactions: true,
-	logAssets: false,
+	logAssets: true,
+	logChainDeposits: true,
 })

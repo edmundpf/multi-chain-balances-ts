@@ -68,6 +68,7 @@ class DefiPrices extends DefiTransactions_1.default {
                 this.writeTempFile();
             }
             this.inferTransactionPrices();
+            this.calculateDeposits();
         });
     }
     /**
@@ -78,7 +79,9 @@ class DefiPrices extends DefiTransactions_1.default {
             const data = JSON.parse(fs_1.readFileSync(values_1.TEMP_TRANSACTION_FILE, 'utf-8'));
             for (const chainNm in data) {
                 const chainName = chainNm;
-                this.chains[chainName].transactions = data[chainName];
+                const { transactions, tokenAddresses } = data[chainName];
+                this.chains[chainName].transactions = transactions;
+                this.chains[chainName].tokenAddresses = tokenAddresses;
             }
             return true;
         }
@@ -92,7 +95,11 @@ class DefiPrices extends DefiTransactions_1.default {
     writeTempFile() {
         const data = {};
         for (const chainName of this.chainNames) {
-            data[chainName] = this.chains[chainName].transactions;
+            const { transactions, tokenAddresses } = this.chains[chainName];
+            data[chainName] = {
+                transactions,
+                tokenAddresses,
+            };
         }
         fs_1.writeFileSync(values_1.TEMP_TRANSACTION_FILE, JSON.stringify(data, null, 2));
     }
@@ -519,7 +526,7 @@ class DefiPrices extends DefiTransactions_1.default {
                                 ineligibleCount,
                                 ineligibleTotal,
                                 ineligibleIndexes,
-                                transactions
+                                transactions,
                             });
                         }
                     }
@@ -538,7 +545,7 @@ class DefiPrices extends DefiTransactions_1.default {
                             ineligibleCount,
                             ineligibleTotal,
                             ineligibleIndexes,
-                            transactions
+                            transactions,
                         });
                     }
                 }
@@ -590,7 +597,7 @@ class DefiPrices extends DefiTransactions_1.default {
      * Infer Multi Swap
      */
     inferMultiSwap(args) {
-        const { absSingleValueUSD, absMultiValueUSD, singleIsBase, transactionCount, ineligibleCount, ineligibleTotal, ineligibleIndexes, transactions } = args;
+        const { absSingleValueUSD, absMultiValueUSD, singleIsBase, transactionCount, ineligibleCount, ineligibleTotal, ineligibleIndexes, transactions, } = args;
         // Get Quote and Base Value, Check if Stablecoin
         let absQuoteValueUSD = singleIsBase ? absMultiValueUSD : absSingleValueUSD;
         let absBaseValueUSD = singleIsBase ? absSingleValueUSD : absMultiValueUSD;
@@ -602,7 +609,7 @@ class DefiPrices extends DefiTransactions_1.default {
             : this.isStableCoin(transactions[0].quoteSymbol, transactions[0].quotePriceUSD);
         // Iterate Transactions to check for Stablecoins
         for (const record of transactions) {
-            const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD, } = record;
+            const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD } = record;
             const isStableCoin = singleIsBase
                 ? this.isStableCoin(quoteSymbol, quotePriceUSD)
                 : this.isStableCoin(baseSymbol, basePriceUSD);
@@ -617,10 +624,8 @@ class DefiPrices extends DefiTransactions_1.default {
         // Calculate Totals w/ Slippage
         const { upperUSD, lowerUSD, lowerQuote } = this.calculateTotalsWithSlippage(absQuoteValueUSD, absBaseValueUSD, quoteIsStable, baseIsStable);
         // Get Quote and Base Values
-        absQuoteValueUSD =
-            (lowerQuote ? lowerUSD : upperUSD) || absQuoteValueUSD;
-        absBaseValueUSD =
-            (lowerQuote ? upperUSD : lowerUSD) || absBaseValueUSD;
+        absQuoteValueUSD = (lowerQuote ? lowerUSD : upperUSD) || absQuoteValueUSD;
+        absBaseValueUSD = (lowerQuote ? upperUSD : lowerUSD) || absBaseValueUSD;
         const avgQuoteValueUSD = singleIsBase
             ? (absQuoteValueUSD - ineligibleTotal) /
                 (transactionCount - ineligibleCount)
@@ -681,7 +686,7 @@ class DefiPrices extends DefiTransactions_1.default {
         const min = lowerQuote ? absQuoteValueUSD : absBaseValueUSD;
         const max = lowerQuote ? absBaseValueUSD : absQuoteValueUSD;
         const diff = Math.abs(absBaseValueUSD - absQuoteValueUSD);
-        const mid = min + (diff / 2);
+        const mid = min + diff / 2;
         const slippageAmount = diff / absBaseValueUSD;
         const hasMediumSlippage = slippageAmount > values_1.slippageConfig.low &&
             slippageAmount <= values_1.slippageConfig.high;
@@ -694,8 +699,8 @@ class DefiPrices extends DefiTransactions_1.default {
                 ? values_1.slippageConfig.low
                 : values_1.slippageConfig.high;
             if (!quoteIsStable && !baseIsStable) {
-                const upperMultiplier = 1 + (slippageAdjust / 2);
-                const lowerMultiplier = 1 - (slippageAdjust / 2);
+                const upperMultiplier = 1 + slippageAdjust / 2;
+                const lowerMultiplier = 1 - slippageAdjust / 2;
                 upperUSD = mid * upperMultiplier;
                 lowerUSD = mid * lowerMultiplier;
             }
@@ -715,7 +720,7 @@ class DefiPrices extends DefiTransactions_1.default {
         return {
             upperUSD,
             lowerUSD,
-            lowerQuote
+            lowerQuote,
         };
     }
     /**

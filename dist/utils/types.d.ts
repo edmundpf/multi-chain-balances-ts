@@ -52,6 +52,7 @@ export declare type Chain = {
     totalValue: number;
     totalTokenValue: number;
     totalVaultValue: number;
+    deposits: number;
     nativeToken: TokenData;
     tokens: TokenData[];
     vaults: VaultData[];
@@ -108,6 +109,12 @@ export declare type InferMultiSwapArgs = {
     transactions: HistoryRecord[];
 };
 export declare type BaseOrQuote = 'base' | 'quote';
+export declare type TransactionsFile = {
+    [index: string]: {
+        transactions: HistoryRecord[];
+        tokenAddresses: StringDict;
+    };
+};
 /**
  * Debank Types
  */

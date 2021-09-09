@@ -40,6 +40,10 @@ export default class DefiTransactions extends DefiBalances {
      */
     getUnknownTokens(): void;
     /**
+     * Calculate Deposits
+     */
+    calculateDeposits(): void;
+    /**
      * Get Private Debank Endpoint
      */
     private getPrivateDebankEndpoint;

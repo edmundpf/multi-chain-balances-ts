@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiBalances_1 = __importDefault(require("./DefiBalances"));
+const envValues_1 = require("./envValues");
 const values_1 = require("./values");
 /**
  * DefiTransactions Class
@@ -442,6 +443,33 @@ class DefiTransactions extends DefiBalances_1.default {
             if (token.firstTransIsReceive && !token.hasSwapOrSend) {
                 this.unknownTokens.push(tokenName);
             }
+        }
+    }
+    /**
+     * Calculate Deposits
+     */
+    calculateDeposits() {
+        for (const chainName of this.chainNames) {
+            let deposits = 0;
+            const chain = this.chains[chainName];
+            const isDefaultDepositChain = chainName == envValues_1.ENV_DEPOSIT_CHAIN;
+            for (const transaction of chain.transactions) {
+                const { type, quoteSymbol, quoteValueUSD, quoteQuantity } = transaction;
+                if (type == 'receive') {
+                    const isNativeToken = this.isNativeToken(quoteSymbol);
+                    const isUnknownToken = this.isUnknownToken({
+                        symbol: quoteSymbol,
+                        value: quoteValueUSD,
+                        amount: quoteQuantity
+                    }, chainName);
+                    if ((!isDefaultDepositChain && !isUnknownToken) ||
+                        (isDefaultDepositChain && isNativeToken)) {
+                        deposits += quoteValueUSD;
+                    }
+                }
+            }
+            chain.deposits = deposits;
+            this.totalDeposits += deposits;
         }
     }
     /**
