@@ -121,13 +121,13 @@ exports.slippageConfig = {
  * Init Values
  */
 // Init Chain
-const initChain = () => {
+const initChain = (chainName) => {
     return {
         totalValue: 0,
         totalTokenValue: 0,
         totalVaultValue: 0,
         nativeToken: {
-            symbol: '',
+            symbol: exports.NATIVE_TOKENS[chainName],
             amount: 0,
             value: 0,
         },
@@ -141,10 +141,10 @@ const initChain = () => {
 // Init Chains
 const initChains = () => {
     return {
-        bsc: initChain(),
-        eth: initChain(),
-        ftm: initChain(),
-        matic: initChain(),
+        bsc: initChain('bsc'),
+        eth: initChain('eth'),
+        ftm: initChain('ftm'),
+        matic: initChain('matic'),
     };
 };
 exports.initChains = initChains;
