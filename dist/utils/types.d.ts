@@ -68,7 +68,7 @@ export declare type Chains = {
 };
 export declare type HistoryRecord = {
     id: string;
-    date: string;
+    time: string;
     quoteSymbol: string;
     baseSymbol: string;
     feeSymbol: string;
@@ -84,7 +84,7 @@ export declare type HistoryRecord = {
     feeQuantity: number;
     feeValueUSD: number;
     feePriceUSD: number;
-    chain: keyof Chains;
+    blockchain: keyof Chains;
     fromAddress: string;
     toAddress: string;
     tokens?: TokenRecords;

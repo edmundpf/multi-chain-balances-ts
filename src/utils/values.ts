@@ -109,7 +109,7 @@ export const defaultDriverArgs: DriverArgs = {
 
 export const defaultHistoryRecord: HistoryRecord = {
 	id: '',
-	date: '',
+	time: '',
 	quoteSymbol: '',
 	baseSymbol: FIAT_CURRENCY,
 	feeSymbol: '',
@@ -125,7 +125,7 @@ export const defaultHistoryRecord: HistoryRecord = {
 	feeQuantity: 0,
 	feeValueUSD: 0,
 	feePriceUSD: 0,
-	chain: 'eth',
+	blockchain: 'eth',
 	fromAddress: '',
 	toAddress: '',
 }

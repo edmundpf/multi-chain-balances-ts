@@ -150,7 +150,7 @@ export default class DefiTransactions extends DefiBalances {
 				historyRecords = [...historyRecords, ...splitRecords, ...dustRecords]
 			}
 			this.chains[chainName].transactions = historyRecords.sort((a, b) =>
-				a.date < b.date ? 1 : -1
+				a.time < b.time ? 1 : -1
 			)
 		}
 	}
@@ -349,14 +349,14 @@ export default class DefiTransactions extends DefiBalances {
 			nestedRecord: {
 				...defaultHistoryRecord,
 				id: hash,
-				date,
+				time: date,
 				feeSymbol,
 				type,
 				direction,
 				feeQuantity,
 				feeValueUSD,
 				feePriceUSD,
-				chain: chainName,
+				blockchain: chainName,
 				fromAddress,
 				toAddress,
 				tokens,

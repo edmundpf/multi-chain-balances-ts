@@ -122,7 +122,7 @@ class DefiTransactions extends DefiBalances_1.default {
                     }
                     historyRecords = [...historyRecords, ...splitRecords, ...dustRecords];
                 }
-                this.chains[chainName].transactions = historyRecords.sort((a, b) => a.date < b.date ? 1 : -1);
+                this.chains[chainName].transactions = historyRecords.sort((a, b) => a.time < b.time ? 1 : -1);
             }
         });
     }
@@ -271,15 +271,14 @@ class DefiTransactions extends DefiBalances_1.default {
         // Format Result
         return {
             dustTokens,
-            nestedRecord: Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, date,
-                feeSymbol,
+            nestedRecord: Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, time: date, feeSymbol,
                 type,
                 direction,
                 feeQuantity,
                 feeValueUSD,
-                feePriceUSD, chain: chainName, fromAddress,
+                feePriceUSD, blockchain: chainName, fromAddress,
                 toAddress,
-                tokens })
+                tokens }),
         };
     }
     /**

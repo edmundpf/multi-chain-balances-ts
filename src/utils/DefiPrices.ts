@@ -114,7 +114,7 @@ export default class DefiPrices extends DefiTransactions {
 
 	private importPriorTransactions(records: HistoryRecord[]) {
 		for (const record of records) {
-			const chainName = record.chain
+			const chainName = record.blockchain
 			this.chains[chainName].transactions.push(record)
 		}
 	}
@@ -206,9 +206,14 @@ export default class DefiPrices extends DefiTransactions {
 
 			// Iterate Transactions
 			for (const transaction of chain.transactions) {
-				const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, date } =
-					transaction
-				const time = this.getTimeMs(date)
+				const {
+					quoteSymbol,
+					baseSymbol,
+					feeSymbol,
+					feePriceUSD,
+					time: timeStr,
+				} = transaction
+				const time = this.getTimeMs(timeStr)
 				const hasFeePrice = feePriceUSD ? true : false
 				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol)
 				const baseName = this.sterilizeTokenNameNoStub(baseSymbol)
@@ -488,9 +493,9 @@ export default class DefiPrices extends DefiTransactions {
 						feePriceUSD,
 						quoteQuantity,
 						baseQuantity,
-						date,
+						time: timeStr,
 					} = transaction
-					const time = this.getTimeMs(date)
+					const time = this.getTimeMs(timeStr)
 					const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol)
 					const baseName = this.sterilizeTokenNameNoStub(baseSymbol)
 					const quoteTokenMatch = tokenName == quoteName

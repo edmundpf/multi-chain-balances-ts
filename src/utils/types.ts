@@ -113,7 +113,7 @@ export type Chains = {
 
 export type HistoryRecord = {
 	id: string
-	date: string
+	time: string
 	quoteSymbol: string
 	baseSymbol: string
 	feeSymbol: string
@@ -129,7 +129,7 @@ export type HistoryRecord = {
 	feeQuantity: number
 	feeValueUSD: number
 	feePriceUSD: number
-	chain: keyof Chains
+	blockchain: keyof Chains
 	fromAddress: string
 	toAddress: string
 	tokens?: TokenRecords

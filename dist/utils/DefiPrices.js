@@ -83,7 +83,7 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     importPriorTransactions(records) {
         for (const record of records) {
-            const chainName = record.chain;
+            const chainName = record.blockchain;
             this.chains[chainName].transactions.push(record);
         }
     }
@@ -103,7 +103,7 @@ class DefiPrices extends DefiTransactions_1.default {
                         const tokenName = this.sterilizeTokenName(symbol);
                         tokenInfo[id] = {
                             name: tokenName,
-                            addresses: []
+                            addresses: [],
                         };
                     }
                     // Iterate Platforms
@@ -158,8 +158,8 @@ class DefiPrices extends DefiTransactions_1.default {
             const chain = this.chains[chainName];
             // Iterate Transactions
             for (const transaction of chain.transactions) {
-                const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, date } = transaction;
-                const time = this.getTimeMs(date);
+                const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, time: timeStr } = transaction;
+                const time = this.getTimeMs(timeStr);
                 const hasFeePrice = feePriceUSD ? true : false;
                 const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
                 const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
@@ -386,8 +386,8 @@ class DefiPrices extends DefiTransactions_1.default {
                 const chain = this.chains[chainName];
                 // Iterate Transactions
                 for (const transaction of chain.transactions) {
-                    const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, date, } = transaction;
-                    const time = this.getTimeMs(date);
+                    const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, time: timeStr, } = transaction;
+                    const time = this.getTimeMs(timeStr);
                     const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
                     const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
                     const quoteTokenMatch = tokenName == quoteName;

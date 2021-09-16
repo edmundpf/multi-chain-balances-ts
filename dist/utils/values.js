@@ -83,7 +83,7 @@ exports.defaultDriverArgs = {
 // Default History Record
 exports.defaultHistoryRecord = {
     id: '',
-    date: '',
+    time: '',
     quoteSymbol: '',
     baseSymbol: exports.FIAT_CURRENCY,
     feeSymbol: '',
@@ -99,7 +99,7 @@ exports.defaultHistoryRecord = {
     feeQuantity: 0,
     feeValueUSD: 0,
     feePriceUSD: 0,
-    chain: 'eth',
+    blockchain: 'eth',
     fromAddress: '',
     toAddress: '',
 };
