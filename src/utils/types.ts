@@ -301,6 +301,7 @@ export type CoinGeckoToken = {
 	id: string
 	symbol: string
 	name: string
+	platforms: StringDict
 }
 
 // Coin Gecko Prices Response

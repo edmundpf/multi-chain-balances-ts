@@ -113,9 +113,14 @@ class DefiTransactions extends DefiBalances_1.default {
                         continue;
                     }
                     // Sterilize Records
-                    const nestedRecord = this.sterilizeHistoryRecord(record, chainName, debankTokens[index], tokenAddresses);
+                    const { nestedRecord, dustTokens } = this.sterilizeHistoryRecord(record, chainName, debankTokens[index], tokenAddresses);
                     const splitRecords = this.splitHistoryRecord(nestedRecord);
-                    historyRecords = [...historyRecords, ...splitRecords];
+                    let dustRecords = [];
+                    if (Object.keys(dustTokens).length) {
+                        const { nestedRecord: nestedDustRecord } = this.sterilizeHistoryRecord(record, chainName, debankTokens[index], tokenAddresses, dustTokens);
+                        dustRecords = this.splitHistoryRecord(nestedDustRecord);
+                    }
+                    historyRecords = [...historyRecords, ...splitRecords, ...dustRecords];
                 }
                 this.chains[chainName].transactions = historyRecords.sort((a, b) => a.date < b.date ? 1 : -1);
             }
@@ -171,17 +176,18 @@ class DefiTransactions extends DefiBalances_1.default {
     /**
      * Sterilize History Record
      */
-    sterilizeHistoryRecord(record, chainName, tokenSymbols, tokenAddresses) {
+    sterilizeHistoryRecord(record, chainName, tokenSymbols, tokenAddresses, dustInfo) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
         const debankRec = record;
         const apeBoardRec = record;
-        const tokens = {};
+        const tokens = Object.assign({}, dustInfo);
+        const dustTokens = {};
         // Add Token
         const addToken = (info) => {
-            var _a;
+            var _a, _b;
             const { token, quantity } = info;
-            if (quantity != 0) {
-                const tokenQuantity = (((_a = tokens[token]) === null || _a === void 0 ? void 0 : _a.quantity) || 0) + quantity;
+            if (quantity != 0 && quantity != ((_a = tokens[token]) === null || _a === void 0 ? void 0 : _a.quantity)) {
+                const tokenQuantity = (((_b = tokens[token]) === null || _b === void 0 ? void 0 : _b.quantity) || 0) + quantity;
                 tokens[token] = {
                     amount: 0,
                     quantity: tokenQuantity,
@@ -196,50 +202,85 @@ class DefiTransactions extends DefiBalances_1.default {
             '';
         const hash = this.getTransactionID(record);
         const date = new Date(debankRec.time_at * 1000 || apeBoardRec.timestamp).toISOString();
-        const toAddress = (((_d = debankRec.tx) === null || _d === void 0 ? void 0 : _d.to_addr) ||
+        let toAddress = (((_d = debankRec.tx) === null || _d === void 0 ? void 0 : _d.to_addr) ||
             ((_f = (_e = apeBoardRec.interactions) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.to) ||
             this.address).toLowerCase();
-        const fromAddress = (((_g = debankRec.tx) === null || _g === void 0 ? void 0 : _g.from_addr) ||
+        let fromAddress = (((_g = debankRec.tx) === null || _g === void 0 ? void 0 : _g.from_addr) ||
             debankRec.other_addr ||
             ((_j = (_h = apeBoardRec.interactions) === null || _h === void 0 ? void 0 : _h[0]) === null || _j === void 0 ? void 0 : _j.from) ||
             this.address).toLowerCase();
         const feeSymbol = values_1.NATIVE_TOKENS[chainName];
-        const feeQuantity = ((_k = debankRec.tx) === null || _k === void 0 ? void 0 : _k.eth_gas_fee) || ((_m = (_l = apeBoardRec.fee) === null || _l === void 0 ? void 0 : _l[0]) === null || _m === void 0 ? void 0 : _m.amount) || 0;
+        let feeQuantity = ((_k = debankRec.tx) === null || _k === void 0 ? void 0 : _k.eth_gas_fee) || ((_m = (_l = apeBoardRec.fee) === null || _l === void 0 ? void 0 : _l[0]) === null || _m === void 0 ? void 0 : _m.amount) || 0;
         let feePriceUSD = ((_p = (_o = apeBoardRec.fee) === null || _o === void 0 ? void 0 : _o[0]) === null || _p === void 0 ? void 0 : _p.price) || 0;
         let feeValueUSD = ((_q = debankRec.tx) === null || _q === void 0 ? void 0 : _q.usd_gas_fee) || 0;
-        feePriceUSD = feePriceUSD || feeValueUSD / feeQuantity || 0;
-        feeValueUSD = feeValueUSD || feeQuantity * feePriceUSD || 0;
-        // Get Tokens Info
-        if (apeBoardRec.transfers) {
-            for (const record of apeBoardRec.transfers) {
-                const tokenInfo = this.sterilizeApeBoardTransfer(record, chainName, tokenAddresses);
-                addToken(tokenInfo);
+        // Dust Info
+        if (dustInfo) {
+            if (toAddress != this.address) {
+                fromAddress = toAddress;
+                toAddress = this.address;
             }
+            feeQuantity = feePriceUSD = feeValueUSD = 0;
         }
+        // Normal Records
         else {
-            for (const record of debankRec.sends) {
-                const tokenInfo = this.sterilizeDebankTransfer(record, chainName, true, tokenSymbols, tokenAddresses);
-                addToken(tokenInfo);
+            feePriceUSD = feePriceUSD || feeValueUSD / feeQuantity || 0;
+            feeValueUSD = feeValueUSD || feeQuantity * feePriceUSD || 0;
+            // Get Tokens Info
+            if (apeBoardRec.transfers) {
+                for (const record of apeBoardRec.transfers) {
+                    const tokenInfo = this.sterilizeApeBoardTransfer(record, chainName, tokenAddresses);
+                    addToken(tokenInfo);
+                }
             }
-            for (const record of debankRec.receives) {
-                const tokenInfo = this.sterilizeDebankTransfer(record, chainName, false, tokenSymbols, tokenAddresses);
-                addToken(tokenInfo);
+            else {
+                for (const record of debankRec.sends) {
+                    const tokenInfo = this.sterilizeDebankTransfer(record, chainName, true, tokenSymbols, tokenAddresses);
+                    addToken(tokenInfo);
+                }
+                for (const record of debankRec.receives) {
+                    const tokenInfo = this.sterilizeDebankTransfer(record, chainName, false, tokenSymbols, tokenAddresses);
+                    addToken(tokenInfo);
+                }
             }
         }
         // Sterilize Type
         type = this.sterilizeTransactionType(type, tokens);
+        // Merge Wrapped/Unwrapped Token Dust from Swaps
+        const tokenNames = Object.keys(tokens);
+        if (type == 'swap' && tokenNames.length > 2) {
+            for (const wrappedTokenName in tokens) {
+                if (wrappedTokenName[0] == 'W') {
+                    const unwrappedTokenName = wrappedTokenName.substring(1);
+                    if (tokenNames.includes(unwrappedTokenName)) {
+                        const { quantity: wrappedQuantity } = tokens[wrappedTokenName];
+                        const { quantity: unwrappedQuantity } = tokens[unwrappedTokenName];
+                        if (Math.abs(unwrappedQuantity) >= Math.abs(wrappedQuantity)) {
+                            dustTokens[wrappedTokenName] = Object.assign({}, tokens[wrappedTokenName]);
+                            delete tokens[wrappedTokenName];
+                        }
+                        else {
+                            dustTokens[unwrappedTokenName] = Object.assign({}, tokens[unwrappedTokenName]);
+                            delete tokens[unwrappedTokenName];
+                        }
+                    }
+                }
+            }
+        }
         // Get Direction
         const direction = ['receive', 'swap'].includes(type) ? 'credit' : 'debit';
         // Format Result
-        return Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, date,
-            feeSymbol,
-            type,
-            direction,
-            feeQuantity,
-            feeValueUSD,
-            feePriceUSD, chain: chainName, fromAddress,
-            toAddress,
-            tokens });
+        return {
+            dustTokens,
+            nestedRecord: Object.assign(Object.assign({}, values_1.defaultHistoryRecord), { id: hash, date,
+                feeSymbol,
+                type,
+                direction,
+                feeQuantity,
+                feeValueUSD,
+                feePriceUSD, chain: chainName, fromAddress,
+                toAddress,
+                tokens })
+        };
     }
     /**
      * Split History Record

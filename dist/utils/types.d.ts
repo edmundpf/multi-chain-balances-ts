@@ -202,6 +202,7 @@ export declare type CoinGeckoToken = {
     id: string;
     symbol: string;
     name: string;
+    platforms: StringDict;
 };
 export declare type CoinGeckoPricesResponse = {
     prices: number[][];

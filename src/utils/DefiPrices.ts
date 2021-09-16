@@ -125,15 +125,68 @@ export default class DefiPrices extends DefiTransactions {
 
 	private async getSupportedTokens() {
 		const supportedTokens: StringDict = {}
+		const tokenInfo: {
+			[index: string]: {
+				name: string
+				addresses: string[]
+			}
+		} = {}
 		const res: CoinGeckoToken[] = await this.getCoinGeckoEndpoint(
-			'coinGeckoList'
+			'coinGeckoList',
+			undefined,
+			{ include_platform: true }
 		)
 		if (res?.length) {
+			// Iterate ID's
 			for (const record of res) {
-				const tokenName = this.sterilizeTokenName(record.symbol)
-				if (tokenName && !supportedTokens[tokenName]) {
-					supportedTokens[tokenName] = record.id
+				const { id, symbol, platforms } = record
+				if (id && !tokenInfo[id]) {
+					const tokenName = this.sterilizeTokenName(symbol)
+					tokenInfo[id] = {
+						name: tokenName,
+						addresses: [],
+					}
 				}
+
+				// Iterate Platforms
+				for (const key in platforms) {
+					const address = platforms[key]
+					if (platforms[key]) {
+						tokenInfo[id].addresses.push(address)
+					}
+				}
+			}
+
+			// Add Tokens w/ Known Addresses
+			for (const id in tokenInfo) {
+				const { name, addresses } = tokenInfo[id]
+				let hasMatchingAddress = false
+
+				// Iterate Chains
+				for (const chainName of this.chainNames) {
+					const knownAddresses = this.chains[chainName].tokenAddresses
+
+					// Iterate Known Addresses
+					for (const knownKey in knownAddresses) {
+						const knownAddress = knownAddresses[knownKey]
+						if (addresses.includes(knownAddress)) {
+							if (name && !supportedTokens[name]) {
+								supportedTokens[name] = id
+								hasMatchingAddress = true
+								break
+							}
+						}
+					}
+					if (hasMatchingAddress) break
+				}
+			}
+		}
+
+		// Add Tokens w/ Unknown Addresses
+		for (const id in tokenInfo) {
+			const { name } = tokenInfo[id]
+			if (name && !supportedTokens[name]) {
+				supportedTokens[name] = id
 			}
 		}
 		return supportedTokens
@@ -896,6 +949,7 @@ export default class DefiPrices extends DefiTransactions {
 		value: number,
 		type: BaseOrQuote
 	) {
+		// Quote
 		if (type == 'quote') {
 			const priceUSD = Math.abs(value / record.quoteQuantity)
 			record.quoteValueUSD = record.quoteQuantity >= 0 ? value : value * -1
@@ -904,7 +958,10 @@ export default class DefiPrices extends DefiTransactions {
 				record.feePriceUSD = record.quotePriceUSD
 				record.feeValueUSD = record.feeQuantity * record.feePriceUSD
 			}
-		} else {
+		}
+
+		// Base
+		else {
 			const priceUSD = Math.abs(value / record.baseQuantity)
 			record.baseValueUSD = record.baseQuantity >= 0 ? value : value * -1
 			record.basePriceUSD = priceUSD

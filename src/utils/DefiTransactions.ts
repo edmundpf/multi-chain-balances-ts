@@ -128,14 +128,26 @@ export default class DefiTransactions extends DefiBalances {
 				}
 
 				// Sterilize Records
-				const nestedRecord = this.sterilizeHistoryRecord(
+				const { nestedRecord, dustTokens } = this.sterilizeHistoryRecord(
 					record,
 					chainName,
 					debankTokens[index],
 					tokenAddresses
 				)
 				const splitRecords = this.splitHistoryRecord(nestedRecord)
-				historyRecords = [...historyRecords, ...splitRecords]
+				let dustRecords: HistoryRecord[] = []
+				if (Object.keys(dustTokens).length) {
+					const { nestedRecord: nestedDustRecord } =
+						this.sterilizeHistoryRecord(
+							record,
+							chainName,
+							debankTokens[index],
+							tokenAddresses,
+							dustTokens
+						)
+					dustRecords = this.splitHistoryRecord(nestedDustRecord)
+				}
+				historyRecords = [...historyRecords, ...splitRecords, ...dustRecords]
 			}
 			this.chains[chainName].transactions = historyRecords.sort((a, b) =>
 				a.date < b.date ? 1 : -1
@@ -206,18 +218,20 @@ export default class DefiTransactions extends DefiBalances {
 		record: DebankHistory | ApeBoardHistory,
 		chainName: keyof typeof NATIVE_TOKENS,
 		tokenSymbols: DebankTokens,
-		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
+		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>,
+		dustInfo?: TokenRecords
 	) {
 		const debankRec = record as DebankHistory
 		const apeBoardRec = record as ApeBoardHistory
-		const tokens: TokenRecords = {}
+		const tokens: TokenRecords = { ...dustInfo }
+		const dustTokens: TokenRecords = {}
 
 		// Add Token
 		const addToken = (
 			info: ReturnType<DefiTransactions['sterilizeDebankTransfer']>
 		) => {
 			const { token, quantity } = info
-			if (quantity != 0) {
+			if (quantity != 0 && quantity != tokens[token]?.quantity) {
 				const tokenQuantity = (tokens[token]?.quantity || 0) + quantity
 				tokens[token] = {
 					amount: 0,
@@ -237,80 +251,117 @@ export default class DefiTransactions extends DefiBalances {
 		const date = new Date(
 			debankRec.time_at * 1000 || apeBoardRec.timestamp
 		).toISOString()
-		const toAddress = (
+		let toAddress = (
 			debankRec.tx?.to_addr ||
 			apeBoardRec.interactions?.[0]?.to ||
 			this.address
 		).toLowerCase()
-		const fromAddress = (
+		let fromAddress = (
 			debankRec.tx?.from_addr ||
 			debankRec.other_addr ||
 			apeBoardRec.interactions?.[0]?.from ||
 			this.address
 		).toLowerCase()
 		const feeSymbol = NATIVE_TOKENS[chainName]
-		const feeQuantity =
+		let feeQuantity =
 			debankRec.tx?.eth_gas_fee || apeBoardRec.fee?.[0]?.amount || 0
 		let feePriceUSD = apeBoardRec.fee?.[0]?.price || 0
 		let feeValueUSD = debankRec.tx?.usd_gas_fee || 0
-		feePriceUSD = feePriceUSD || feeValueUSD / feeQuantity || 0
-		feeValueUSD = feeValueUSD || feeQuantity * feePriceUSD || 0
 
-		// Get Tokens Info
-		if (apeBoardRec.transfers) {
-			for (const record of apeBoardRec.transfers) {
-				const tokenInfo = this.sterilizeApeBoardTransfer(
-					record,
-					chainName,
-					tokenAddresses
-				)
-				addToken(tokenInfo)
+		// Dust Info
+		if (dustInfo) {
+			if (toAddress != this.address) {
+				fromAddress = toAddress
+				toAddress = this.address
 			}
-		} else {
-			for (const record of debankRec.sends) {
-				const tokenInfo = this.sterilizeDebankTransfer(
-					record,
-					chainName,
-					true,
-					tokenSymbols,
-					tokenAddresses
-				)
-				addToken(tokenInfo)
-			}
-			for (const record of debankRec.receives) {
-				const tokenInfo = this.sterilizeDebankTransfer(
-					record,
-					chainName,
-					false,
-					tokenSymbols,
-					tokenAddresses
-				)
-				addToken(tokenInfo)
+			feeQuantity = feePriceUSD = feeValueUSD = 0
+		}
+
+		// Normal Records
+		else {
+			feePriceUSD = feePriceUSD || feeValueUSD / feeQuantity || 0
+			feeValueUSD = feeValueUSD || feeQuantity * feePriceUSD || 0
+
+			// Get Tokens Info
+			if (apeBoardRec.transfers) {
+				for (const record of apeBoardRec.transfers) {
+					const tokenInfo = this.sterilizeApeBoardTransfer(
+						record,
+						chainName,
+						tokenAddresses
+					)
+					addToken(tokenInfo)
+				}
+			} else {
+				for (const record of debankRec.sends) {
+					const tokenInfo = this.sterilizeDebankTransfer(
+						record,
+						chainName,
+						true,
+						tokenSymbols,
+						tokenAddresses
+					)
+					addToken(tokenInfo)
+				}
+				for (const record of debankRec.receives) {
+					const tokenInfo = this.sterilizeDebankTransfer(
+						record,
+						chainName,
+						false,
+						tokenSymbols,
+						tokenAddresses
+					)
+					addToken(tokenInfo)
+				}
 			}
 		}
 
 		// Sterilize Type
 		type = this.sterilizeTransactionType(type, tokens)
 
+		// Merge Wrapped/Unwrapped Token Dust from Swaps
+		const tokenNames = Object.keys(tokens)
+		if (type == 'swap' && tokenNames.length > 2) {
+			for (const wrappedTokenName in tokens) {
+				if (wrappedTokenName[0] == 'W') {
+					const unwrappedTokenName = wrappedTokenName.substring(1)
+					if (tokenNames.includes(unwrappedTokenName)) {
+						const { quantity: wrappedQuantity } = tokens[wrappedTokenName]
+						const { quantity: unwrappedQuantity } = tokens[unwrappedTokenName]
+						if (Math.abs(unwrappedQuantity) >= Math.abs(wrappedQuantity)) {
+							dustTokens[wrappedTokenName] = { ...tokens[wrappedTokenName] }
+							delete tokens[wrappedTokenName]
+						} else {
+							dustTokens[unwrappedTokenName] = { ...tokens[unwrappedTokenName] }
+							delete tokens[unwrappedTokenName]
+						}
+					}
+				}
+			}
+		}
+
 		// Get Direction
 		const direction = ['receive', 'swap'].includes(type) ? 'credit' : 'debit'
 
 		// Format Result
 		return {
-			...defaultHistoryRecord,
-			id: hash,
-			date,
-			feeSymbol,
-			type,
-			direction,
-			feeQuantity,
-			feeValueUSD,
-			feePriceUSD,
-			chain: chainName,
-			fromAddress,
-			toAddress,
-			tokens,
-		} as HistoryRecord
+			dustTokens,
+			nestedRecord: {
+				...defaultHistoryRecord,
+				id: hash,
+				date,
+				feeSymbol,
+				type,
+				direction,
+				feeQuantity,
+				feeValueUSD,
+				feePriceUSD,
+				chain: chainName,
+				fromAddress,
+				toAddress,
+				tokens,
+			} as HistoryRecord,
+		}
 	}
 
 	/**
