@@ -64,8 +64,8 @@ export default class DefiPrices extends DefiTransactions {
 		}
 
 		// Get Prices and Balances
+		if (getBalances) await this.getBalances(this.filterUnknownTokens)
 		if (getPrices) await this.getPriceData()
-		if (getBalances) await this.getBalances()
 	}
 
 	/**

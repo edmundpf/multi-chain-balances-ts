@@ -57,18 +57,20 @@ class DefiBalances {
     /**
      * Get All Balances
      */
-    getBalances() {
+    getBalances(filterUnkownTokens = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [
                 this.getTokenList(),
+                filterUnkownTokens ? this.getKnownTokenList() : [],
                 this.getProtocolList(),
                 this.getBeefyApy(),
             ];
             const res = yield Promise.all(requests);
             const tokenData = res[0];
-            const protocolData = res[1];
-            const apyData = res[2];
-            this.parseTokenData(tokenData);
+            const knownTokenData = res[1];
+            const protocolData = res[2];
+            const apyData = res[3];
+            this.parseTokenData(tokenData, knownTokenData);
             this.parseProtocolData(protocolData);
             this.parseApyData(apyData);
             this.getAssetsAndTotalValues();
@@ -252,15 +254,21 @@ class DefiBalances {
     /**
      * Get Debank Endpoint
      */
-    getDebankEndpoint(endpoint) {
+    getDebankEndpoint(endpoint, args) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debank', endpoint, { id: this.address });
+            return yield this.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { id: this.address }));
         });
     }
     /**
      * Parse Token Data
      */
-    parseTokenData(data) {
+    parseTokenData(data, knownData) {
+        // Get Known Symbols
+        const knownSymbols = [];
+        for (const record of knownData) {
+            knownSymbols.push(record.symbol);
+        }
+        // Iterate All Tokens
         for (const record of data) {
             // Token Info
             const { chain, symbol, price: recPrice, amount: recAmount } = record;
@@ -282,12 +290,26 @@ class DefiBalances {
                         amount,
                         value,
                     };
+                    const shouldDisplay = knownSymbols.length
+                        ? knownSymbols.includes(symbol)
+                        : true;
                     // Update token data
-                    chainInfo.tokens.push(tokenData);
+                    if (shouldDisplay) {
+                        chainInfo.tokens.push(tokenData);
+                    }
+                    // Add Unknown Tokens
+                    else {
+                        const tokenName = this.sterilizeTokenNameNoStub(symbol);
+                        if (!this.unknownTokens.includes(tokenName)) {
+                            this.unknownTokens.push(tokenName);
+                        }
+                    }
+                    // Set Native Token Info
                     if (symbol == values_1.NATIVE_TOKENS[chain]) {
                         chainInfo.nativeToken = tokenData;
                     }
-                    if (!this.isUnknownToken(symbol)) {
+                    // Exclude Unknown Token Totals
+                    if (shouldDisplay && !this.isUnknownToken(symbol)) {
                         chainInfo.totalTokenValue += value;
                     }
                 }
@@ -469,6 +491,14 @@ class DefiBalances {
     getTokenList() {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getDebankEndpoint('tokenList');
+        });
+    }
+    /**
+     * Get Known Token List
+     */
+    getKnownTokenList() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getDebankEndpoint('tokenList', { is_all: false });
         });
     }
     /**

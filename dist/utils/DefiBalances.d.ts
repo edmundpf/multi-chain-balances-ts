@@ -20,7 +20,7 @@ export default class DefiBalances {
     /**
      * Get All Balances
      */
-    getBalances(): Promise<void>;
+    getBalances(filterUnkownTokens?: boolean): Promise<void>;
     /**
      * Get Assets & Total Values
      */
@@ -81,6 +81,10 @@ export default class DefiBalances {
      * Get Token List
      */
     private getTokenList;
+    /**
+     * Get Known Token List
+     */
+    private getKnownTokenList;
     /**
      * Get Protocol List
      */

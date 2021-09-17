@@ -67,17 +67,19 @@ export default class DefiBalances {
 	 * Get All Balances
 	 */
 
-	async getBalances() {
-		const requests: Promise<MainRequest>[] = [
+	async getBalances(filterUnkownTokens = true) {
+		const requests: (Promise<MainRequest> | Token[])[] = [
 			this.getTokenList(),
+			filterUnkownTokens ? this.getKnownTokenList() : [],
 			this.getProtocolList(),
 			this.getBeefyApy(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
-		const protocolData = res[1] as Protocol[]
-		const apyData = res[2] as NumDict
-		this.parseTokenData(tokenData)
+		const knownTokenData = res[1] as Token[]
+		const protocolData = res[2] as Protocol[]
+		const apyData = res[3] as NumDict
+		this.parseTokenData(tokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData)
 		this.getAssetsAndTotalValues()
@@ -299,15 +301,28 @@ export default class DefiBalances {
 	 * Get Debank Endpoint
 	 */
 
-	private async getDebankEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint('debank', endpoint, { id: this.address })
+	private async getDebankEndpoint(
+		endpoint: keyof typeof ENDPOINTS,
+		args?: any
+	) {
+		return await this.getEndpoint('debank', endpoint, {
+			...args,
+			id: this.address,
+		})
 	}
 
 	/**
 	 * Parse Token Data
 	 */
 
-	private parseTokenData(data: Token[]) {
+	private parseTokenData(data: Token[], knownData: Token[]) {
+		// Get Known Symbols
+		const knownSymbols: string[] = []
+		for (const record of knownData) {
+			knownSymbols.push(record.symbol)
+		}
+
+		// Iterate All Tokens
 		for (const record of data) {
 			// Token Info
 			const { chain, symbol, price: recPrice, amount: recAmount } = record
@@ -331,13 +346,30 @@ export default class DefiBalances {
 						amount,
 						value,
 					}
+					const shouldDisplay = knownSymbols.length
+						? knownSymbols.includes(symbol)
+						: true
 
 					// Update token data
-					chainInfo.tokens.push(tokenData)
+					if (shouldDisplay) {
+						chainInfo.tokens.push(tokenData)
+					}
+
+					// Add Unknown Tokens
+					else {
+						const tokenName = this.sterilizeTokenNameNoStub(symbol)
+						if (!this.unknownTokens.includes(tokenName)) {
+							this.unknownTokens.push(tokenName)
+						}
+					}
+
+					// Set Native Token Info
 					if (symbol == NATIVE_TOKENS[chain]) {
 						chainInfo.nativeToken = tokenData
 					}
-					if (!this.isUnknownToken(symbol)) {
+
+					// Exclude Unknown Token Totals
+					if (shouldDisplay && !this.isUnknownToken(symbol)) {
 						chainInfo.totalTokenValue += value
 					}
 				}
@@ -562,6 +594,14 @@ export default class DefiBalances {
 
 	private async getTokenList() {
 		return await this.getDebankEndpoint('tokenList')
+	}
+
+	/**
+	 * Get Known Token List
+	 */
+
+	private async getKnownTokenList() {
+		return await this.getDebankEndpoint('tokenList', { is_all: false })
 	}
 
 	/**

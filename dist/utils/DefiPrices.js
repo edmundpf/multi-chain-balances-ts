@@ -44,10 +44,10 @@ class DefiPrices extends DefiTransactions_1.default {
                     this.getUnknownTokens();
             }
             // Get Prices and Balances
+            if (getBalances)
+                yield this.getBalances(this.filterUnknownTokens);
             if (getPrices)
                 yield this.getPriceData();
-            if (getBalances)
-                yield this.getBalances();
         });
     }
     /**
@@ -158,7 +158,7 @@ class DefiPrices extends DefiTransactions_1.default {
             const chain = this.chains[chainName];
             // Iterate Transactions
             for (const transaction of chain.transactions) {
-                const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, time: timeStr } = transaction;
+                const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, time: timeStr, } = transaction;
                 const time = this.getTimeMs(timeStr);
                 const hasFeePrice = feePriceUSD ? true : false;
                 const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
