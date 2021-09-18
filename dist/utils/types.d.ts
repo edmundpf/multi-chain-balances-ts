@@ -107,6 +107,9 @@ export declare type InferMultiSwapArgs = {
     ineligibleIndexes: number[];
     transactions: HistoryRecord[];
 };
+export declare type TokenAddresses = {
+    [index: string]: string[];
+};
 export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
 /**
  * Debank Types
@@ -212,5 +215,10 @@ export declare type CoinGeckoPricesResponse = {
  */
 export declare type LocalPriceData = PriceData & {
     symbol: string;
+};
+export declare type LocalContractData = {
+    blockchain: string;
+    symbol: string;
+    address: string;
 };
 export {};

@@ -1,6 +1,6 @@
 import DefiTransactions from './DefiTransactions'
 import { waitMs } from './misc'
-import { prepareDB, selectPrices, insertPrice } from './priceData'
+import { prepareDB, selectPrices, insertPrice } from './localData'
 import {
 	CoinGeckoToken,
 	CoinGeckoPricesResponse,
@@ -59,6 +59,7 @@ export default class DefiPrices extends DefiTransactions {
 
 		// Get Transactions
 		if (getTransactions || getPrices) {
+			await prepareDB()
 			await this.getTransactions(useDebank)
 			if (this.filterUnknownTokens && !getPrices) this.getUnknownTokens()
 		}
@@ -73,8 +74,6 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private async getPriceData() {
-		await prepareDB()
-
 		// Get Transaction Times for Supported Tokens
 		const supportedTokens = await this.getSupportedTokens()
 		const supportedTokenNames = Object.keys(supportedTokens)

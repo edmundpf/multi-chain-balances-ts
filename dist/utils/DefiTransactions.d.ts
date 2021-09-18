@@ -12,6 +12,14 @@ export default class DefiTransactions extends DefiBalances {
      */
     getUnknownTokens(): void;
     /**
+     * Get Existing Token Addresses
+     */
+    private getExistingTokenAddresses;
+    /**
+     * Sync Contract Addresses
+     */
+    private syncContractAddresses;
+    /**
      * Sterilize History Record
      */
     private sterilizeHistoryRecord;
@@ -40,6 +48,10 @@ export default class DefiTransactions extends DefiBalances {
      */
     private sterilizeTransactionType;
     /**
+     * Add Contract
+     */
+    private addContract;
+    /**
      * Get Private Debank Endpoint
      */
     private getPrivateDebankEndpoint;
@@ -51,4 +63,8 @@ export default class DefiTransactions extends DefiBalances {
      * Is Contract
      */
     private isContract;
+    /**
+     * Dashed Symbol
+     */
+    private symbolWithDashes;
 }

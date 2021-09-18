@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiTransactions_1 = __importDefault(require("./DefiTransactions"));
 const misc_1 = require("./misc");
-const priceData_1 = require("./priceData");
+const localData_1 = require("./localData");
 const values_1 = require("./values");
 /**
  * DefiPrices Class
@@ -39,6 +39,7 @@ class DefiPrices extends DefiTransactions_1.default {
             }
             // Get Transactions
             if (getTransactions || getPrices) {
+                yield localData_1.prepareDB();
                 yield this.getTransactions(useDebank);
                 if (this.filterUnknownTokens && !getPrices)
                     this.getUnknownTokens();
@@ -55,7 +56,6 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     getPriceData() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield priceData_1.prepareDB();
             // Get Transaction Times for Supported Tokens
             const supportedTokens = yield this.getSupportedTokens();
             const supportedTokenNames = Object.keys(supportedTokens);
@@ -193,7 +193,7 @@ class DefiPrices extends DefiTransactions_1.default {
             const localPrices = {};
             const requests = [];
             for (const tokenName of tokenNames) {
-                requests.push(priceData_1.selectPrices(tokenName));
+                requests.push(localData_1.selectPrices(tokenName));
             }
             const res = yield Promise.all(requests);
             for (const index in res) {
@@ -338,7 +338,7 @@ class DefiPrices extends DefiTransactions_1.default {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [];
             for (const record of insertRecords) {
-                requests.push(priceData_1.insertPrice(record));
+                requests.push(localData_1.insertPrice(record));
             }
             yield Promise.all(requests);
         });

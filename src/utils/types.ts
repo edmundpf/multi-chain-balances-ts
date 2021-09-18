@@ -159,6 +159,10 @@ export type InferMultiSwapArgs = {
 	transactions: HistoryRecord[]
 }
 
+// Token Addresses Type
+
+export type TokenAddresses = { [index: string]: string[] }
+
 // Main Request Type
 
 export type MainRequest = Token[] | Protocol[] | NumDict | void
@@ -314,4 +318,14 @@ export type CoinGeckoPricesResponse = {
  * Local DB Types
  */
 
+// Local Price Data
+
 export type LocalPriceData = PriceData & { symbol: string }
+
+// Local Contract Data
+
+export type LocalContractData = {
+	blockchain: string
+	symbol: string
+	address: string
+}

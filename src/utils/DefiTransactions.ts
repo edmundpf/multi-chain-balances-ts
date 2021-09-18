@@ -1,4 +1,5 @@
 import DefiBalances from './DefiBalances'
+import { selectContracts, insertContract } from './localData'
 import {
 	NATIVE_TOKENS,
 	ENDPOINTS,
@@ -17,6 +18,7 @@ import {
 	TokenRecords,
 	HistoryRecord,
 	Chains,
+	TokenAddresses,
 } from './types'
 
 /**
@@ -96,6 +98,9 @@ export default class DefiTransactions extends DefiBalances {
 			await getInfoFromDebank()
 		}
 
+		// Get Existing Token Addresses
+		const existingAddresses = await this.getExistingTokenAddresses()
+
 		// Iterate Chain Results
 		for (const index in rawChains) {
 			const chainName = this.chainNames[index]
@@ -106,7 +111,8 @@ export default class DefiTransactions extends DefiBalances {
 			// Get Token Addresses
 			const tokenAddresses = this.getTokenAddresses(
 				records,
-				debankTokens[index]
+				debankTokens[index],
+				existingAddresses[chainName]
 			)
 
 			// Get existing hashes from imported history records
@@ -153,6 +159,9 @@ export default class DefiTransactions extends DefiBalances {
 				a.time < b.time ? 1 : -1
 			)
 		}
+
+		// Sync Contract Addresses
+		await this.syncContractAddresses()
 	}
 
 	/**
@@ -211,6 +220,42 @@ export default class DefiTransactions extends DefiBalances {
 	}
 
 	/**
+	 * Get Existing Token Addresses
+	 */
+
+	private async getExistingTokenAddresses() {
+		const chainSymbols: { [index: string]: TokenAddresses } = {}
+		const localRecords = await selectContracts()
+
+		// Iterate Records
+		for (const record of localRecords) {
+			const { blockchain, symbol, address } = record
+			const chainName = blockchain as keyof Chains
+			if (!chainSymbols[chainName]) chainSymbols[chainName] = {}
+			this.addContract(chainSymbols[chainName], symbol, address)
+		}
+		return chainSymbols
+	}
+
+	/**
+	 * Sync Contract Addresses
+	 */
+
+	private async syncContractAddresses() {
+		const requests: Promise<void>[] = []
+		for (const blockchain of this.chainNames) {
+			const addresses = this.chains[blockchain].tokenAddresses
+			for (const symbolWithStub in addresses) {
+				const address = addresses[symbolWithStub]
+				const symbol =
+					this.sterilizeTokenNameNoStub(symbolWithStub).toUpperCase()
+				requests.push(insertContract({ blockchain, symbol, address }))
+			}
+		}
+		await Promise.all(requests)
+	}
+
+	/**
 	 * Sterilize History Record
 	 */
 
@@ -218,7 +263,7 @@ export default class DefiTransactions extends DefiBalances {
 		record: DebankHistory | ApeBoardHistory,
 		chainName: keyof typeof NATIVE_TOKENS,
 		tokenSymbols: DebankTokens,
-		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>,
+		tokenAddresses: TokenAddresses,
 		dustInfo?: TokenRecords
 	) {
 		const debankRec = record as DebankHistory
@@ -483,22 +528,11 @@ export default class DefiTransactions extends DefiBalances {
 
 	private getTokenAddresses(
 		records: ApeBoardHistory[] | DebankHistory[],
-		tokenSymbols: DebankTokens
+		tokenSymbols: DebankTokens,
+		existingAddresses: TokenAddresses = {}
 	) {
-		const symbols: { [index: string]: string[] } = {}
-		// Add Contract
-		const addContract = (symbol: string, address: string) => {
-			const upperSymbol = symbol.toUpperCase()
-			const lowerAddress = address.toLowerCase()
-			const isContract = this.isContract(lowerAddress)
-			if (upperSymbol && isContract) {
-				if (!symbols[upperSymbol]) {
-					symbols[upperSymbol] = [lowerAddress]
-				} else if (!symbols[upperSymbol].includes(lowerAddress)) {
-					symbols[upperSymbol].push(lowerAddress)
-				}
-			}
-		}
+		const symbols: TokenAddresses = { ...existingAddresses }
+		const addContract = this.addContract.bind(this, symbols)
 
 		// Iterate Records
 		for (const record of records) {
@@ -537,9 +571,9 @@ export default class DefiTransactions extends DefiBalances {
 		symbol: string,
 		address: string,
 		chainName: keyof Chains,
-		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
+		tokenAddresses: TokenAddresses
 	) {
-		let newSymbol = (symbol || '').replace(/ /g, '-')
+		let newSymbol = this.symbolWithDashes(symbol)
 		const upperSymbol = newSymbol.toUpperCase()
 		const upperChain = chainName.toUpperCase()
 		const lowerAddress = (address || '').toLowerCase()
@@ -572,7 +606,7 @@ export default class DefiTransactions extends DefiBalances {
 	private sterilizeApeBoardTransfer(
 		record: ApeBoardTransfer,
 		chainName: keyof Chains,
-		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
+		tokenAddresses: TokenAddresses
 	) {
 		const { symbol, tokenAddress, balance, type } = record
 		const token = this.getTokenName(
@@ -598,7 +632,7 @@ export default class DefiTransactions extends DefiBalances {
 		chainName: keyof Chains,
 		isSend = true,
 		tokenSymbols: DebankTokens,
-		tokenAddresses: ReturnType<DefiTransactions['getTokenAddresses']>
+		tokenAddresses: TokenAddresses
 	) {
 		const { amount, token_id: tokenId } = record
 		const token = this.getTokenName(
@@ -656,6 +690,27 @@ export default class DefiTransactions extends DefiBalances {
 	}
 
 	/**
+	 * Add Contract
+	 */
+
+	private addContract(
+		symbols: TokenAddresses,
+		symbol: string,
+		address: string
+	) {
+		const upperSymbol = this.symbolWithDashes(symbol).toUpperCase()
+		const lowerAddress = address.toLowerCase()
+		const isContract = this.isContract(lowerAddress)
+		if (upperSymbol && isContract) {
+			if (!symbols[upperSymbol]) {
+				symbols[upperSymbol] = [lowerAddress]
+			} else if (!symbols[upperSymbol].includes(lowerAddress)) {
+				symbols[upperSymbol].push(lowerAddress)
+			}
+		}
+	}
+
+	/**
 	 * Get Private Debank Endpoint
 	 */
 
@@ -688,4 +743,11 @@ export default class DefiTransactions extends DefiBalances {
 	private isContract(address: string) {
 		return address.startsWith('0x')
 	}
+
+	/**
+	 * Dashed Symbol
+	 */
+
+	private symbolWithDashes = (symbol: string) =>
+		(symbol || '').replace(/ /g, '-')
 }

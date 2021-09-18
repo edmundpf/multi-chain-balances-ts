@@ -13,14 +13,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiBalances_1 = __importDefault(require("./DefiBalances"));
+const localData_1 = require("./localData");
 const values_1 = require("./values");
 /**
  * DefiTransactions Class
  */
 class DefiTransactions extends DefiBalances_1.default {
-    /**
-     * Get Transactions
-     */
+    constructor() {
+        /**
+         * Get Transactions
+         */
+        super(...arguments);
+        /**
+         * Dashed Symbol
+         */
+        this.symbolWithDashes = (symbol) => (symbol || '').replace(/ /g, '-');
+    }
     getTransactions(useDebank = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const debankRequests = [];
@@ -89,6 +97,8 @@ class DefiTransactions extends DefiBalances_1.default {
                 yield getInfoFromApeBoard();
                 yield getInfoFromDebank();
             }
+            // Get Existing Token Addresses
+            const existingAddresses = yield this.getExistingTokenAddresses();
             // Iterate Chain Results
             for (const index in rawChains) {
                 const chainName = this.chainNames[index];
@@ -96,7 +106,7 @@ class DefiTransactions extends DefiBalances_1.default {
                 const transactionHashes = [];
                 let historyRecords = this.chains[chainName].transactions;
                 // Get Token Addresses
-                const tokenAddresses = this.getTokenAddresses(records, debankTokens[index]);
+                const tokenAddresses = this.getTokenAddresses(records, debankTokens[index], existingAddresses[chainName]);
                 // Get existing hashes from imported history records
                 if (historyRecords.length) {
                     for (const record of historyRecords) {
@@ -124,6 +134,8 @@ class DefiTransactions extends DefiBalances_1.default {
                 }
                 this.chains[chainName].transactions = historyRecords.sort((a, b) => a.time < b.time ? 1 : -1);
             }
+            // Sync Contract Addresses
+            yield this.syncContractAddresses();
         });
     }
     /**
@@ -172,6 +184,41 @@ class DefiTransactions extends DefiBalances_1.default {
                     this.unknownTokens.push(tokenName);
             }
         }
+    }
+    /**
+     * Get Existing Token Addresses
+     */
+    getExistingTokenAddresses() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const chainSymbols = {};
+            const localRecords = yield localData_1.selectContracts();
+            // Iterate Records
+            for (const record of localRecords) {
+                const { blockchain, symbol, address } = record;
+                const chainName = blockchain;
+                if (!chainSymbols[chainName])
+                    chainSymbols[chainName] = {};
+                this.addContract(chainSymbols[chainName], symbol, address);
+            }
+            return chainSymbols;
+        });
+    }
+    /**
+     * Sync Contract Addresses
+     */
+    syncContractAddresses() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const requests = [];
+            for (const blockchain of this.chainNames) {
+                const addresses = this.chains[blockchain].tokenAddresses;
+                for (const symbolWithStub in addresses) {
+                    const address = addresses[symbolWithStub];
+                    const symbol = this.sterilizeTokenNameNoStub(symbolWithStub).toUpperCase();
+                    requests.push(localData_1.insertContract({ blockchain, symbol, address }));
+                }
+            }
+            yield Promise.all(requests);
+        });
     }
     /**
      * Sterilize History Record
@@ -372,23 +419,10 @@ class DefiTransactions extends DefiBalances_1.default {
     /**
      * Get Token Addresses
      */
-    getTokenAddresses(records, tokenSymbols) {
+    getTokenAddresses(records, tokenSymbols, existingAddresses = {}) {
         var _a, _b, _c;
-        const symbols = {};
-        // Add Contract
-        const addContract = (symbol, address) => {
-            const upperSymbol = symbol.toUpperCase();
-            const lowerAddress = address.toLowerCase();
-            const isContract = this.isContract(lowerAddress);
-            if (upperSymbol && isContract) {
-                if (!symbols[upperSymbol]) {
-                    symbols[upperSymbol] = [lowerAddress];
-                }
-                else if (!symbols[upperSymbol].includes(lowerAddress)) {
-                    symbols[upperSymbol].push(lowerAddress);
-                }
-            }
-        };
+        const symbols = Object.assign({}, existingAddresses);
+        const addContract = this.addContract.bind(this, symbols);
         // Iterate Records
         for (const record of records) {
             const debankRec = record;
@@ -421,7 +455,7 @@ class DefiTransactions extends DefiBalances_1.default {
      * Get Token Name
      */
     getTokenName(symbol, address, chainName, tokenAddresses) {
-        let newSymbol = (symbol || '').replace(/ /g, '-');
+        let newSymbol = this.symbolWithDashes(symbol);
         const upperSymbol = newSymbol.toUpperCase();
         const upperChain = chainName.toUpperCase();
         const lowerAddress = (address || '').toLowerCase();
@@ -503,6 +537,22 @@ class DefiTransactions extends DefiBalances_1.default {
             newType = 'failure';
         }
         return newType;
+    }
+    /**
+     * Add Contract
+     */
+    addContract(symbols, symbol, address) {
+        const upperSymbol = this.symbolWithDashes(symbol).toUpperCase();
+        const lowerAddress = address.toLowerCase();
+        const isContract = this.isContract(lowerAddress);
+        if (upperSymbol && isContract) {
+            if (!symbols[upperSymbol]) {
+                symbols[upperSymbol] = [lowerAddress];
+            }
+            else if (!symbols[upperSymbol].includes(lowerAddress)) {
+                symbols[upperSymbol].push(lowerAddress);
+            }
+        }
     }
     /**
      * Get Private Debank Endpoint

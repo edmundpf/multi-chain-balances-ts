@@ -269,12 +269,12 @@ export default class DefiBalances {
 	sterilizeTokenNameNoStub(tokenName: string) {
 		let curName = tokenName
 		if (tokenName.includes('-')) {
-			const dashParts = tokenName.split('-')
+			let dashParts = tokenName.split('-')
 			const lastPart = dashParts[dashParts.length - 1]
 			const isPool = lastPart == 'Pool'
 			const hasStub = lastPart.startsWith('0x') && lastPart.length == 6
 			if (!isPool && hasStub) {
-				dashParts.pop()
+				dashParts = dashParts.slice(0, dashParts.length - 2)
 				curName = dashParts.join('-')
 			}
 		}
