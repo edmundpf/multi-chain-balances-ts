@@ -287,15 +287,17 @@ export default class DefiTransactions extends DefiBalances {
 		}
 
 		// Get Universal Info
+		const hash = this.getTransactionID(record)
+		const date = new Date(
+			debankRec.time_at * 1000 || apeBoardRec.timestamp
+		).toISOString()
+		const feeSymbol = NATIVE_TOKENS[chainName]
+		const hasError = debankRec.tx?.status == 0 || apeBoardRec.isError
 		let type =
 			debankRec.cate_id ||
 			debankRec.tx?.name ||
 			apeBoardRec.interactions?.[0]?.function ||
 			''
-		const hash = this.getTransactionID(record)
-		const date = new Date(
-			debankRec.time_at * 1000 || apeBoardRec.timestamp
-		).toISOString()
 		let toAddress = (
 			debankRec.tx?.to_addr ||
 			apeBoardRec.interactions?.[0]?.to ||
@@ -307,7 +309,6 @@ export default class DefiTransactions extends DefiBalances {
 			apeBoardRec.interactions?.[0]?.from ||
 			this.address
 		).toLowerCase()
-		const feeSymbol = NATIVE_TOKENS[chainName]
 		let feeQuantity =
 			debankRec.tx?.eth_gas_fee || apeBoardRec.fee?.[0]?.amount || 0
 		let feePriceUSD = apeBoardRec.fee?.[0]?.price || 0
@@ -362,7 +363,7 @@ export default class DefiTransactions extends DefiBalances {
 		}
 
 		// Sterilize Type
-		type = this.sterilizeTransactionType(type, tokens)
+		type = this.sterilizeTransactionType(type, hasError, tokens)
 
 		// Merge Wrapped/Unwrapped Token Dust from Swaps
 		const tokenNames = Object.keys(tokens)
@@ -652,7 +653,11 @@ export default class DefiTransactions extends DefiBalances {
 	 * Sterilize Transaction Type
 	 */
 
-	private sterilizeTransactionType(type: string, tokens: TokenRecords) {
+	private sterilizeTransactionType(
+		type: string,
+		hasError: boolean,
+		tokens: TokenRecords
+	) {
 		let newType = type
 		const tokenKeys = Object.keys(tokens)
 		const numTokens = tokenKeys.length
@@ -683,8 +688,9 @@ export default class DefiTransactions extends DefiBalances {
 		}
 
 		// Failure
-		else if (type != 'approve' && !numTokens) {
-			newType = 'failure'
+		else if (!numTokens) {
+			if (hasError) newType = 'failure'
+			else newType = 'approve'
 		}
 		return newType
 	}

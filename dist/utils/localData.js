@@ -100,7 +100,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
         let contractSuccess = false;
         const res = yield Promise.all([
             db.all(selectTableNameStmt, [PRICES_TABLE_NAME]),
-            db.all(selectTableNameStmt, [CONTRACTS_TABLE_NAME])
+            db.all(selectTableNameStmt, [CONTRACTS_TABLE_NAME]),
         ]);
         const priceRecords = res[0];
         const contractRecords = res[1];
@@ -144,7 +144,7 @@ exports.prepareDB = prepareDB;
  */
 const selectPrices = (symbol) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return (yield db.all(selectPricesStmt, [symbol]));
+        return yield db.all(selectPricesStmt, [symbol]);
     }
     catch (err) {
         return [];
@@ -168,7 +168,7 @@ exports.insertPrice = insertPrice;
  */
 const selectContracts = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return (yield db.all(selectContractsStmt));
+        return yield db.all(selectContractsStmt);
     }
     catch (err) {
         return [];

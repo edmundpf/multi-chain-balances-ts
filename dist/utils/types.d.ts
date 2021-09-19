@@ -128,6 +128,7 @@ declare type DebankTransactionInfo = {
     to_addr: string;
     from_addr: string;
     name: string;
+    status: 0 | 1;
 };
 export declare type DebankTokens = {
     [index: string]: {
@@ -195,6 +196,7 @@ export declare type ApeBoardHistory = {
     timestamp: number;
     transfers: ApeBoardTransfer[];
     interactions: ApeBoardInteraction[];
+    isError: boolean;
     fee: ApeBoardFee[];
 };
 export declare type ApeBoardTransResponse = ApeBoardHistory[];
