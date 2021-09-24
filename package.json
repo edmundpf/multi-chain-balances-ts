@@ -1,6 +1,6 @@
 {
   "name": "multi-chain-balances-ts",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Get Balances/Transactions from Ethereum, BSC, Polygon Blockchains and Beefy.Finance Vaults.",
   "main": "./dist/index.js",
   "files": [
