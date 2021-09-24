@@ -7,12 +7,14 @@ export declare const FIAT_CURRENCY = "USD";
  * Crypto Info
  */
 export declare const NATIVE_TOKENS: {
+    avax: string;
     bsc: string;
     eth: string;
     ftm: string;
     matic: string;
 };
 export declare const APEBOARD_CHAIN_ALIASES: {
+    avax: string;
     bsc: string;
     eth: string;
     ftm: string;
@@ -22,7 +24,9 @@ export declare const EXCHANGE_ALIASES: {
     dino: string[];
     ape: string[];
 };
+export declare const TOKEN_ALIASES: any;
 export declare const DEFAULT_URLS: {
+    avax: string;
     bsc: string;
     eth: string;
     ftm: string;

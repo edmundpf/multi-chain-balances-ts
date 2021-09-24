@@ -384,7 +384,9 @@ class DefiBalances {
                     tokens.push(token.symbol);
                 }
                 // Format Symbols for Parsing
-                let symbolsStr = misc_1.titleCase(tokens.join(' ').toLowerCase()).toLowerCase();
+                let symbolsStr = misc_1.titleCase(tokens.join(' ')
+                    .toLowerCase()
+                    .replace('.e', 'e')).toLowerCase();
                 const numericSymbol = misc_1.hasNumber(symbolsStr);
                 // Numeric Symbol Format
                 if (numericSymbol) {
@@ -412,10 +414,18 @@ class DefiBalances {
                                 receiptStr.substring(dashIndex + 1).toUpperCase();
                     }
                     // Format Beefy Receipts for Parsing
+                    receiptStr = receiptStr.replace('.E', 'E').replace('.e', 'E');
                     receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
                     const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
                     const receiptWords = receiptStr.split(' ');
                     const receiptWordsEnd = receiptWords.slice(receiptWords.length - symbols.length);
+                    // Add Alias Token Names
+                    for (const word of receiptWordsEnd) {
+                        if (values_1.TOKEN_ALIASES[word] &&
+                            !receiptWordsEnd.includes(values_1.TOKEN_ALIASES[word])) {
+                            receiptWordsEnd.push(values_1.TOKEN_ALIASES[word]);
+                        }
+                    }
                     const hasMultipleSymbols = symbols.length >= 2;
                     const tokensMatchReceiptTokens = symbols.every((sym) => receiptWordsEnd.some((receiptSym) => sym.includes(receiptSym)));
                     // Check for Match comparing Symbols vs. Receipts

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.TOKEN_ALIASES = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -10,6 +10,7 @@ exports.FIAT_CURRENCY = 'USD';
  */
 // Native Tokens
 exports.NATIVE_TOKENS = {
+    avax: 'AVAX',
     bsc: 'BNB',
     eth: 'ETH',
     ftm: 'FTM',
@@ -17,6 +18,7 @@ exports.NATIVE_TOKENS = {
 };
 // Ape Board Chain Aliases
 exports.APEBOARD_CHAIN_ALIASES = {
+    avax: 'avax',
     bsc: 'bsc',
     eth: 'ethereum',
     ftm: 'fantom',
@@ -27,8 +29,14 @@ exports.EXCHANGE_ALIASES = {
     dino: ['dinoswap'],
     ape: ['banana'],
 };
+// Token Aliases
+exports.TOKEN_ALIASES = {
+    mai: 'mimatic',
+    mimatic: 'mai',
+};
 // Default URL's
 exports.DEFAULT_URLS = {
+    avax: 'https://cchain.explorer.avax.network',
     bsc: 'https://bscscan.com',
     eth: 'https://etherscan.io',
     ftm: 'https://ftmscan.com',
@@ -141,6 +149,7 @@ const initChain = (chainName) => {
 // Init Chains
 const initChains = () => {
     return {
+        avax: initChain('avax'),
         bsc: initChain('bsc'),
         eth: initChain('eth'),
         ftm: initChain('ftm'),

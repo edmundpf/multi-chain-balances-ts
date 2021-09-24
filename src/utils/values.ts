@@ -13,6 +13,7 @@ export const FIAT_CURRENCY = 'USD'
 // Native Tokens
 
 export const NATIVE_TOKENS = {
+	avax: 'AVAX',
 	bsc: 'BNB',
 	eth: 'ETH',
 	ftm: 'FTM',
@@ -22,6 +23,7 @@ export const NATIVE_TOKENS = {
 // Ape Board Chain Aliases
 
 export const APEBOARD_CHAIN_ALIASES = {
+	avax: 'avax',
 	bsc: 'bsc',
 	eth: 'ethereum',
 	ftm: 'fantom',
@@ -35,9 +37,17 @@ export const EXCHANGE_ALIASES = {
 	ape: ['banana'],
 }
 
+// Token Aliases
+
+export const TOKEN_ALIASES: any = {
+	mai: 'mimatic',
+	mimatic: 'mai',
+}
+
 // Default URL's
 
 export const DEFAULT_URLS = {
+	avax: 'https://cchain.explorer.avax.network',
 	bsc: 'https://bscscan.com',
 	eth: 'https://etherscan.io',
 	ftm: 'https://ftmscan.com',
@@ -180,6 +190,7 @@ const initChain = (chainName: keyof Chains) => {
 
 export const initChains = () => {
 	return {
+		avax: initChain('avax'),
 		bsc: initChain('bsc'),
 		eth: initChain('eth'),
 		ftm: initChain('ftm'),

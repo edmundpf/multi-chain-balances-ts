@@ -9,6 +9,7 @@ import {
 	initChains,
 	apeBoardCredentials,
 	EXCHANGE_ALIASES,
+	TOKEN_ALIASES,
 	FIAT_CURRENCY,
 	stableCoinConfig,
 } from './values'
@@ -458,7 +459,9 @@ export default class DefiBalances {
 				}
 
 				// Format Symbols for Parsing
-				let symbolsStr = titleCase(tokens.join(' ').toLowerCase()).toLowerCase()
+				let symbolsStr = titleCase(
+					tokens.join(' ').toLowerCase().replace('.e', 'e')
+				).toLowerCase()
 				const numericSymbol = hasNumber(symbolsStr)
 
 				// Numeric Symbol Format
@@ -490,12 +493,23 @@ export default class DefiBalances {
 					}
 
 					// Format Beefy Receipts for Parsing
+					receiptStr = receiptStr.replace('.E', 'E').replace('.e', 'E')
 					receiptStr = titleCase(receiptStr).toLowerCase()
 					const receiptStrNoSpaces = receiptStr.replace(/ /g, '')
 					const receiptWords = receiptStr.split(' ')
 					const receiptWordsEnd = receiptWords.slice(
 						receiptWords.length - symbols.length
 					)
+
+					// Add Alias Token Names
+					for (const word of receiptWordsEnd) {
+						if (
+							TOKEN_ALIASES[word] &&
+							!receiptWordsEnd.includes(TOKEN_ALIASES[word])
+						) {
+							receiptWordsEnd.push(TOKEN_ALIASES[word])
+						}
+					}
 					const hasMultipleSymbols = symbols.length >= 2
 					const tokensMatchReceiptTokens = symbols.every((sym: string) =>
 						receiptWordsEnd.some((receiptSym: string) =>

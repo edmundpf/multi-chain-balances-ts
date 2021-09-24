@@ -103,6 +103,7 @@ export type Chain = {
 // Chains Type
 
 export type Chains = {
+	avax: Chain
 	bsc: Chain
 	eth: Chain
 	ftm: Chain

@@ -61,6 +61,7 @@ export declare type Chain = {
     tokenAddresses: StringDict;
 };
 export declare type Chains = {
+    avax: Chain;
     bsc: Chain;
     eth: Chain;
     ftm: Chain;
