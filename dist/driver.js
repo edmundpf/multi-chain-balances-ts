@@ -62,7 +62,7 @@ main({
     filterUnknownTokens: true,
     getBalances: true,
     getTransactions: true,
-    getPrices: true,
-    logTransactions: true,
+    getPrices: false,
+    logTransactions: false,
     logAssets: true,
 });

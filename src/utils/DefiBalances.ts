@@ -460,7 +460,7 @@ export default class DefiBalances {
 
 				// Format Symbols for Parsing
 				let symbolsStr = titleCase(
-					tokens.join(' ').toLowerCase().replace('.e', 'e')
+					tokens.join(' ').toLowerCase().replace(/\.e/g, 'e')
 				).toLowerCase()
 				const numericSymbol = hasNumber(symbolsStr)
 
@@ -493,7 +493,7 @@ export default class DefiBalances {
 					}
 
 					// Format Beefy Receipts for Parsing
-					receiptStr = receiptStr.replace('.E', 'E').replace('.e', 'E')
+					receiptStr = receiptStr.replace(/\.E/g, 'E').replace(/\.e/g, 'E')
 					receiptStr = titleCase(receiptStr).toLowerCase()
 					const receiptStrNoSpaces = receiptStr.replace(/ /g, '')
 					const receiptWords = receiptStr.split(' ')

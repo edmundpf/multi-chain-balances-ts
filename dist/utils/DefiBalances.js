@@ -384,9 +384,7 @@ class DefiBalances {
                     tokens.push(token.symbol);
                 }
                 // Format Symbols for Parsing
-                let symbolsStr = misc_1.titleCase(tokens.join(' ')
-                    .toLowerCase()
-                    .replace('.e', 'e')).toLowerCase();
+                let symbolsStr = misc_1.titleCase(tokens.join(' ').toLowerCase().replace(/\.e/g, 'e')).toLowerCase();
                 const numericSymbol = misc_1.hasNumber(symbolsStr);
                 // Numeric Symbol Format
                 if (numericSymbol) {
@@ -414,7 +412,7 @@ class DefiBalances {
                                 receiptStr.substring(dashIndex + 1).toUpperCase();
                     }
                     // Format Beefy Receipts for Parsing
-                    receiptStr = receiptStr.replace('.E', 'E').replace('.e', 'E');
+                    receiptStr = receiptStr.replace(/\.E/g, 'E').replace(/\.e/g, 'E');
                     receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
                     const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
                     const receiptWords = receiptStr.split(' ');
