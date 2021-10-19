@@ -468,6 +468,7 @@ class DefiBalances {
                             }
                         }
                     }
+                    // TO-DO: Fix vault/APY matching
                     // Find Matching APY Info
                     for (const vaultName in apyData) {
                         let vaultMatch = '';
