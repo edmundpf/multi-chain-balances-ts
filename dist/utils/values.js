@@ -114,7 +114,7 @@ exports.defaultHistoryRecord = {
 // Default Minimum Value
 exports.DEFAULT_MIN_VALUE = 0.05;
 // Default Database File
-exports.DEFAULT_DB_FILE = '.defi-prices.db';
+exports.DEFAULT_DB_FILE = '.sqlite-data/defi-prices.db';
 // Stablecoin Config
 exports.stableCoinConfig = {
     otherCoins: ['DAI'],

@@ -146,7 +146,7 @@ export const DEFAULT_MIN_VALUE = 0.05
 
 // Default Database File
 
-export const DEFAULT_DB_FILE = '.defi-prices.db'
+export const DEFAULT_DB_FILE = '.sqlite-data/defi-prices.db'
 
 // Stablecoin Config
 
