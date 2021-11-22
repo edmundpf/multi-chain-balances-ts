@@ -63,9 +63,11 @@ export declare type Chain = {
 export declare type Chains = {
     avax: Chain;
     bsc: Chain;
+    cro: Chain;
     eth: Chain;
     ftm: Chain;
     matic: Chain;
+    movr: Chain;
 };
 export declare type HistoryRecord = {
     id: string;
@@ -111,7 +113,7 @@ export declare type InferMultiSwapArgs = {
 export declare type TokenAddresses = {
     [index: string]: string[];
 };
-export declare type MainRequest = Token[] | Protocol[] | NumDict | void;
+export declare type MainRequest = Token[] | Protocol[] | NumDict | BeefyVaultInfo[] | void;
 /**
  * Debank Types
  */
@@ -201,6 +203,13 @@ export declare type ApeBoardHistory = {
     fee: ApeBoardFee[];
 };
 export declare type ApeBoardTransResponse = ApeBoardHistory[];
+/**
+ * Beefy Types
+ */
+export declare type BeefyVaultInfo = {
+    id: string;
+    earnedToken: string;
+};
 /**
  * Coin Gecko Types
  */

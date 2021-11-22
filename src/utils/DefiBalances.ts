@@ -8,10 +8,10 @@ import {
 	DEFAULT_URLS,
 	initChains,
 	apeBoardCredentials,
-	EXCHANGE_ALIASES,
 	TOKEN_ALIASES,
 	FIAT_CURRENCY,
 	stableCoinConfig,
+	RECEIPT_ALIASES,
 } from './values'
 import {
 	Token,
@@ -22,6 +22,7 @@ import {
 	NumDict,
 	MainRequest,
 	Assets,
+	BeefyVaultInfo,
 } from './types'
 
 /**
@@ -74,15 +75,17 @@ export default class DefiBalances {
 			filterUnkownTokens ? this.getKnownTokenList() : [],
 			this.getProtocolList(),
 			this.getBeefyApy(),
+			this.getBeefyVaults(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
 		const knownTokenData = res[1] as Token[]
 		const protocolData = res[2] as Protocol[]
 		const apyData = res[3] as NumDict
+		const vaultData = res[4] as BeefyVaultInfo[]
 		this.parseTokenData(tokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
-		this.parseApyData(apyData)
+		this.parseApyData(apyData, vaultData)
 		this.getAssetsAndTotalValues()
 	}
 
@@ -443,7 +446,7 @@ export default class DefiBalances {
 	 * Parse APY Data
 	 */
 
-	private parseApyData(apyData: NumDict) {
+	private parseApyData(apyData: NumDict, vaultData: BeefyVaultInfo[]) {
 		// Iterate Chains
 		for (const chainName in this.chains) {
 			const chain = this.chains[chainName as keyof Chains]
@@ -517,12 +520,26 @@ export default class DefiBalances {
 						)
 					)
 
+					// Check if receipt has alias
+					let isReceiptAlias = false
+					for (const part in RECEIPT_ALIASES) {
+						if (receiptStrNoSpaces.includes(part)) {
+							const aliasTokens: string[] = RECEIPT_ALIASES[part]
+							isReceiptAlias = symbols.every((sym: string) =>
+								aliasTokens.some((receiptSym: string) =>
+									sym.includes(receiptSym)
+								)
+							)
+						}
+					}
+
 					// Check for Match comparing Symbols vs. Receipts
 					const isMatch = isPair
 						? hasMultipleSymbols && tokensMatchReceiptTokens
 						: receiptStr.includes(symbolsStr) ||
 						  receiptStrNoSpaces.includes(symbolsStr) ||
-						  (!hasMultipleSymbols && tokensMatchReceiptTokens)
+						  (!hasMultipleSymbols && tokensMatchReceiptTokens) ||
+						  isReceiptAlias
 
 					// Add Match to Compare Vault/Receipt Amounts
 					if (isMatch) {
@@ -544,55 +561,21 @@ export default class DefiBalances {
 
 				// Get Matching APY Info
 				if (receiptMatch) {
-					// Format Pancake-LP V2 Receipts
-					const receiptStr = titleCase(
-						receiptMatch.replace('V2', 'v2')
-					).toLowerCase()
-					let receiptWords = receiptStr.split(' ').slice(1)
-
-					// Check if Symbol has Version and format Receipt Words
-					const symbolHasVersion =
-						receiptWords.length == 2 &&
-						receiptWords[0].endsWith('v') &&
-						String(Number(receiptWords[1])) == receiptWords[1]
-					if (symbolHasVersion) receiptWords = [receiptWords.join('')]
-					const receiptWordsSet = [receiptWords]
-
-					// Get APY Aliases
-					for (const key in EXCHANGE_ALIASES) {
-						if (receiptStr.includes(key)) {
-							for (const alias of EXCHANGE_ALIASES[
-								key as keyof typeof EXCHANGE_ALIASES
-							]) {
-								receiptWordsSet.push(
-									receiptStr.replace(key, alias).split(' ').slice(1)
-								)
-							}
-						}
-					}
-
-					// TO-DO: Fix vault/APY matching
-					// Find Matching APY Info
-					for (const vaultName in apyData) {
-						let vaultMatch = ''
-						for (const wordSet of receiptWordsSet) {
-							const isMatch =
-								wordSet.length == 1
-									? vaultName.endsWith(`-${wordSet[0]}`)
-									: wordSet.every(
-											(word: string) =>
-												word == 'swap' || vaultName.includes(word)
-									  )
-							if (isMatch) {
-								vaultMatch = vaultName
-								break
-							}
-						}
-
-						// Set Vault Info
-						if (vaultMatch) {
-							vault.apy = apyData[vaultName] * 100
-							vault.beefyVaultName = vaultName
+					for (const vaultRecord of vaultData) {
+						const { id, earnedToken } = vaultRecord
+						const unwrappedReceipt = receiptMatch
+							.toLowerCase()
+							.replace(/w/g, '')
+						const unwrappedVaultReceipt = earnedToken
+							.toLowerCase()
+							.replace(/w/g, '')
+						if (
+							unwrappedReceipt == unwrappedVaultReceipt &&
+							apyData[id] != null
+						) {
+							// Set Vault Info
+							vault.apy = apyData[id] * 100
+							vault.beefyVaultName = id
 							vault.beefyReceiptName = receiptMatch
 							vault.beefyReceiptAmount = chain.receipts[receiptMatch]
 							break
@@ -633,5 +616,13 @@ export default class DefiBalances {
 
 	private async getBeefyApy() {
 		return await this.getBeefyEndpoint('beefyApy')
+	}
+
+	/**
+	 * Get Beefy Vaults
+	 */
+
+	private async getBeefyVaults() {
+		return await this.getBeefyEndpoint('beefyVaults')
 	}
 }

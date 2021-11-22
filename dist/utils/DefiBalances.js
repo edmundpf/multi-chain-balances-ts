@@ -64,15 +64,17 @@ class DefiBalances {
                 filterUnkownTokens ? this.getKnownTokenList() : [],
                 this.getProtocolList(),
                 this.getBeefyApy(),
+                this.getBeefyVaults(),
             ];
             const res = yield Promise.all(requests);
             const tokenData = res[0];
             const knownTokenData = res[1];
             const protocolData = res[2];
             const apyData = res[3];
+            const vaultData = res[4];
             this.parseTokenData(tokenData, knownTokenData);
             this.parseProtocolData(protocolData);
-            this.parseApyData(apyData);
+            this.parseApyData(apyData, vaultData);
             this.getAssetsAndTotalValues();
         });
     }
@@ -371,7 +373,7 @@ class DefiBalances {
     /**
      * Parse APY Data
      */
-    parseApyData(apyData) {
+    parseApyData(apyData, vaultData) {
         // Iterate Chains
         for (const chainName in this.chains) {
             const chain = this.chains[chainName];
@@ -426,12 +428,21 @@ class DefiBalances {
                     }
                     const hasMultipleSymbols = symbols.length >= 2;
                     const tokensMatchReceiptTokens = symbols.every((sym) => receiptWordsEnd.some((receiptSym) => sym.includes(receiptSym)));
+                    // Check if receipt has alias
+                    let isReceiptAlias = false;
+                    for (const part in values_1.RECEIPT_ALIASES) {
+                        if (receiptStrNoSpaces.includes(part)) {
+                            const aliasTokens = values_1.RECEIPT_ALIASES[part];
+                            isReceiptAlias = symbols.every((sym) => aliasTokens.some((receiptSym) => sym.includes(receiptSym)));
+                        }
+                    }
                     // Check for Match comparing Symbols vs. Receipts
                     const isMatch = isPair
                         ? hasMultipleSymbols && tokensMatchReceiptTokens
                         : receiptStr.includes(symbolsStr) ||
                             receiptStrNoSpaces.includes(symbolsStr) ||
-                            (!hasMultipleSymbols && tokensMatchReceiptTokens);
+                            (!hasMultipleSymbols && tokensMatchReceiptTokens) ||
+                            isReceiptAlias;
                     // Add Match to Compare Vault/Receipt Amounts
                     if (isMatch) {
                         const vaultAmount = vault.amount || 0;
@@ -450,41 +461,14 @@ class DefiBalances {
                 }
                 // Get Matching APY Info
                 if (receiptMatch) {
-                    // Format Pancake-LP V2 Receipts
-                    const receiptStr = misc_1.titleCase(receiptMatch.replace('V2', 'v2')).toLowerCase();
-                    let receiptWords = receiptStr.split(' ').slice(1);
-                    // Check if Symbol has Version and format Receipt Words
-                    const symbolHasVersion = receiptWords.length == 2 &&
-                        receiptWords[0].endsWith('v') &&
-                        String(Number(receiptWords[1])) == receiptWords[1];
-                    if (symbolHasVersion)
-                        receiptWords = [receiptWords.join('')];
-                    const receiptWordsSet = [receiptWords];
-                    // Get APY Aliases
-                    for (const key in values_1.EXCHANGE_ALIASES) {
-                        if (receiptStr.includes(key)) {
-                            for (const alias of values_1.EXCHANGE_ALIASES[key]) {
-                                receiptWordsSet.push(receiptStr.replace(key, alias).split(' ').slice(1));
-                            }
-                        }
-                    }
-                    // TO-DO: Fix vault/APY matching
-                    // Find Matching APY Info
-                    for (const vaultName in apyData) {
-                        let vaultMatch = '';
-                        for (const wordSet of receiptWordsSet) {
-                            const isMatch = wordSet.length == 1
-                                ? vaultName.endsWith(`-${wordSet[0]}`)
-                                : wordSet.every((word) => word == 'swap' || vaultName.includes(word));
-                            if (isMatch) {
-                                vaultMatch = vaultName;
-                                break;
-                            }
-                        }
-                        // Set Vault Info
-                        if (vaultMatch) {
-                            vault.apy = apyData[vaultName] * 100;
-                            vault.beefyVaultName = vaultName;
+                    for (const vaultRecord of vaultData) {
+                        const { id, earnedToken } = vaultRecord;
+                        const unwrappedReceipt = receiptMatch.toLowerCase().replace(/w/g, '');
+                        const unwrappedVaultReceipt = earnedToken.toLowerCase().replace(/w/g, '');
+                        if (unwrappedReceipt == unwrappedVaultReceipt && apyData[id] != null) {
+                            // Set Vault Info
+                            vault.apy = apyData[id] * 100;
+                            vault.beefyVaultName = id;
                             vault.beefyReceiptName = receiptMatch;
                             vault.beefyReceiptAmount = chain.receipts[receiptMatch];
                             break;
@@ -524,6 +508,14 @@ class DefiBalances {
     getBeefyApy() {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getBeefyEndpoint('beefyApy');
+        });
+    }
+    /**
+     * Get Beefy Vaults
+     */
+    getBeefyVaults() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getBeefyEndpoint('beefyVaults');
         });
     }
 }

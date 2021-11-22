@@ -9,9 +9,11 @@ export declare const FIAT_CURRENCY = "USD";
 export declare const NATIVE_TOKENS: {
     avax: string;
     bsc: string;
+    cro: string;
     eth: string;
     ftm: string;
     matic: string;
+    movr: string;
 };
 export declare const APEBOARD_CHAIN_ALIASES: {
     avax: string;
@@ -20,17 +22,16 @@ export declare const APEBOARD_CHAIN_ALIASES: {
     ftm: string;
     matic: string;
 };
-export declare const EXCHANGE_ALIASES: {
-    dino: string[];
-    ape: string[];
-};
 export declare const TOKEN_ALIASES: any;
+export declare const RECEIPT_ALIASES: any;
 export declare const DEFAULT_URLS: {
     avax: string;
     bsc: string;
+    cro: string;
     eth: string;
     ftm: string;
     matic: string;
+    movr: string;
 };
 /**
  * API Info
@@ -44,6 +45,7 @@ export declare const APIS: {
 };
 export declare const ENDPOINTS: {
     beefyApy: string;
+    beefyVaults: string;
     tokenList: string;
     protocolList: string;
     debankHistory: string;

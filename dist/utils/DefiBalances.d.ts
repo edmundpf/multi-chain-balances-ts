@@ -93,4 +93,8 @@ export default class DefiBalances {
      * Get Beefy APY
      */
     private getBeefyApy;
+    /**
+     * Get Beefy Vaults
+     */
+    private getBeefyVaults;
 }

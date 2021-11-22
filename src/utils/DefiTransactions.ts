@@ -64,8 +64,8 @@ export default class DefiTransactions extends DefiBalances {
 		const getInfoFromApeBoard = async () => {
 			for (const index in this.chainNames) {
 				const chainName = this.chainNames[index]
-				const chainAlias = APEBOARD_CHAIN_ALIASES[chainName]
-				if (!rawChains[index]) {
+				const chainAlias = (APEBOARD_CHAIN_ALIASES as any)[chainName] || ''
+				if (chainAlias && !rawChains[index]) {
 					const endpoint =
 						`${ENDPOINTS['apeBoardHistory']}/${chainAlias}` as keyof typeof ENDPOINTS
 					apeBoardRequests.push(this.getApeBoardEndpoint(endpoint))

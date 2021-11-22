@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.TOKEN_ALIASES = exports.EXCHANGE_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.RECEIPT_ALIASES = exports.TOKEN_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -12,9 +12,11 @@ exports.FIAT_CURRENCY = 'USD';
 exports.NATIVE_TOKENS = {
     avax: 'AVAX',
     bsc: 'BNB',
+    cro: 'CRO',
     eth: 'ETH',
     ftm: 'FTM',
     matic: 'MATIC',
+    movr: 'MOVR',
 };
 // Ape Board Chain Aliases
 exports.APEBOARD_CHAIN_ALIASES = {
@@ -24,23 +26,24 @@ exports.APEBOARD_CHAIN_ALIASES = {
     ftm: 'fantom',
     matic: 'polygon',
 };
-// Exchange Aliases
-exports.EXCHANGE_ALIASES = {
-    dino: ['dinoswap'],
-    ape: ['banana'],
-};
 // Token Aliases
 exports.TOKEN_ALIASES = {
     mai: 'mimatic',
     mimatic: 'mai',
 };
+// Receipt Aliases
+exports.RECEIPT_ALIASES = {
+    '3crv': ['dai', 'usd', 'usd']
+};
 // Default URL's
 exports.DEFAULT_URLS = {
     avax: 'https://cchain.explorer.avax.network',
     bsc: 'https://bscscan.com',
+    cro: 'https://cronos.crypto.org',
     eth: 'https://etherscan.io',
     ftm: 'https://ftmscan.com',
     matic: 'https://polygonscan.com',
+    movr: 'https://moonriver.moonscan.io',
 };
 /**
  * API Info
@@ -56,6 +59,7 @@ exports.APIS = {
 // Endpoints
 exports.ENDPOINTS = {
     beefyApy: 'apy',
+    beefyVaults: 'vaults',
     tokenList: 'token_list',
     protocolList: 'complex_protocol_list',
     debankHistory: 'history/list',
@@ -151,9 +155,11 @@ const initChains = () => {
     return {
         avax: initChain('avax'),
         bsc: initChain('bsc'),
+        cro: initChain('cro'),
         eth: initChain('eth'),
         ftm: initChain('ftm'),
         matic: initChain('matic'),
+        movr: initChain('movr'),
     };
 };
 exports.initChains = initChains;

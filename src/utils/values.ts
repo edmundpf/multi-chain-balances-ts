@@ -15,9 +15,11 @@ export const FIAT_CURRENCY = 'USD'
 export const NATIVE_TOKENS = {
 	avax: 'AVAX',
 	bsc: 'BNB',
+	cro: 'CRO',
 	eth: 'ETH',
 	ftm: 'FTM',
 	matic: 'MATIC',
+	movr: 'MOVR',
 }
 
 // Ape Board Chain Aliases
@@ -30,13 +32,6 @@ export const APEBOARD_CHAIN_ALIASES = {
 	matic: 'polygon',
 }
 
-// Exchange Aliases
-
-export const EXCHANGE_ALIASES = {
-	dino: ['dinoswap'],
-	ape: ['banana'],
-}
-
 // Token Aliases
 
 export const TOKEN_ALIASES: any = {
@@ -44,14 +39,22 @@ export const TOKEN_ALIASES: any = {
 	mimatic: 'mai',
 }
 
+// Receipt Aliases
+
+export const RECEIPT_ALIASES: any = {
+	'3crv': ['dai', 'usd', 'usd'],
+}
+
 // Default URL's
 
 export const DEFAULT_URLS = {
 	avax: 'https://cchain.explorer.avax.network',
 	bsc: 'https://bscscan.com',
+	cro: 'https://cronos.crypto.org',
 	eth: 'https://etherscan.io',
 	ftm: 'https://ftmscan.com',
 	matic: 'https://polygonscan.com',
+	movr: 'https://moonriver.moonscan.io',
 }
 
 /**
@@ -72,6 +75,7 @@ export const APIS = {
 
 export const ENDPOINTS = {
 	beefyApy: 'apy',
+	beefyVaults: 'vaults',
 	tokenList: 'token_list',
 	protocolList: 'complex_protocol_list',
 	debankHistory: 'history/list',
@@ -192,9 +196,11 @@ export const initChains = () => {
 	return {
 		avax: initChain('avax'),
 		bsc: initChain('bsc'),
+		cro: initChain('cro'),
 		eth: initChain('eth'),
 		ftm: initChain('ftm'),
 		matic: initChain('matic'),
+		movr: initChain('movr'),
 	} as Chains
 }
 

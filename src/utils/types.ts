@@ -105,9 +105,11 @@ export type Chain = {
 export type Chains = {
 	avax: Chain
 	bsc: Chain
+	cro: Chain
 	eth: Chain
 	ftm: Chain
 	matic: Chain
+	movr: Chain
 }
 
 // History Record Type
@@ -166,7 +168,12 @@ export type TokenAddresses = { [index: string]: string[] }
 
 // Main Request Type
 
-export type MainRequest = Token[] | Protocol[] | NumDict | void
+export type MainRequest =
+	| Token[]
+	| Protocol[]
+	| NumDict
+	| BeefyVaultInfo[]
+	| void
 
 /**
  * Debank Types
@@ -297,6 +304,17 @@ export type ApeBoardHistory = {
 // Ape Board Transactions Response Type
 
 export type ApeBoardTransResponse = ApeBoardHistory[]
+
+/**
+ * Beefy Types
+ */
+
+// Beefy Vault Info Type
+
+export type BeefyVaultInfo = {
+	id: string
+	earnedToken: string
+}
 
 /**
  * Coin Gecko Types

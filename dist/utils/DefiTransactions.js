@@ -65,8 +65,8 @@ class DefiTransactions extends DefiBalances_1.default {
                 var _d, _e;
                 for (const index in this.chainNames) {
                     const chainName = this.chainNames[index];
-                    const chainAlias = values_1.APEBOARD_CHAIN_ALIASES[chainName];
-                    if (!rawChains[index]) {
+                    const chainAlias = values_1.APEBOARD_CHAIN_ALIASES[chainName] || '';
+                    if (chainAlias && !rawChains[index]) {
                         const endpoint = `${values_1.ENDPOINTS['apeBoardHistory']}/${chainAlias}`;
                         apeBoardRequests.push(this.getApeBoardEndpoint(endpoint));
                     }
