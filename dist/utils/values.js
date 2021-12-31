@@ -45,7 +45,7 @@ exports.DEFAULT_URLS = {
     ftm: 'https://ftmscan.com',
     matic: 'https://polygonscan.com',
     movr: 'https://moonriver.moonscan.io',
-    one: 'https://explorer.harmony.one'
+    one: 'https://explorer.harmony.one',
 };
 // Beefy Vault URL's
 exports.BEEFY_VAULT_URLS = {
@@ -68,7 +68,7 @@ exports.APIS = {
     debankPrivate: 'https://api.debank.com',
     coinGecko: 'https://api.coingecko.com/api/v3',
     farmArmy: 'https://farm.army',
-    githubVaults: 'https://raw.githubusercontent.com/beefyfinance/beefy-app/prod/src/features/configure/vault'
+    githubVaults: 'https://raw.githubusercontent.com/beefyfinance/beefy-app/prod/src/features/configure/vault',
 };
 // Endpoints
 exports.ENDPOINTS = {

@@ -14,10 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const path_1 = require("path");
-const promises_1 = require("fs/promises");
+const fs_1 = require("fs");
 const misc_1 = require("./misc");
 const envValues_1 = require("./envValues");
 const values_1 = require("./values");
+const { readFile, writeFile } = fs_1.promises;
 /**
  * DefiBalances Class
  */
@@ -508,7 +509,7 @@ class DefiBalances {
             const vaultFile = path_1.resolve(values_1.SAVED_VAULTS_FILE);
             // Get Saved Vaults
             try {
-                savedVaults = JSON.parse(yield promises_1.readFile(vaultFile, 'utf-8'));
+                savedVaults = JSON.parse(yield readFile(vaultFile, 'utf-8'));
             }
             catch (err) {
                 // Do Nothing
@@ -519,7 +520,9 @@ class DefiBalances {
             for (const key in values_1.BEEFY_VAULT_URLS) {
                 // Get Plain Text
                 const pool = values_1.BEEFY_VAULT_URLS[key];
-                const jsText = ((_b = (_a = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, { responseType: 'text' }))) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.trim()) || '';
+                const jsText = ((_b = (_a = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, {
+                    responseType: 'text',
+                }))) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.trim()) || '';
                 // Parse Text
                 if (jsText.includes('[')) {
                     try {
@@ -527,9 +530,7 @@ class DefiBalances {
                         // Add Vault
                         for (const record of data) {
                             const { id, earnedToken } = record;
-                            const formattedToken = earnedToken
-                                .toLowerCase()
-                                .replace(/w/g, '');
+                            const formattedToken = earnedToken.toLowerCase().replace(/w/g, '');
                             vaults[formattedToken] = id;
                         }
                     }
@@ -539,7 +540,7 @@ class DefiBalances {
                 }
             }
             // Write File
-            promises_1.writeFile(vaultFile, JSON.stringify(vaults, null, 2));
+            writeFile(vaultFile, JSON.stringify(vaults, null, 2));
             return vaults;
         });
     }

@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { resolve } from 'path'
-import { readFile, writeFile } from 'fs/promises'
+import { promises } from 'fs'
 import { titleCase, hasNumber, getFormattedURL } from './misc'
 import { ENV_ADDRESS, ENV_MIN_VALUE } from './envValues'
 import {
@@ -30,6 +30,7 @@ import {
 	FarmArmyTokensResponse,
 	FarmArmyVaultsResponse,
 } from './types'
+const { readFile, writeFile } = promises
 
 /**
  * DefiBalances Class
