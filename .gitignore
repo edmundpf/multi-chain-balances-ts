@@ -24,4 +24,5 @@ node_modules
 data/
 
 # Project Specific
+saved_vaults.json
 transactions.json
