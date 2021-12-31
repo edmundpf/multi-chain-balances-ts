@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.DEFAULT_URLS = exports.RECEIPT_ALIASES = exports.TOKEN_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.RECEIPT_ALIASES = exports.TOKEN_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -17,6 +17,7 @@ exports.NATIVE_TOKENS = {
     ftm: 'FTM',
     matic: 'MATIC',
     movr: 'MOVR',
+    one: 'ONE',
 };
 // Ape Board Chain Aliases
 exports.APEBOARD_CHAIN_ALIASES = {
@@ -33,7 +34,7 @@ exports.TOKEN_ALIASES = {
 };
 // Receipt Aliases
 exports.RECEIPT_ALIASES = {
-    '3crv': ['dai', 'usd', 'usd']
+    '3crv': ['dai', 'usd', 'usd'],
 };
 // Default URL's
 exports.DEFAULT_URLS = {
@@ -44,6 +45,17 @@ exports.DEFAULT_URLS = {
     ftm: 'https://ftmscan.com',
     matic: 'https://polygonscan.com',
     movr: 'https://moonriver.moonscan.io',
+    one: 'https://explorer.harmony.one'
+};
+// Beefy Vault URL's
+exports.BEEFY_VAULT_URLS = {
+    avax: 'avalanche',
+    bsc: 'bsc',
+    cro: 'cronos',
+    frm: 'fantom',
+    matic: 'polygon',
+    movr: 'moonriver',
+    one: 'harmony',
 };
 /**
  * API Info
@@ -55,6 +67,8 @@ exports.APIS = {
     debank: 'https://openapi.debank.com/v1/user',
     debankPrivate: 'https://api.debank.com',
     coinGecko: 'https://api.coingecko.com/api/v3',
+    farmArmy: 'https://farm.army',
+    githubVaults: 'https://raw.githubusercontent.com/beefyfinance/beefy-app/prod/src/features/configure/vault'
 };
 // Endpoints
 exports.ENDPOINTS = {
@@ -66,6 +80,8 @@ exports.ENDPOINTS = {
     apeBoardHistory: 'transaction-history',
     coinGeckoList: 'coins/list',
     coinGeckoPrices: 'coins/$id/market_chart',
+    harmonyTokens: 'farms/harmony/$address/wallet.json',
+    harmonyVaults: 'farms/harmony/$address/platform/0.json',
 };
 // Ape Board Credentials
 exports.apeBoardCredentials = {
@@ -160,6 +176,7 @@ const initChains = () => {
         ftm: initChain('ftm'),
         matic: initChain('matic'),
         movr: initChain('movr'),
+        one: initChain('one'),
     };
 };
 exports.initChains = initChains;
@@ -174,3 +191,5 @@ const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 // One Day
 exports.ONE_DAY = 24 * ONE_HOUR;
+// Saved Vaults File
+exports.SAVED_VAULTS_FILE = 'saved_vaults.json';

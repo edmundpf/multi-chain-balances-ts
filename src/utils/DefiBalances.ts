@@ -1,5 +1,7 @@
 import axios from 'axios'
-import { titleCase, hasNumber } from './misc'
+import { resolve } from 'path'
+import { readFile, writeFile } from 'fs/promises'
+import { titleCase, hasNumber, getFormattedURL } from './misc'
 import { ENV_ADDRESS, ENV_MIN_VALUE } from './envValues'
 import {
 	APIS,
@@ -12,6 +14,8 @@ import {
 	FIAT_CURRENCY,
 	stableCoinConfig,
 	RECEIPT_ALIASES,
+	SAVED_VAULTS_FILE,
+	BEEFY_VAULT_URLS,
 } from './values'
 import {
 	Token,
@@ -22,7 +26,9 @@ import {
 	NumDict,
 	MainRequest,
 	Assets,
-	BeefyVaultInfo,
+	TokenAddresses,
+	FarmArmyTokensResponse,
+	FarmArmyVaultsResponse,
 } from './types'
 
 /**
@@ -76,14 +82,17 @@ export default class DefiBalances {
 			this.getProtocolList(),
 			this.getBeefyApy(),
 			this.getBeefyVaults(),
+			this.getHarmonyTokensAndVaults(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
 		const knownTokenData = res[1] as Token[]
 		const protocolData = res[2] as Protocol[]
 		const apyData = res[3] as NumDict
-		const vaultData = res[4] as BeefyVaultInfo[]
-		this.parseTokenData(tokenData, knownTokenData)
+		const vaultData = res[4] as any
+		const harmonyTokenData = res[5] as Token[]
+		const allTokenData = [...tokenData, ...harmonyTokenData]
+		this.parseTokenData(allTokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData, vaultData)
 		this.getAssetsAndTotalValues()
@@ -218,13 +227,49 @@ export default class DefiBalances {
 	async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
 		return await this.getEndpoint(
 			'apeBoard',
-			`${endpoint}/${this.address}` as keyof typeof ENDPOINTS,
+			`${endpoint}/${this.address}` as any as keyof typeof ENDPOINTS,
 			undefined,
 			{
 				passcode: apeBoardCredentials.passCode,
 				'ape-secret': apeBoardCredentials.secret,
 			}
 		)
+	}
+
+	/**
+	 * Remove Token Contract Stub
+	 */
+
+	sterilizeTokenNameNoStub(tokenName: string) {
+		let curName = tokenName
+		if (tokenName.includes('-')) {
+			let dashParts = tokenName.split('-')
+			const lastPart = dashParts[dashParts.length - 1]
+			const isPool = lastPart == 'Pool'
+			const hasStub = lastPart.startsWith('0x') && lastPart.length == 6
+			if (!isPool && hasStub) {
+				dashParts = dashParts.slice(0, dashParts.length - 2)
+				curName = dashParts.join('-')
+			}
+		}
+		return this.sterilizeTokenName(curName)
+	}
+
+	/**
+	 * Add Contract
+	 */
+
+	addContract(symbols: TokenAddresses, symbol: string, address: string) {
+		const upperSymbol = this.symbolWithDashes(symbol).toUpperCase()
+		const lowerAddress = address.toLowerCase()
+		const isContract = this.isContract(lowerAddress)
+		if (upperSymbol && isContract) {
+			if (!symbols[upperSymbol]) {
+				symbols[upperSymbol] = [lowerAddress]
+			} else if (!symbols[upperSymbol].includes(lowerAddress)) {
+				symbols[upperSymbol].push(lowerAddress)
+			}
+		}
 	}
 
 	/**
@@ -267,25 +312,6 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Remove Token Contract Stub
-	 */
-
-	sterilizeTokenNameNoStub(tokenName: string) {
-		let curName = tokenName
-		if (tokenName.includes('-')) {
-			let dashParts = tokenName.split('-')
-			const lastPart = dashParts[dashParts.length - 1]
-			const isPool = lastPart == 'Pool'
-			const hasStub = lastPart.startsWith('0x') && lastPart.length == 6
-			if (!isPool && hasStub) {
-				dashParts = dashParts.slice(0, dashParts.length - 2)
-				curName = dashParts.join('-')
-			}
-		}
-		return this.sterilizeTokenName(curName)
-	}
-
-	/**
 	 * Get Address Stub
 	 */
 
@@ -294,25 +320,19 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Get Beefy Endpoint
+	 * Is Contract
 	 */
 
-	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint('beefy', endpoint)
+	isContract(address: string) {
+		return address.startsWith('0x')
 	}
 
 	/**
-	 * Get Debank Endpoint
+	 * Dashed Symbol
 	 */
 
-	private async getDebankEndpoint(
-		endpoint: keyof typeof ENDPOINTS,
-		args?: any
-	) {
-		return await this.getEndpoint('debank', endpoint, {
-			...args,
-			id: this.address,
-		})
+	symbolWithDashes(symbol: string) {
+		return (symbol || '').replace(/ /g, '-')
 	}
 
 	/**
@@ -350,8 +370,9 @@ export default class DefiBalances {
 						amount,
 						value,
 					}
+					const isNativeToken = symbol == NATIVE_TOKENS[chain]
 					const shouldDisplay = knownSymbols.length
-						? knownSymbols.includes(symbol)
+						? knownSymbols.includes(symbol) || isNativeToken
 						: true
 
 					// Update token data
@@ -368,7 +389,7 @@ export default class DefiBalances {
 					}
 
 					// Set Native Token Info
-					if (symbol == NATIVE_TOKENS[chain]) {
+					if (isNativeToken) {
 						chainInfo.nativeToken = tokenData
 					}
 
@@ -446,7 +467,7 @@ export default class DefiBalances {
 	 * Parse APY Data
 	 */
 
-	private parseApyData(apyData: NumDict, vaultData: BeefyVaultInfo[]) {
+	private parseApyData(apyData: NumDict, vaultData: any) {
 		// Iterate Chains
 		for (const chainName in this.chains) {
 			const chain = this.chains[chainName as keyof Chains]
@@ -561,12 +582,9 @@ export default class DefiBalances {
 
 				// Get Matching APY Info
 				if (receiptMatch) {
-					for (const vaultRecord of vaultData) {
-						const { id, earnedToken } = vaultRecord
+					for (const unwrappedVaultReceipt in vaultData) {
+						const id = vaultData[unwrappedVaultReceipt]
 						const unwrappedReceipt = receiptMatch
-							.toLowerCase()
-							.replace(/w/g, '')
-						const unwrappedVaultReceipt = earnedToken
 							.toLowerCase()
 							.replace(/w/g, '')
 						if (
@@ -584,6 +602,175 @@ export default class DefiBalances {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Get Beefy Vaults
+	 */
+
+	private async getBeefyVaults() {
+		let savedVaults: any = {}
+		const vaultFile = resolve(SAVED_VAULTS_FILE)
+
+		// Get Saved Vaults
+		try {
+			savedVaults = JSON.parse(await readFile(vaultFile, 'utf-8'))
+		} catch (err) {
+			// Do Nothing
+		}
+
+		// Init Vaults
+		const vaults: any = { ...savedVaults }
+
+		// Iterage URL's
+		for (const key in BEEFY_VAULT_URLS) {
+			// Get Plain Text
+			const pool = BEEFY_VAULT_URLS[key as keyof typeof BEEFY_VAULT_URLS]
+			const jsText =
+				(
+					await axios.get(`${APIS.githubVaults}/${pool}_pools.js`, {
+						responseType: 'text',
+					})
+				)?.data?.trim() || ''
+
+			// Parse Text
+			if (jsText.includes('[')) {
+				try {
+					const data = eval(
+						jsText.substring(jsText.indexOf('['), jsText.length - 1)
+					)
+
+					// Add Vault
+					for (const record of data) {
+						const { id, earnedToken } = record
+						const formattedToken = earnedToken.toLowerCase().replace(/w/g, '')
+						vaults[formattedToken] = id
+					}
+				} catch (err) {
+					// Do Nothing
+				}
+			}
+		}
+
+		// Write File
+		writeFile(vaultFile, JSON.stringify(vaults, null, 2))
+		return vaults
+	}
+
+	/**
+	 * Get Harmony Tokens and Vaults
+	 */
+
+	private async getHarmonyTokensAndVaults() {
+		const responses = await Promise.all([
+			this.getHarmonyTokensInfo(),
+			this.getHarmonyVaultsInfo(),
+		])
+		const tokensResponse = responses[0]
+		const vaultsResponse = responses[1]
+		const parsedTokens = this.parseHarmonyTokens(tokensResponse)
+		this.parseHarmonyVaults(vaultsResponse)
+		return parsedTokens
+	}
+
+	/**
+	 * Parse Harmony Tokens
+	 */
+
+	private parseHarmonyTokens(response: FarmArmyTokensResponse) {
+		const parsedTokens: Token[] = []
+		const tokens = response?.tokens || []
+		for (const token of tokens) {
+			const { symbol, amount, usd } = token
+			const price = usd / amount
+			parsedTokens.push({
+				chain: 'one',
+				symbol: symbol.toUpperCase(),
+				price,
+				amount,
+			})
+		}
+		return parsedTokens
+	}
+
+	/**
+	 * Parse Harmony Vaults
+	 */
+
+	private parseHarmonyVaults(response: FarmArmyVaultsResponse) {
+		const vaults = response?.hbeefy?.farms || []
+		const platformUrl = response?.hbeefy?.url || ''
+
+		// Iterate Vaults
+		for (const vault of vaults) {
+			const { deposit, farm } = vault
+			const symbol = `${farm.name.toUpperCase()}-Pool`
+			const value = deposit.usd || 0
+			const apy = farm.yield?.apy || 0
+			const beefyVaultName = farm.id.split('_')[1] || ''
+			const beefyReceiptName = `moo${beefyVaultName}`
+			const tokenNames = farm.token.split('-')
+			const tokens: TokenData[] = []
+
+			// Iterate Token Names
+			for (const tokenName of tokenNames) {
+				tokens.push({
+					symbol: tokenName.toUpperCase(),
+					value: 0,
+					amount: 0,
+				})
+			}
+
+			// Push Vault
+			this.chains.one.vaults.push({
+				symbol,
+				value,
+				platform: 'Beefy',
+				platformUrl,
+				beefyVaultName,
+				beefyReceiptName,
+				apy,
+				tokens,
+			})
+		}
+	}
+
+	/**
+	 * Get Beefy Endpoint
+	 */
+
+	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		return await this.getEndpoint('beefy', endpoint)
+	}
+
+	/**
+	 * Get Debank Endpoint
+	 */
+
+	private async getDebankEndpoint(
+		endpoint: keyof typeof ENDPOINTS,
+		args?: any
+	) {
+		return await this.getEndpoint('debank', endpoint, {
+			...args,
+			id: this.address,
+		})
+	}
+
+	/**
+	 * Get Farm.Army Endpoint
+	 */
+
+	private async getFarmArmyEndpoint(
+		endpoint: keyof typeof ENDPOINTS,
+		params?: any
+	): Promise<any> {
+		const url = getFormattedURL(ENDPOINTS[endpoint], { $address: this.address })
+		return await this.getEndpoint(
+			'farmArmy',
+			url as keyof typeof ENDPOINTS,
+			params
+		)
 	}
 
 	/**
@@ -619,10 +806,18 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Get Beefy Vaults
+	 * Get Harmony Tokens Info
 	 */
 
-	private async getBeefyVaults() {
-		return await this.getBeefyEndpoint('beefyVaults')
+	private async getHarmonyTokensInfo(): Promise<FarmArmyTokensResponse> {
+		return await this.getFarmArmyEndpoint('harmonyTokens')
+	}
+
+	/**
+	 * Get Harmony Vaults Info
+	 */
+
+	private async getHarmonyVaultsInfo(): Promise<FarmArmyVaultsResponse> {
+		return await this.getFarmArmyEndpoint('harmonyVaults')
 	}
 }

@@ -14,6 +14,22 @@ export const titleCase = (str: string) => startCase(camelCase(str))
 export const hasNumber = (str: string) => /\d/.test(str)
 
 /**
+ * Get Formatted URL
+ */
+
+export const getFormattedURL = (endpoint: string, replaceArgs: any) => {
+	let url = endpoint
+	if (replaceArgs) {
+		for (const key in replaceArgs) {
+			if (url.includes(key)) {
+				url = url.replace(key, replaceArgs[key])
+			}
+		}
+	}
+	return url
+}
+
+/**
  * Wait ms
  */
 

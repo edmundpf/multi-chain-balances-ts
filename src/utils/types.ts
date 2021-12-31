@@ -110,6 +110,7 @@ export type Chains = {
 	ftm: Chain
 	matic: Chain
 	movr: Chain
+	one: Chain
 }
 
 // History Record Type
@@ -333,6 +334,52 @@ export type CoinGeckoToken = {
 
 export type CoinGeckoPricesResponse = {
 	prices: number[][]
+}
+
+/**
+ * Farm.Army Types
+ */
+
+// Farm.Army Token
+
+type FarmArmyToken = {
+	token: string
+	symbol: string
+	amount: number
+	usd: number
+}
+
+// Farm.Army Vault
+
+type FarmArmyVault = {
+	deposit: {
+		symbol: string
+		amount: number
+		usd: number
+	}
+	farm: {
+		name: string
+		token: string
+		id: string
+		yield: {
+			apy: number
+		}
+	}
+}
+
+// Farm.Army Tokens Response
+
+export type FarmArmyTokensResponse = {
+	tokens: FarmArmyToken[]
+}
+
+// Farm.Army Vaults Response
+
+export type FarmArmyVaultsResponse = {
+	hbeefy: {
+		farms: FarmArmyVault[]
+		url: string
+	}
 }
 
 /**

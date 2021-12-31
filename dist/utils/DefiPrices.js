@@ -913,15 +913,7 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     getCoinGeckoEndpoint(endpoint, replaceArgs, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Format URL
-            let url = values_1.ENDPOINTS[endpoint];
-            if (replaceArgs) {
-                for (const key in replaceArgs) {
-                    if (url.includes(key)) {
-                        url = url.replace(key, replaceArgs[key]);
-                    }
-                }
-            }
+            const url = misc_1.getFormattedURL(values_1.ENDPOINTS[endpoint], replaceArgs);
             // Get URL
             const getUrl = () => __awaiter(this, void 0, void 0, function* () {
                 this.manageApiLimits();

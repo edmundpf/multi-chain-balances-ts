@@ -67,7 +67,7 @@ export default class DefiTransactions extends DefiBalances {
 				const chainAlias = (APEBOARD_CHAIN_ALIASES as any)[chainName] || ''
 				if (chainAlias && !rawChains[index]) {
 					const endpoint =
-						`${ENDPOINTS['apeBoardHistory']}/${chainAlias}` as keyof typeof ENDPOINTS
+						`${ENDPOINTS['apeBoardHistory']}/${chainAlias}` as any as keyof typeof ENDPOINTS
 					apeBoardRequests.push(this.getApeBoardEndpoint(endpoint))
 				} else {
 					apeBoardRequests.push(undefined)
@@ -696,27 +696,6 @@ export default class DefiTransactions extends DefiBalances {
 	}
 
 	/**
-	 * Add Contract
-	 */
-
-	private addContract(
-		symbols: TokenAddresses,
-		symbol: string,
-		address: string
-	) {
-		const upperSymbol = this.symbolWithDashes(symbol).toUpperCase()
-		const lowerAddress = address.toLowerCase()
-		const isContract = this.isContract(lowerAddress)
-		if (upperSymbol && isContract) {
-			if (!symbols[upperSymbol]) {
-				symbols[upperSymbol] = [lowerAddress]
-			} else if (!symbols[upperSymbol].includes(lowerAddress)) {
-				symbols[upperSymbol].push(lowerAddress)
-			}
-		}
-	}
-
-	/**
 	 * Get Private Debank Endpoint
 	 */
 
@@ -741,19 +720,4 @@ export default class DefiTransactions extends DefiBalances {
 			''
 		).toLowerCase()
 	}
-
-	/**
-	 * Is Contract
-	 */
-
-	private isContract(address: string) {
-		return address.startsWith('0x')
-	}
-
-	/**
-	 * Dashed Symbol
-	 */
-
-	private symbolWithDashes = (symbol: string) =>
-		(symbol || '').replace(/ /g, '-')
 }

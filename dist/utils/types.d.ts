@@ -68,6 +68,7 @@ export declare type Chains = {
     ftm: Chain;
     matic: Chain;
     movr: Chain;
+    one: Chain;
 };
 export declare type HistoryRecord = {
     id: string;
@@ -221,6 +222,39 @@ export declare type CoinGeckoToken = {
 };
 export declare type CoinGeckoPricesResponse = {
     prices: number[][];
+};
+/**
+ * Farm.Army Types
+ */
+declare type FarmArmyToken = {
+    token: string;
+    symbol: string;
+    amount: number;
+    usd: number;
+};
+declare type FarmArmyVault = {
+    deposit: {
+        symbol: string;
+        amount: number;
+        usd: number;
+    };
+    farm: {
+        name: string;
+        token: string;
+        id: string;
+        yield: {
+            apy: number;
+        };
+    };
+};
+export declare type FarmArmyTokensResponse = {
+    tokens: FarmArmyToken[];
+};
+export declare type FarmArmyVaultsResponse = {
+    hbeefy: {
+        farms: FarmArmyVault[];
+        url: string;
+    };
 };
 /**
  * Local DB Types

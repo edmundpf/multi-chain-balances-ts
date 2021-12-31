@@ -19,16 +19,9 @@ const values_1 = require("./values");
  * DefiTransactions Class
  */
 class DefiTransactions extends DefiBalances_1.default {
-    constructor() {
-        /**
-         * Get Transactions
-         */
-        super(...arguments);
-        /**
-         * Dashed Symbol
-         */
-        this.symbolWithDashes = (symbol) => (symbol || '').replace(/ /g, '-');
-    }
+    /**
+     * Get Transactions
+     */
     getTransactions(useDebank = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const debankRequests = [];
@@ -543,22 +536,6 @@ class DefiTransactions extends DefiBalances_1.default {
         return newType;
     }
     /**
-     * Add Contract
-     */
-    addContract(symbols, symbol, address) {
-        const upperSymbol = this.symbolWithDashes(symbol).toUpperCase();
-        const lowerAddress = address.toLowerCase();
-        const isContract = this.isContract(lowerAddress);
-        if (upperSymbol && isContract) {
-            if (!symbols[upperSymbol]) {
-                symbols[upperSymbol] = [lowerAddress];
-            }
-            else if (!symbols[upperSymbol].includes(lowerAddress)) {
-                symbols[upperSymbol].push(lowerAddress);
-            }
-        }
-    }
-    /**
      * Get Private Debank Endpoint
      */
     getPrivateDebankEndpoint(endpoint, params) {
@@ -573,12 +550,6 @@ class DefiTransactions extends DefiBalances_1.default {
         return (record.id ||
             record.hash ||
             '').toLowerCase();
-    }
-    /**
-     * Is Contract
-     */
-    isContract(address) {
-        return address.startsWith('0x');
     }
 }
 exports.default = DefiTransactions;

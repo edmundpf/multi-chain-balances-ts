@@ -1,5 +1,5 @@
 import { APIS, ENDPOINTS } from './values';
-import { Chains, Assets } from './types';
+import { Chains, Assets, TokenAddresses } from './types';
 /**
  * DefiBalances Class
  */
@@ -34,6 +34,14 @@ export default class DefiBalances {
      */
     getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS): Promise<any>;
     /**
+     * Remove Token Contract Stub
+     */
+    sterilizeTokenNameNoStub(tokenName: string): string;
+    /**
+     * Add Contract
+     */
+    addContract(symbols: TokenAddresses, symbol: string, address: string): void;
+    /**
      * Is Stable Coin
      */
     isStableCoin(tokenName: string, price: number): boolean;
@@ -50,21 +58,17 @@ export default class DefiBalances {
      */
     sterilizeTokenName(token: string): string;
     /**
-     * Remove Token Contract Stub
-     */
-    sterilizeTokenNameNoStub(tokenName: string): string;
-    /**
      * Get Address Stub
      */
     getAddressStub(address: string): string;
     /**
-     * Get Beefy Endpoint
+     * Is Contract
      */
-    private getBeefyEndpoint;
+    isContract(address: string): boolean;
     /**
-     * Get Debank Endpoint
+     * Dashed Symbol
      */
-    private getDebankEndpoint;
+    symbolWithDashes(symbol: string): string;
     /**
      * Parse Token Data
      */
@@ -77,6 +81,34 @@ export default class DefiBalances {
      * Parse APY Data
      */
     private parseApyData;
+    /**
+     * Get Beefy Vaults
+     */
+    private getBeefyVaults;
+    /**
+     * Get Harmony Tokens and Vaults
+     */
+    private getHarmonyTokensAndVaults;
+    /**
+     * Parse Harmony Tokens
+     */
+    private parseHarmonyTokens;
+    /**
+     * Parse Harmony Vaults
+     */
+    private parseHarmonyVaults;
+    /**
+     * Get Beefy Endpoint
+     */
+    private getBeefyEndpoint;
+    /**
+     * Get Debank Endpoint
+     */
+    private getDebankEndpoint;
+    /**
+     * Get Farm.Army Endpoint
+     */
+    private getFarmArmyEndpoint;
     /**
      * Get Token List
      */
@@ -94,7 +126,11 @@ export default class DefiBalances {
      */
     private getBeefyApy;
     /**
-     * Get Beefy Vaults
+     * Get Harmony Tokens Info
      */
-    private getBeefyVaults;
+    private getHarmonyTokensInfo;
+    /**
+     * Get Harmony Vaults Info
+     */
+    private getHarmonyVaultsInfo;
 }

@@ -1,5 +1,5 @@
 import DefiTransactions from './DefiTransactions'
-import { waitMs } from './misc'
+import { waitMs, getFormattedURL } from './misc'
 import { prepareDB, selectPrices, insertPrice } from './localData'
 import {
 	CoinGeckoToken,
@@ -1165,15 +1165,7 @@ export default class DefiPrices extends DefiTransactions {
 		replaceArgs?: any,
 		params?: any
 	): Promise<any> {
-		// Format URL
-		let url = ENDPOINTS[endpoint]
-		if (replaceArgs) {
-			for (const key in replaceArgs) {
-				if (url.includes(key)) {
-					url = url.replace(key, replaceArgs[key])
-				}
-			}
-		}
+		const url = getFormattedURL(ENDPOINTS[endpoint], replaceArgs)
 
 		// Get URL
 		const getUrl = async () => {
@@ -1186,7 +1178,6 @@ export default class DefiPrices extends DefiTransactions {
 		}
 
 		// Manage API Limits
-
 		const nowMs = this.getTimeMs()
 		const diffMs = this.nextApiCallMs - nowMs
 

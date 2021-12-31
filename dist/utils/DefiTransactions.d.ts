@@ -48,10 +48,6 @@ export default class DefiTransactions extends DefiBalances {
      */
     private sterilizeTransactionType;
     /**
-     * Add Contract
-     */
-    private addContract;
-    /**
      * Get Private Debank Endpoint
      */
     private getPrivateDebankEndpoint;
@@ -59,12 +55,4 @@ export default class DefiTransactions extends DefiBalances {
      * Get Transaction ID
      */
     private getTransactionID;
-    /**
-     * Is Contract
-     */
-    private isContract;
-    /**
-     * Dashed Symbol
-     */
-    private symbolWithDashes;
 }

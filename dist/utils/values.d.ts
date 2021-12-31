@@ -14,6 +14,7 @@ export declare const NATIVE_TOKENS: {
     ftm: string;
     matic: string;
     movr: string;
+    one: string;
 };
 export declare const APEBOARD_CHAIN_ALIASES: {
     avax: string;
@@ -32,6 +33,16 @@ export declare const DEFAULT_URLS: {
     ftm: string;
     matic: string;
     movr: string;
+    one: string;
+};
+export declare const BEEFY_VAULT_URLS: {
+    avax: string;
+    bsc: string;
+    cro: string;
+    frm: string;
+    matic: string;
+    movr: string;
+    one: string;
 };
 /**
  * API Info
@@ -42,6 +53,8 @@ export declare const APIS: {
     debank: string;
     debankPrivate: string;
     coinGecko: string;
+    farmArmy: string;
+    githubVaults: string;
 };
 export declare const ENDPOINTS: {
     beefyApy: string;
@@ -52,6 +65,8 @@ export declare const ENDPOINTS: {
     apeBoardHistory: string;
     coinGeckoList: string;
     coinGeckoPrices: string;
+    harmonyTokens: string;
+    harmonyVaults: string;
 };
 export declare const apeBoardCredentials: {
     secret: string;
@@ -79,3 +94,4 @@ export declare const slippageConfig: {
 };
 export declare const initChains: () => Chains;
 export declare const ONE_DAY: number;
+export declare const SAVED_VAULTS_FILE = "saved_vaults.json";

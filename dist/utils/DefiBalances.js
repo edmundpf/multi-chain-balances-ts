@@ -13,6 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
+const path_1 = require("path");
+const promises_1 = require("fs/promises");
 const misc_1 = require("./misc");
 const envValues_1 = require("./envValues");
 const values_1 = require("./values");
@@ -65,6 +67,7 @@ class DefiBalances {
                 this.getProtocolList(),
                 this.getBeefyApy(),
                 this.getBeefyVaults(),
+                this.getHarmonyTokensAndVaults(),
             ];
             const res = yield Promise.all(requests);
             const tokenData = res[0];
@@ -72,7 +75,9 @@ class DefiBalances {
             const protocolData = res[2];
             const apyData = res[3];
             const vaultData = res[4];
-            this.parseTokenData(tokenData, knownTokenData);
+            const harmonyTokenData = res[5];
+            const allTokenData = [...tokenData, ...harmonyTokenData];
+            this.parseTokenData(allTokenData, knownTokenData);
             this.parseProtocolData(protocolData);
             this.parseApyData(apyData, vaultData);
             this.getAssetsAndTotalValues();
@@ -193,6 +198,39 @@ class DefiBalances {
         });
     }
     /**
+     * Remove Token Contract Stub
+     */
+    sterilizeTokenNameNoStub(tokenName) {
+        let curName = tokenName;
+        if (tokenName.includes('-')) {
+            let dashParts = tokenName.split('-');
+            const lastPart = dashParts[dashParts.length - 1];
+            const isPool = lastPart == 'Pool';
+            const hasStub = lastPart.startsWith('0x') && lastPart.length == 6;
+            if (!isPool && hasStub) {
+                dashParts = dashParts.slice(0, dashParts.length - 2);
+                curName = dashParts.join('-');
+            }
+        }
+        return this.sterilizeTokenName(curName);
+    }
+    /**
+     * Add Contract
+     */
+    addContract(symbols, symbol, address) {
+        const upperSymbol = this.symbolWithDashes(symbol).toUpperCase();
+        const lowerAddress = address.toLowerCase();
+        const isContract = this.isContract(lowerAddress);
+        if (upperSymbol && isContract) {
+            if (!symbols[upperSymbol]) {
+                symbols[upperSymbol] = [lowerAddress];
+            }
+            else if (!symbols[upperSymbol].includes(lowerAddress)) {
+                symbols[upperSymbol].push(lowerAddress);
+            }
+        }
+    }
+    /**
      * Is Stable Coin
      */
     isStableCoin(tokenName, price) {
@@ -223,43 +261,22 @@ class DefiBalances {
         return (token || '').replace(/ /g, '-').toUpperCase();
     }
     /**
-     * Remove Token Contract Stub
-     */
-    sterilizeTokenNameNoStub(tokenName) {
-        let curName = tokenName;
-        if (tokenName.includes('-')) {
-            let dashParts = tokenName.split('-');
-            const lastPart = dashParts[dashParts.length - 1];
-            const isPool = lastPart == 'Pool';
-            const hasStub = lastPart.startsWith('0x') && lastPart.length == 6;
-            if (!isPool && hasStub) {
-                dashParts = dashParts.slice(0, dashParts.length - 2);
-                curName = dashParts.join('-');
-            }
-        }
-        return this.sterilizeTokenName(curName);
-    }
-    /**
      * Get Address Stub
      */
     getAddressStub(address) {
         return address.substring(2, 6).toUpperCase();
     }
     /**
-     * Get Beefy Endpoint
+     * Is Contract
      */
-    getBeefyEndpoint(endpoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('beefy', endpoint);
-        });
+    isContract(address) {
+        return address.startsWith('0x');
     }
     /**
-     * Get Debank Endpoint
+     * Dashed Symbol
      */
-    getDebankEndpoint(endpoint, args) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { id: this.address }));
-        });
+    symbolWithDashes(symbol) {
+        return (symbol || '').replace(/ /g, '-');
     }
     /**
      * Parse Token Data
@@ -292,8 +309,9 @@ class DefiBalances {
                         amount,
                         value,
                     };
+                    const isNativeToken = symbol == values_1.NATIVE_TOKENS[chain];
                     const shouldDisplay = knownSymbols.length
-                        ? knownSymbols.includes(symbol)
+                        ? knownSymbols.includes(symbol) || isNativeToken
                         : true;
                     // Update token data
                     if (shouldDisplay) {
@@ -307,7 +325,7 @@ class DefiBalances {
                         }
                     }
                     // Set Native Token Info
-                    if (symbol == values_1.NATIVE_TOKENS[chain]) {
+                    if (isNativeToken) {
                         chainInfo.nativeToken = tokenData;
                     }
                     // Exclude Unknown Token Totals
@@ -461,11 +479,13 @@ class DefiBalances {
                 }
                 // Get Matching APY Info
                 if (receiptMatch) {
-                    for (const vaultRecord of vaultData) {
-                        const { id, earnedToken } = vaultRecord;
-                        const unwrappedReceipt = receiptMatch.toLowerCase().replace(/w/g, '');
-                        const unwrappedVaultReceipt = earnedToken.toLowerCase().replace(/w/g, '');
-                        if (unwrappedReceipt == unwrappedVaultReceipt && apyData[id] != null) {
+                    for (const unwrappedVaultReceipt in vaultData) {
+                        const id = vaultData[unwrappedVaultReceipt];
+                        const unwrappedReceipt = receiptMatch
+                            .toLowerCase()
+                            .replace(/w/g, '');
+                        if (unwrappedReceipt == unwrappedVaultReceipt &&
+                            apyData[id] != null) {
                             // Set Vault Info
                             vault.apy = apyData[id] * 100;
                             vault.beefyVaultName = id;
@@ -477,6 +497,148 @@ class DefiBalances {
                 }
             }
         }
+    }
+    /**
+     * Get Beefy Vaults
+     */
+    getBeefyVaults() {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            let savedVaults = {};
+            const vaultFile = path_1.resolve(values_1.SAVED_VAULTS_FILE);
+            // Get Saved Vaults
+            try {
+                savedVaults = JSON.parse(yield promises_1.readFile(vaultFile, 'utf-8'));
+            }
+            catch (err) {
+                // Do Nothing
+            }
+            // Init Vaults
+            const vaults = Object.assign({}, savedVaults);
+            // Iterage URL's
+            for (const key in values_1.BEEFY_VAULT_URLS) {
+                // Get Plain Text
+                const pool = values_1.BEEFY_VAULT_URLS[key];
+                const jsText = ((_b = (_a = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, { responseType: 'text' }))) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.trim()) || '';
+                // Parse Text
+                if (jsText.includes('[')) {
+                    try {
+                        const data = eval(jsText.substring(jsText.indexOf('['), jsText.length - 1));
+                        // Add Vault
+                        for (const record of data) {
+                            const { id, earnedToken } = record;
+                            const formattedToken = earnedToken
+                                .toLowerCase()
+                                .replace(/w/g, '');
+                            vaults[formattedToken] = id;
+                        }
+                    }
+                    catch (err) {
+                        // Do Nothing
+                    }
+                }
+            }
+            // Write File
+            promises_1.writeFile(vaultFile, JSON.stringify(vaults, null, 2));
+            return vaults;
+        });
+    }
+    /**
+     * Get Harmony Tokens and Vaults
+     */
+    getHarmonyTokensAndVaults() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const responses = yield Promise.all([
+                this.getHarmonyTokensInfo(),
+                this.getHarmonyVaultsInfo(),
+            ]);
+            const tokensResponse = responses[0];
+            const vaultsResponse = responses[1];
+            const parsedTokens = this.parseHarmonyTokens(tokensResponse);
+            this.parseHarmonyVaults(vaultsResponse);
+            return parsedTokens;
+        });
+    }
+    /**
+     * Parse Harmony Tokens
+     */
+    parseHarmonyTokens(response) {
+        const parsedTokens = [];
+        const tokens = (response === null || response === void 0 ? void 0 : response.tokens) || [];
+        for (const token of tokens) {
+            const { symbol, amount, usd } = token;
+            const price = usd / amount;
+            parsedTokens.push({
+                chain: 'one',
+                symbol: symbol.toUpperCase(),
+                price,
+                amount,
+            });
+        }
+        return parsedTokens;
+    }
+    /**
+     * Parse Harmony Vaults
+     */
+    parseHarmonyVaults(response) {
+        var _a, _b, _c;
+        const vaults = ((_a = response === null || response === void 0 ? void 0 : response.hbeefy) === null || _a === void 0 ? void 0 : _a.farms) || [];
+        const platformUrl = ((_b = response === null || response === void 0 ? void 0 : response.hbeefy) === null || _b === void 0 ? void 0 : _b.url) || '';
+        // Iterate Vaults
+        for (const vault of vaults) {
+            const { deposit, farm } = vault;
+            const symbol = `${farm.name.toUpperCase()}-Pool`;
+            const value = deposit.usd || 0;
+            const apy = ((_c = farm.yield) === null || _c === void 0 ? void 0 : _c.apy) || 0;
+            const beefyVaultName = farm.id.split('_')[1] || '';
+            const beefyReceiptName = `moo${beefyVaultName}`;
+            const tokenNames = farm.token.split('-');
+            const tokens = [];
+            // Iterate Token Names
+            for (const tokenName of tokenNames) {
+                tokens.push({
+                    symbol: tokenName.toUpperCase(),
+                    value: 0,
+                    amount: 0,
+                });
+            }
+            // Push Vault
+            this.chains.one.vaults.push({
+                symbol,
+                value,
+                platform: 'Beefy',
+                platformUrl,
+                beefyVaultName,
+                beefyReceiptName,
+                apy,
+                tokens,
+            });
+        }
+    }
+    /**
+     * Get Beefy Endpoint
+     */
+    getBeefyEndpoint(endpoint) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('beefy', endpoint);
+        });
+    }
+    /**
+     * Get Debank Endpoint
+     */
+    getDebankEndpoint(endpoint, args) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { id: this.address }));
+        });
+    }
+    /**
+     * Get Farm.Army Endpoint
+     */
+    getFarmArmyEndpoint(endpoint, params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = misc_1.getFormattedURL(values_1.ENDPOINTS[endpoint], { $address: this.address });
+            return yield this.getEndpoint('farmArmy', url, params);
+        });
     }
     /**
      * Get Token List
@@ -511,11 +673,19 @@ class DefiBalances {
         });
     }
     /**
-     * Get Beefy Vaults
+     * Get Harmony Tokens Info
      */
-    getBeefyVaults() {
+    getHarmonyTokensInfo() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getBeefyEndpoint('beefyVaults');
+            return yield this.getFarmArmyEndpoint('harmonyTokens');
+        });
+    }
+    /**
+     * Get Harmony Vaults Info
+     */
+    getHarmonyVaultsInfo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getFarmArmyEndpoint('harmonyVaults');
         });
     }
 }

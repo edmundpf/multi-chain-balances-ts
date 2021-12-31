@@ -20,6 +20,7 @@ export const NATIVE_TOKENS = {
 	ftm: 'FTM',
 	matic: 'MATIC',
 	movr: 'MOVR',
+	one: 'ONE',
 }
 
 // Ape Board Chain Aliases
@@ -55,6 +56,19 @@ export const DEFAULT_URLS = {
 	ftm: 'https://ftmscan.com',
 	matic: 'https://polygonscan.com',
 	movr: 'https://moonriver.moonscan.io',
+	one: 'https://explorer.harmony.one',
+}
+
+// Beefy Vault URL's
+
+export const BEEFY_VAULT_URLS = {
+	avax: 'avalanche',
+	bsc: 'bsc',
+	cro: 'cronos',
+	frm: 'fantom',
+	matic: 'polygon',
+	movr: 'moonriver',
+	one: 'harmony',
 }
 
 /**
@@ -69,6 +83,9 @@ export const APIS = {
 	debank: 'https://openapi.debank.com/v1/user',
 	debankPrivate: 'https://api.debank.com',
 	coinGecko: 'https://api.coingecko.com/api/v3',
+	farmArmy: 'https://farm.army',
+	githubVaults:
+		'https://raw.githubusercontent.com/beefyfinance/beefy-app/prod/src/features/configure/vault',
 }
 
 // Endpoints
@@ -82,6 +99,8 @@ export const ENDPOINTS = {
 	apeBoardHistory: 'transaction-history',
 	coinGeckoList: 'coins/list',
 	coinGeckoPrices: 'coins/$id/market_chart',
+	harmonyTokens: 'farms/harmony/$address/wallet.json',
+	harmonyVaults: 'farms/harmony/$address/platform/0.json',
 }
 
 // Ape Board Credentials
@@ -201,6 +220,7 @@ export const initChains = () => {
 		ftm: initChain('ftm'),
 		matic: initChain('matic'),
 		movr: initChain('movr'),
+		one: initChain('one'),
 	} as Chains
 }
 
@@ -223,3 +243,7 @@ const ONE_HOUR = 60 * ONE_MINUTE
 // One Day
 
 export const ONE_DAY = 24 * ONE_HOUR
+
+// Saved Vaults File
+
+export const SAVED_VAULTS_FILE = 'saved_vaults.json'
