@@ -487,8 +487,12 @@ class DefiTransactions extends DefiBalances_1.default {
      * Sterilize Debank Transfer
      */
     sterilizeDebankTransfer(record, chainName, isSend = true, tokenSymbols, tokenAddresses) {
+        var _a;
         const { amount, token_id: tokenId } = record;
-        const token = this.getTokenName(tokenSymbols[tokenId].symbol, tokenId, chainName, tokenAddresses);
+        const symbol = ((_a = tokenSymbols[tokenId]) === null || _a === void 0 ? void 0 : _a.symbol)
+            ? tokenSymbols[tokenId].symbol
+            : tokenId.substring(0, 6);
+        const token = this.getTokenName(symbol, tokenId, chainName, tokenAddresses);
         const quantity = isSend ? amount * -1 : amount;
         return {
             token,
