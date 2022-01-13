@@ -21,6 +21,7 @@ export const NATIVE_TOKENS = {
 	matic: 'MATIC',
 	movr: 'MOVR',
 	one: 'ONE',
+	sol: 'SOL',
 }
 
 // Ape Board Chain Aliases
@@ -31,6 +32,7 @@ export const APEBOARD_CHAIN_ALIASES = {
 	eth: 'ethereum',
 	ftm: 'fantom',
 	matic: 'polygon',
+	sol: 'solana',
 }
 
 // Token Aliases
@@ -57,6 +59,7 @@ export const DEFAULT_URLS = {
 	matic: 'https://polygonscan.com',
 	movr: 'https://moonriver.moonscan.io',
 	one: 'https://explorer.harmony.one',
+	sol: 'https://solscan.io',
 }
 
 // Beefy Vault URL's
@@ -96,6 +99,8 @@ export const ENDPOINTS = {
 	tokenList: 'token_list',
 	protocolList: 'complex_protocol_list',
 	debankHistory: 'history/list',
+	apeBoardSolWallet: 'wallet/solana',
+	apeBoardSolfarm: 'solfarmSolana',
 	apeBoardHistory: 'transaction-history',
 	coinGeckoList: 'coins/list',
 	coinGeckoPrices: 'coins/$id/market_chart',
@@ -221,6 +226,7 @@ export const initChains = () => {
 		matic: initChain('matic'),
 		movr: initChain('movr'),
 		one: initChain('one'),
+		sol: initChain('sol'),
 	} as Chains
 }
 
@@ -247,3 +253,7 @@ export const ONE_DAY = 24 * ONE_HOUR
 // Saved Vaults File
 
 export const SAVED_VAULTS_FILE = 'saved_vaults.json'
+
+// Tulip URL
+
+export const TULIP_URL = 'https://tulip.gardens'

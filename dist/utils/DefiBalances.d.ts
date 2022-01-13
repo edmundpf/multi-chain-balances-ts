@@ -5,6 +5,7 @@ import { Chains, Assets, TokenAddresses } from './types';
  */
 export default class DefiBalances {
     address: string;
+    isEVM: boolean;
     totalValue: number;
     totalTokenValue: number;
     totalVaultValue: number;
@@ -86,6 +87,18 @@ export default class DefiBalances {
      */
     private getBeefyVaults;
     /**
+     * Get Solana Tokens and Vaults
+     */
+    private getSolanaTokensAndVaults;
+    /**
+     * Parse Solana Tokens
+     */
+    private parseSolanaTokens;
+    /**
+     * Parse Solana Vaults
+     */
+    private parseSolanaVaults;
+    /**
      * Get Harmony Tokens and Vaults
      */
     private getHarmonyTokensAndVaults;
@@ -133,4 +146,12 @@ export default class DefiBalances {
      * Get Harmony Vaults Info
      */
     private getHarmonyVaultsInfo;
+    /**
+     * Get Solana Tokens Info
+     */
+    private getSolanaTokensInfo;
+    /**
+     * Get Solana Vaults Info
+     */
+    private getSolanaVaultsInfo;
 }

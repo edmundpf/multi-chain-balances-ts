@@ -16,6 +16,7 @@ import {
 	RECEIPT_ALIASES,
 	SAVED_VAULTS_FILE,
 	BEEFY_VAULT_URLS,
+	TULIP_URL,
 } from './values'
 import {
 	Token,
@@ -29,6 +30,8 @@ import {
 	TokenAddresses,
 	FarmArmyTokensResponse,
 	FarmArmyVaultsResponse,
+	ApeBoardToken,
+	ApeBoardPositionsResponse,
 } from './types'
 const { readFile, writeFile } = promises
 
@@ -40,6 +43,7 @@ export default class DefiBalances {
 	// Properties
 
 	address = ''
+	isEVM = false
 	totalValue = 0
 	totalTokenValue = 0
 	totalVaultValue = 0
@@ -68,7 +72,13 @@ export default class DefiBalances {
 				this.address = ENV_ADDRESS /* Single Environment Address */
 			}
 		}
-		this.address = this.address.toLowerCase()
+
+		// Format Address
+		const lowerAddress = this.address.toLowerCase()
+		this.isEVM = lowerAddress.startsWith('0x')
+		if (this.isEVM) this.address = lowerAddress
+
+		// Get Chain Names
 		this.chainNames = Object.keys(this.chains) as Array<keyof Chains>
 	}
 
@@ -77,13 +87,14 @@ export default class DefiBalances {
 	 */
 
 	async getBalances(filterUnkownTokens = true) {
-		const requests: (Promise<MainRequest> | Token[])[] = [
-			this.getTokenList(),
-			filterUnkownTokens ? this.getKnownTokenList() : [],
-			this.getProtocolList(),
-			this.getBeefyApy(),
-			this.getBeefyVaults(),
-			this.getHarmonyTokensAndVaults(),
+		const requests: (Promise<MainRequest> | Token[] | any)[] = [
+			this.isEVM ? this.getTokenList() : [],
+			this.isEVM && filterUnkownTokens ? this.getKnownTokenList() : [],
+			this.isEVM ? this.getProtocolList() : [],
+			this.isEVM ? this.getBeefyApy() : {},
+			this.isEVM ? this.getBeefyVaults() : {},
+			this.isEVM ? this.getHarmonyTokensAndVaults() : [],
+			this.isEVM ? [] : this.getSolanaTokensAndVaults(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
@@ -92,7 +103,8 @@ export default class DefiBalances {
 		const apyData = res[3] as NumDict
 		const vaultData = res[4] as any
 		const harmonyTokenData = res[5] as Token[]
-		const allTokenData = [...tokenData, ...harmonyTokenData]
+		const solanaTokenData = res[6] as Token[]
+		const allTokenData = [...tokenData, ...harmonyTokenData, ...solanaTokenData]
 		this.parseTokenData(allTokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData, vaultData)
@@ -115,11 +127,10 @@ export default class DefiBalances {
 		) => {
 			const { symbol, value } = record
 			const apy: number = (record as any).apy || 0
-			const beefyVaultName: string = (record as any).beefyVaultName || ''
+			const vaultName: string = (record as any).vaultName || ''
 			const url: string = (record as any).platformUrl || DEFAULT_URLS[chainName]
-			let symbolStr =
-				isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol
-			if (!beefyVaultName || !isVault) {
+			let symbolStr = isVault && vaultName ? vaultName.toUpperCase() : symbol
+			if (!vaultName || !isVault) {
 				if (assetCounts[symbol] > 1) {
 					const symbolIndex =
 						assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0
@@ -177,7 +188,7 @@ export default class DefiBalances {
 				addToken(record)
 			}
 			for (const record of chain.vaults) {
-				if (record.beefyReceiptName && record.beefyVaultName) {
+				if (record.receiptName && record.vaultName) {
 					addAsset(record, chainName, true)
 				}
 				for (const token of record.tokens) {
@@ -226,9 +237,10 @@ export default class DefiBalances {
 	 */
 
 	async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
+		const url = ENDPOINTS[endpoint] || endpoint
 		return await this.getEndpoint(
 			'apeBoard',
-			`${endpoint}/${this.address}` as any as keyof typeof ENDPOINTS,
+			`${url}/${this.address}` as any as keyof typeof ENDPOINTS,
 			undefined,
 			{
 				passcode: apeBoardCredentials.passCode,
@@ -471,6 +483,7 @@ export default class DefiBalances {
 	private parseApyData(apyData: NumDict, vaultData: any) {
 		// Iterate Chains
 		for (const chainName in this.chains) {
+			if (chainName == 'sol') continue
 			const chain = this.chains[chainName as keyof Chains]
 
 			// Iterate Vault Info
@@ -594,9 +607,9 @@ export default class DefiBalances {
 						) {
 							// Set Vault Info
 							vault.apy = apyData[id] * 100
-							vault.beefyVaultName = id
-							vault.beefyReceiptName = receiptMatch
-							vault.beefyReceiptAmount = chain.receipts[receiptMatch]
+							vault.vaultName = id
+							vault.receiptName = receiptMatch
+							vault.receiptAmount = chain.receipts[receiptMatch]
 							break
 						}
 					}
@@ -659,6 +672,88 @@ export default class DefiBalances {
 	}
 
 	/**
+	 * Get Solana Tokens and Vaults
+	 */
+
+	private async getSolanaTokensAndVaults() {
+		const responses = await Promise.all([
+			this.getSolanaTokensInfo(),
+			this.getSolanaVaultsInfo(),
+		])
+		const tokensResponse = responses[0]
+		const vaultsResponse = responses[1]
+		const parsedTokens = this.parseSolanaTokens(tokensResponse)
+		this.parseSolanaVaults(vaultsResponse)
+		return parsedTokens
+	}
+
+	/**
+	 * Parse Solana Tokens
+	 */
+
+	private parseSolanaTokens(response: ApeBoardToken[]) {
+		const parsedTokens: Token[] = []
+		const tokens = response?.length ? response : []
+		for (const token of tokens) {
+			const { symbol, balance: amount, price } = token
+			parsedTokens.push({
+				chain: 'sol',
+				symbol: symbol.toUpperCase(),
+				price,
+				amount,
+			})
+		}
+		return parsedTokens
+	}
+
+	/**
+	 * Parse Solana Vaults
+	 */
+
+	private parseSolanaVaults(response: ApeBoardPositionsResponse) {
+		const vaults = response?.positions || []
+
+		// Iterate Vaults
+		for (const vault of vaults) {
+			const tokens: TokenData[] = []
+			const tokenNames: string[] = []
+			const tokenInfo = vault.tokens
+			let vaultValue = 0
+
+			// Iterate Tokens
+			for (const token of tokenInfo) {
+				const { symbol, balance: amount, price } = token
+				const tokenName = symbol.toUpperCase()
+				const tokenValue = amount * price
+				vaultValue += tokenValue
+				tokenNames.push(tokenName)
+				tokens.push({
+					symbol: tokenName,
+					value: tokenValue,
+					amount,
+				})
+			}
+
+			// Get Pool and Vault Symbols
+			const tokensStr = tokenNames.join('-')
+			const symbol = `${tokensStr}-Pool`
+			const vaultName = `tulip-${tokensStr.toLowerCase()}`
+
+			// Push Vault
+			this.chains.sol.vaults.push({
+				symbol,
+				value: vaultValue,
+				platform: 'Tulip',
+				platformUrl: TULIP_URL,
+				vaultName,
+				receiptName: vaultName,
+				apy: 0,
+				tokens,
+			})
+		}
+	}
+
+	/**
 	 * Get Harmony Tokens and Vaults
 	 */
 
@@ -708,8 +803,8 @@ export default class DefiBalances {
 			const symbol = `${farm.name.toUpperCase()}-Pool`
 			const value = deposit.usd || 0
 			const apy = farm.yield?.apy || 0
-			const beefyVaultName = farm.id.split('_')[1] || ''
-			const beefyReceiptName = `moo${beefyVaultName}`
+			const vaultName = farm.id.split('_')[1] || ''
+			const receiptName = `moo${vaultName}`
 			const tokenNames = farm.token.split('-')
 			const tokens: TokenData[] = []
 
@@ -728,8 +823,8 @@ export default class DefiBalances {
 				value,
 				platform: 'Beefy',
 				platformUrl,
-				beefyVaultName,
-				beefyReceiptName,
+				vaultName,
+				receiptName,
 				apy,
 				tokens,
 			})
@@ -820,5 +915,21 @@ export default class DefiBalances {
 
 	private async getHarmonyVaultsInfo(): Promise<FarmArmyVaultsResponse> {
 		return await this.getFarmArmyEndpoint('harmonyVaults')
+	}
+
+	/**
+	 * Get Solana Tokens Info
+	 */
+
+	private async getSolanaTokensInfo(): Promise<ApeBoardToken[]> {
+		return await this.getApeBoardEndpoint('apeBoardSolWallet')
+	}
+
+	/**
+	 * Get Solana Vaults Info
+	 */
+
+	private async getSolanaVaultsInfo(): Promise<ApeBoardPositionsResponse> {
+		return await this.getApeBoardEndpoint('apeBoardSolfarm')
 	}
 }

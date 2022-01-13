@@ -35,9 +35,9 @@ export declare type VaultData = TokenData & {
     platform: string;
     platformUrl: string;
     apy?: number;
-    beefyVaultName?: string;
-    beefyReceiptName?: string;
-    beefyReceiptAmount?: number;
+    vaultName?: string;
+    receiptName?: string;
+    receiptAmount?: number;
     tokens: TokenData[];
 };
 export declare type Assets = {
@@ -69,6 +69,7 @@ export declare type Chains = {
     matic: Chain;
     movr: Chain;
     one: Chain;
+    sol: Chain;
 };
 export declare type HistoryRecord = {
     id: string;
@@ -186,6 +187,19 @@ declare type ApeBoardFee = {
     amount: number;
     price: number;
     symbol: string;
+};
+declare type ApeBoardPosition = {
+    balance: number;
+    tokens: ApeBoardToken[];
+};
+export declare type ApeBoardToken = {
+    address: string;
+    symbol: string;
+    balance: number;
+    price: number;
+};
+export declare type ApeBoardPositionsResponse = {
+    positions: ApeBoardPosition[];
 };
 export declare type ApeBoardTransfer = {
     from: string;

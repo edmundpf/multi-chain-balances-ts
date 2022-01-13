@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.RECEIPT_ALIASES = exports.TOKEN_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.TULIP_URL = exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.apeBoardCredentials = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.RECEIPT_ALIASES = exports.TOKEN_ALIASES = exports.APEBOARD_CHAIN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -18,6 +18,7 @@ exports.NATIVE_TOKENS = {
     matic: 'MATIC',
     movr: 'MOVR',
     one: 'ONE',
+    sol: 'SOL',
 };
 // Ape Board Chain Aliases
 exports.APEBOARD_CHAIN_ALIASES = {
@@ -26,6 +27,7 @@ exports.APEBOARD_CHAIN_ALIASES = {
     eth: 'ethereum',
     ftm: 'fantom',
     matic: 'polygon',
+    sol: 'solana',
 };
 // Token Aliases
 exports.TOKEN_ALIASES = {
@@ -46,6 +48,7 @@ exports.DEFAULT_URLS = {
     matic: 'https://polygonscan.com',
     movr: 'https://moonriver.moonscan.io',
     one: 'https://explorer.harmony.one',
+    sol: 'https://solscan.io',
 };
 // Beefy Vault URL's
 exports.BEEFY_VAULT_URLS = {
@@ -77,6 +80,8 @@ exports.ENDPOINTS = {
     tokenList: 'token_list',
     protocolList: 'complex_protocol_list',
     debankHistory: 'history/list',
+    apeBoardSolWallet: 'wallet/solana',
+    apeBoardSolfarm: 'solfarmSolana',
     apeBoardHistory: 'transaction-history',
     coinGeckoList: 'coins/list',
     coinGeckoPrices: 'coins/$id/market_chart',
@@ -177,6 +182,7 @@ const initChains = () => {
         matic: initChain('matic'),
         movr: initChain('movr'),
         one: initChain('one'),
+        sol: initChain('sol'),
     };
 };
 exports.initChains = initChains;
@@ -193,3 +199,5 @@ const ONE_HOUR = 60 * ONE_MINUTE;
 exports.ONE_DAY = 24 * ONE_HOUR;
 // Saved Vaults File
 exports.SAVED_VAULTS_FILE = 'saved_vaults.json';
+// Tulip URL
+exports.TULIP_URL = 'https://tulip.gardens';

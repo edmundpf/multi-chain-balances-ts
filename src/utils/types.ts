@@ -62,9 +62,9 @@ export type VaultData = TokenData & {
 	platform: string
 	platformUrl: string
 	apy?: number
-	beefyVaultName?: string
-	beefyReceiptName?: string
-	beefyReceiptAmount?: number
+	vaultName?: string
+	receiptName?: string
+	receiptAmount?: number
 	tokens: TokenData[]
 }
 
@@ -111,6 +111,7 @@ export type Chains = {
 	matic: Chain
 	movr: Chain
 	one: Chain
+	sol: Chain
 }
 
 // History Record Type
@@ -278,6 +279,28 @@ type ApeBoardFee = {
 	amount: number
 	price: number
 	symbol: string
+}
+
+// Ape Board Position
+
+type ApeBoardPosition = {
+	balance: number
+	tokens: ApeBoardToken[]
+}
+
+// Ape Board Token
+
+export type ApeBoardToken = {
+	address: string
+	symbol: string
+	balance: number
+	price: number
+}
+
+// Ape Board Positions Response
+
+export type ApeBoardPositionsResponse = {
+	positions: ApeBoardPosition[]
 }
 
 // Ape Board Transfer Type

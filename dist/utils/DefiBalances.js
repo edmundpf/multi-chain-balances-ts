@@ -30,6 +30,7 @@ class DefiBalances {
         var _a;
         // Properties
         this.address = '';
+        this.isEVM = false;
         this.totalValue = 0;
         this.totalTokenValue = 0;
         this.totalVaultValue = 0;
@@ -54,7 +55,12 @@ class DefiBalances {
                 this.address = envValues_1.ENV_ADDRESS; /* Single Environment Address */
             }
         }
-        this.address = this.address.toLowerCase();
+        // Format Address
+        const lowerAddress = this.address.toLowerCase();
+        this.isEVM = lowerAddress.startsWith('0x');
+        if (this.isEVM)
+            this.address = lowerAddress;
+        // Get Chain Names
         this.chainNames = Object.keys(this.chains);
     }
     /**
@@ -63,12 +69,13 @@ class DefiBalances {
     getBalances(filterUnkownTokens = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [
-                this.getTokenList(),
-                filterUnkownTokens ? this.getKnownTokenList() : [],
-                this.getProtocolList(),
-                this.getBeefyApy(),
-                this.getBeefyVaults(),
-                this.getHarmonyTokensAndVaults(),
+                this.isEVM ? this.getTokenList() : [],
+                this.isEVM && filterUnkownTokens ? this.getKnownTokenList() : [],
+                this.isEVM ? this.getProtocolList() : [],
+                this.isEVM ? this.getBeefyApy() : {},
+                this.isEVM ? this.getBeefyVaults() : {},
+                this.isEVM ? this.getHarmonyTokensAndVaults() : [],
+                this.isEVM ? [] : this.getSolanaTokensAndVaults(),
             ];
             const res = yield Promise.all(requests);
             const tokenData = res[0];
@@ -77,7 +84,8 @@ class DefiBalances {
             const apyData = res[3];
             const vaultData = res[4];
             const harmonyTokenData = res[5];
-            const allTokenData = [...tokenData, ...harmonyTokenData];
+            const solanaTokenData = res[6];
+            const allTokenData = [...tokenData, ...harmonyTokenData, ...solanaTokenData];
             this.parseTokenData(allTokenData, knownTokenData);
             this.parseProtocolData(protocolData);
             this.parseApyData(apyData, vaultData);
@@ -94,10 +102,10 @@ class DefiBalances {
         const addAsset = (record, chainName, isVault = false) => {
             const { symbol, value } = record;
             const apy = record.apy || 0;
-            const beefyVaultName = record.beefyVaultName || '';
+            const vaultName = record.vaultName || '';
             const url = record.platformUrl || values_1.DEFAULT_URLS[chainName];
-            let symbolStr = isVault && beefyVaultName ? beefyVaultName.toUpperCase() : symbol;
-            if (!beefyVaultName || !isVault) {
+            let symbolStr = isVault && vaultName ? vaultName.toUpperCase() : symbol;
+            if (!vaultName || !isVault) {
                 if (assetCounts[symbol] > 1) {
                     const symbolIndex = assetIndexes[symbol] != null ? assetIndexes[symbol] + 1 : 0;
                     symbolStr += `-${symbolIndex}`;
@@ -151,7 +159,7 @@ class DefiBalances {
                 addToken(record);
             }
             for (const record of chain.vaults) {
-                if (record.beefyReceiptName && record.beefyVaultName) {
+                if (record.receiptName && record.vaultName) {
                     addAsset(record, chainName, true);
                 }
                 for (const token of record.tokens) {
@@ -192,7 +200,8 @@ class DefiBalances {
      */
     getApeBoardEndpoint(endpoint) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('apeBoard', `${endpoint}/${this.address}`, undefined, {
+            const url = values_1.ENDPOINTS[endpoint] || endpoint;
+            return yield this.getEndpoint('apeBoard', `${url}/${this.address}`, undefined, {
                 passcode: values_1.apeBoardCredentials.passCode,
                 'ape-secret': values_1.apeBoardCredentials.secret,
             });
@@ -395,6 +404,8 @@ class DefiBalances {
     parseApyData(apyData, vaultData) {
         // Iterate Chains
         for (const chainName in this.chains) {
+            if (chainName == 'sol')
+                continue;
             const chain = this.chains[chainName];
             // Iterate Vault Info
             for (const vault of chain.vaults) {
@@ -489,9 +500,9 @@ class DefiBalances {
                             apyData[id] != null) {
                             // Set Vault Info
                             vault.apy = apyData[id] * 100;
-                            vault.beefyVaultName = id;
-                            vault.beefyReceiptName = receiptMatch;
-                            vault.beefyReceiptAmount = chain.receipts[receiptMatch];
+                            vault.vaultName = id;
+                            vault.receiptName = receiptMatch;
+                            vault.receiptAmount = chain.receipts[receiptMatch];
                             break;
                         }
                     }
@@ -545,6 +556,80 @@ class DefiBalances {
         });
     }
     /**
+     * Get Solana Tokens and Vaults
+     */
+    getSolanaTokensAndVaults() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const responses = yield Promise.all([
+                this.getSolanaTokensInfo(),
+                this.getSolanaVaultsInfo(),
+            ]);
+            const tokensResponse = responses[0];
+            const vaultsResponse = responses[1];
+            const parsedTokens = this.parseSolanaTokens(tokensResponse);
+            this.parseSolanaVaults(vaultsResponse);
+            return parsedTokens;
+        });
+    }
+    /**
+     * Parse Solana Tokens
+     */
+    parseSolanaTokens(response) {
+        const parsedTokens = [];
+        const tokens = (response === null || response === void 0 ? void 0 : response.length) ? response : [];
+        for (const token of tokens) {
+            const { symbol, balance: amount, price } = token;
+            parsedTokens.push({
+                chain: 'sol',
+                symbol: symbol.toUpperCase(),
+                price,
+                amount,
+            });
+        }
+        return parsedTokens;
+    }
+    /**
+     * Parse Solana Vaults
+     */
+    parseSolanaVaults(response) {
+        const vaults = (response === null || response === void 0 ? void 0 : response.positions) || [];
+        // Iterate Vaults
+        for (const vault of vaults) {
+            const tokens = [];
+            const tokenNames = [];
+            const tokenInfo = vault.tokens;
+            let vaultValue = 0;
+            // Iterate Tokens
+            for (const token of tokenInfo) {
+                const { symbol, balance: amount, price } = token;
+                const tokenName = symbol.toUpperCase();
+                const tokenValue = amount * price;
+                vaultValue += tokenValue;
+                tokenNames.push(tokenName);
+                tokens.push({
+                    symbol: tokenName,
+                    value: tokenValue,
+                    amount,
+                });
+            }
+            // Get Pool and Vault Symbols
+            const tokensStr = tokenNames.join('-');
+            const symbol = `${tokensStr}-Pool`;
+            const vaultName = `tulip-${tokensStr.toLowerCase()}`;
+            // Push Vault
+            this.chains.sol.vaults.push({
+                symbol,
+                value: vaultValue,
+                platform: 'Tulip',
+                platformUrl: values_1.TULIP_URL,
+                vaultName,
+                receiptName: vaultName,
+                apy: 0,
+                tokens,
+            });
+        }
+    }
+    /**
      * Get Harmony Tokens and Vaults
      */
     getHarmonyTokensAndVaults() {
@@ -591,8 +676,8 @@ class DefiBalances {
             const symbol = `${farm.name.toUpperCase()}-Pool`;
             const value = deposit.usd || 0;
             const apy = ((_c = farm.yield) === null || _c === void 0 ? void 0 : _c.apy) || 0;
-            const beefyVaultName = farm.id.split('_')[1] || '';
-            const beefyReceiptName = `moo${beefyVaultName}`;
+            const vaultName = farm.id.split('_')[1] || '';
+            const receiptName = `moo${vaultName}`;
             const tokenNames = farm.token.split('-');
             const tokens = [];
             // Iterate Token Names
@@ -609,8 +694,8 @@ class DefiBalances {
                 value,
                 platform: 'Beefy',
                 platformUrl,
-                beefyVaultName,
-                beefyReceiptName,
+                vaultName,
+                receiptName,
                 apy,
                 tokens,
             });
@@ -687,6 +772,22 @@ class DefiBalances {
     getHarmonyVaultsInfo() {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getFarmArmyEndpoint('harmonyVaults');
+        });
+    }
+    /**
+     * Get Solana Tokens Info
+     */
+    getSolanaTokensInfo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getApeBoardEndpoint('apeBoardSolWallet');
+        });
+    }
+    /**
+     * Get Solana Vaults Info
+     */
+    getSolanaVaultsInfo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getApeBoardEndpoint('apeBoardSolfarm');
         });
     }
 }
