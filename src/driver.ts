@@ -74,7 +74,7 @@ main({
 	filterUnknownTokens: true,
 	getBalances: true,
 	getTransactions: true,
-	getPrices: false,
-	logTransactions: false,
+	getPrices: true,
+	logTransactions: true,
 	logAssets: true,
 })

@@ -1,23 +1,26 @@
-import axios from 'axios'
-import { resolve } from 'path'
-import { promises } from 'fs'
-import { titleCase, hasNumber, getFormattedURL } from './misc'
+import { titleCase, hasNumber } from './miscUtils'
 import { ENV_ADDRESS, ENV_MIN_VALUE } from './envValues'
 import {
-	APIS,
-	ENDPOINTS,
 	NATIVE_TOKENS,
 	DEFAULT_URLS,
 	initChains,
-	apeBoardCredentials,
 	TOKEN_ALIASES,
-	FIAT_CURRENCY,
-	stableCoinConfig,
 	RECEIPT_ALIASES,
-	SAVED_VAULTS_FILE,
-	BEEFY_VAULT_URLS,
 	TULIP_URL,
 } from './values'
+import {
+	getTokenList,
+	getKnownTokenList,
+	getProtocolList,
+	getSolanaTokensInfo,
+	getSolanaVaultsInfo,
+	getHarmonyTokensInfo,
+	getHarmonyVaultsInfo,
+	getBeefyApy,
+	getBeefyVaults,
+	sterilizeTokenNameNoStub,
+	isUnknownToken
+} from './utils'
 import {
 	Token,
 	Protocol,
@@ -27,13 +30,11 @@ import {
 	NumDict,
 	MainRequest,
 	Assets,
-	TokenAddresses,
 	FarmArmyTokensResponse,
 	FarmArmyVaultsResponse,
 	ApeBoardToken,
 	ApeBoardPositionsResponse,
 } from './types'
-const { readFile, writeFile } = promises
 
 /**
  * DefiBalances Class
@@ -88,11 +89,11 @@ export default class DefiBalances {
 
 	async getBalances(filterUnkownTokens = true) {
 		const requests: (Promise<MainRequest> | Token[] | any)[] = [
-			this.isEVM ? this.getTokenList() : [],
-			this.isEVM && filterUnkownTokens ? this.getKnownTokenList() : [],
-			this.isEVM ? this.getProtocolList() : [],
-			this.isEVM ? this.getBeefyApy() : {},
-			this.isEVM ? this.getBeefyVaults() : {},
+			this.isEVM ? getTokenList(this.address) : [],
+			this.isEVM && filterUnkownTokens ? getKnownTokenList(this.address) : [],
+			this.isEVM ? getProtocolList(this.address) : [],
+			this.isEVM ? getBeefyApy() : {},
+			this.isEVM ? getBeefyVaults() : {},
 			this.isEVM ? this.getHarmonyTokensAndVaults() : [],
 			this.isEVM ? [] : this.getSolanaTokensAndVaults(),
 		]
@@ -115,7 +116,7 @@ export default class DefiBalances {
 	 * Get Assets & Total Values
 	 */
 
-	getAssetsAndTotalValues() {
+	private getAssetsAndTotalValues() {
 		const assetCounts: NumDict = {}
 		const assetIndexes: NumDict = {}
 
@@ -183,7 +184,7 @@ export default class DefiBalances {
 
 			// Update simplified assets
 			for (const record of chain.tokens) {
-				if (this.isUnknownToken(record.symbol)) continue
+				if (isUnknownToken(this.unknownTokens, record.symbol)) continue
 				addAsset(record, chainName)
 				addToken(record)
 			}
@@ -192,7 +193,7 @@ export default class DefiBalances {
 					addAsset(record, chainName, true)
 				}
 				for (const token of record.tokens) {
-					if (this.isUnknownToken(record.symbol)) continue
+					if (isUnknownToken(this.unknownTokens, record.symbol)) continue
 					addToken(token)
 				}
 			}
@@ -202,150 +203,6 @@ export default class DefiBalances {
 			this.totalVaultValue += chain.totalVaultValue
 		}
 		this.totalValue = this.totalTokenValue + this.totalVaultValue
-	}
-
-	/**
-	 * Get Endpoint
-	 */
-
-	async getEndpoint(
-		api: keyof typeof APIS,
-		endpoint: keyof typeof ENDPOINTS,
-		params?: any,
-		headers?: any
-	) {
-		try {
-			const apiUrl = APIS[api]
-			const stub = ENDPOINTS[endpoint] || endpoint
-			let paramStr = params ? new URLSearchParams(params).toString() : ''
-			if (paramStr) paramStr = '?' + paramStr
-			const fullUrl = `${apiUrl}/${stub}${paramStr}`
-			return (
-				(await axios.get(fullUrl, headers ? { headers } : undefined))?.data ||
-				{}
-			)
-		} catch (err) {
-			return {
-				...((err as any)?.response?.data || {}),
-				hasError: true,
-			}
-		}
-	}
-
-	/**
-	 * Get Ape Board Endpoint
-	 */
-
-	async getApeBoardEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		const url = ENDPOINTS[endpoint] || endpoint
-		return await this.getEndpoint(
-			'apeBoard',
-			`${url}/${this.address}` as any as keyof typeof ENDPOINTS,
-			undefined,
-			{
-				passcode: apeBoardCredentials.passCode,
-				'ape-secret': apeBoardCredentials.secret,
-			}
-		)
-	}
-
-	/**
-	 * Remove Token Contract Stub
-	 */
-
-	sterilizeTokenNameNoStub(tokenName: string) {
-		let curName = tokenName
-		if (tokenName.includes('-')) {
-			let dashParts = tokenName.split('-')
-			const lastPart = dashParts[dashParts.length - 1]
-			const isPool = lastPart == 'Pool'
-			const hasStub = lastPart.startsWith('0x') && lastPart.length == 6
-			if (!isPool && hasStub) {
-				dashParts = dashParts.slice(0, dashParts.length - 2)
-				curName = dashParts.join('-')
-			}
-		}
-		return this.sterilizeTokenName(curName)
-	}
-
-	/**
-	 * Add Contract
-	 */
-
-	addContract(symbols: TokenAddresses, symbol: string, address: string) {
-		const upperSymbol = this.symbolWithDashes(symbol).toUpperCase()
-		const lowerAddress = address.toLowerCase()
-		const isContract = this.isContract(lowerAddress)
-		if (upperSymbol && isContract) {
-			if (!symbols[upperSymbol]) {
-				symbols[upperSymbol] = [lowerAddress]
-			} else if (!symbols[upperSymbol].includes(lowerAddress)) {
-				symbols[upperSymbol].push(lowerAddress)
-			}
-		}
-	}
-
-	/**
-	 * Is Stable Coin
-	 */
-
-	isStableCoin(tokenName: string, price: number) {
-		const upperToken = tokenName.toUpperCase()
-		const isNormalStable = upperToken.includes(FIAT_CURRENCY)
-		const isOtherStable = stableCoinConfig.otherCoins.includes(tokenName)
-		const withinError =
-			price >= 1 - stableCoinConfig.errorPercent &&
-			price <= 1 + stableCoinConfig.errorPercent
-		return (isNormalStable || isOtherStable) && withinError
-	}
-
-	/**
-	 * Is Native Token
-	 */
-
-	isNativeToken(tokenName: string) {
-		return Object.values(NATIVE_TOKENS).includes(tokenName)
-	}
-
-	/**
-	 * Is Unknown Token
-	 */
-
-	isUnknownToken(symbol: string) {
-		const sterileSymbol = this.sterilizeTokenNameNoStub(symbol)
-		return this.unknownTokens.includes(sterileSymbol)
-	}
-
-	/**
-	 * Sterilize Token Name
-	 */
-
-	sterilizeTokenName(token: string) {
-		return (token || '').replace(/ /g, '-').toUpperCase()
-	}
-
-	/**
-	 * Get Address Stub
-	 */
-
-	getAddressStub(address: string) {
-		return address.substring(2, 6).toUpperCase()
-	}
-
-	/**
-	 * Is Contract
-	 */
-
-	isContract(address: string) {
-		return address.startsWith('0x')
-	}
-
-	/**
-	 * Dashed Symbol
-	 */
-
-	symbolWithDashes(symbol: string) {
-		return (symbol || '').replace(/ /g, '-')
 	}
 
 	/**
@@ -395,7 +252,7 @@ export default class DefiBalances {
 
 					// Add Unknown Tokens
 					else {
-						const tokenName = this.sterilizeTokenNameNoStub(symbol)
+						const tokenName = sterilizeTokenNameNoStub(symbol)
 						if (!this.unknownTokens.includes(tokenName)) {
 							this.unknownTokens.push(tokenName)
 						}
@@ -407,7 +264,7 @@ export default class DefiBalances {
 					}
 
 					// Exclude Unknown Token Totals
-					if (shouldDisplay && !this.isUnknownToken(symbol)) {
+					if (shouldDisplay && !isUnknownToken(this.unknownTokens, symbol)) {
 						chainInfo.totalTokenValue += value
 					}
 				}
@@ -619,66 +476,13 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Get Beefy Vaults
-	 */
-
-	private async getBeefyVaults() {
-		let savedVaults: any = {}
-		const vaultFile = resolve(SAVED_VAULTS_FILE)
-
-		// Get Saved Vaults
-		try {
-			savedVaults = JSON.parse(await readFile(vaultFile, 'utf-8'))
-		} catch (err) {
-			// Do Nothing
-		}
-
-		// Init Vaults
-		const vaults: any = { ...savedVaults }
-
-		// Iterage URL's
-		for (const key in BEEFY_VAULT_URLS) {
-			// Get Plain Text
-			const pool = BEEFY_VAULT_URLS[key as keyof typeof BEEFY_VAULT_URLS]
-			const jsText =
-				(
-					await axios.get(`${APIS.githubVaults}/${pool}_pools.js`, {
-						responseType: 'text',
-					})
-				)?.data?.trim() || ''
-
-			// Parse Text
-			if (jsText.includes('[')) {
-				try {
-					const data = eval(
-						jsText.substring(jsText.indexOf('['), jsText.length - 1)
-					)
-
-					// Add Vault
-					for (const record of data) {
-						const { id, earnedToken } = record
-						const formattedToken = earnedToken.toLowerCase().replace(/w/g, '')
-						vaults[formattedToken] = id
-					}
-				} catch (err) {
-					// Do Nothing
-				}
-			}
-		}
-
-		// Write File
-		writeFile(vaultFile, JSON.stringify(vaults, null, 2))
-		return vaults
-	}
-
-	/**
 	 * Get Solana Tokens and Vaults
 	 */
 
 	private async getSolanaTokensAndVaults() {
 		const responses = await Promise.all([
-			this.getSolanaTokensInfo(),
-			this.getSolanaVaultsInfo(),
+			getSolanaTokensInfo(this.address),
+			getSolanaVaultsInfo(this.address),
 		])
 		const tokensResponse = responses[0]
 		const vaultsResponse = responses[1]
@@ -759,8 +563,8 @@ export default class DefiBalances {
 
 	private async getHarmonyTokensAndVaults() {
 		const responses = await Promise.all([
-			this.getHarmonyTokensInfo(),
-			this.getHarmonyVaultsInfo(),
+			getHarmonyTokensInfo(this.address),
+			getHarmonyVaultsInfo(this.address),
 		])
 		const tokensResponse = responses[0]
 		const vaultsResponse = responses[1]
@@ -829,107 +633,5 @@ export default class DefiBalances {
 				tokens,
 			})
 		}
-	}
-
-	/**
-	 * Get Beefy Endpoint
-	 */
-
-	private async getBeefyEndpoint(endpoint: keyof typeof ENDPOINTS) {
-		return await this.getEndpoint('beefy', endpoint)
-	}
-
-	/**
-	 * Get Debank Endpoint
-	 */
-
-	private async getDebankEndpoint(
-		endpoint: keyof typeof ENDPOINTS,
-		args?: any
-	) {
-		return await this.getEndpoint('debank', endpoint, {
-			...args,
-			id: this.address,
-		})
-	}
-
-	/**
-	 * Get Farm.Army Endpoint
-	 */
-
-	private async getFarmArmyEndpoint(
-		endpoint: keyof typeof ENDPOINTS,
-		params?: any
-	): Promise<any> {
-		const url = getFormattedURL(ENDPOINTS[endpoint], { $address: this.address })
-		return await this.getEndpoint(
-			'farmArmy',
-			url as keyof typeof ENDPOINTS,
-			params
-		)
-	}
-
-	/**
-	 * Get Token List
-	 */
-
-	private async getTokenList() {
-		return await this.getDebankEndpoint('tokenList')
-	}
-
-	/**
-	 * Get Known Token List
-	 */
-
-	private async getKnownTokenList() {
-		return await this.getDebankEndpoint('tokenList', { is_all: false })
-	}
-
-	/**
-	 * Get Protocol List
-	 */
-
-	private async getProtocolList() {
-		return await this.getDebankEndpoint('protocolList')
-	}
-
-	/**
-	 * Get Beefy APY
-	 */
-
-	private async getBeefyApy() {
-		return await this.getBeefyEndpoint('beefyApy')
-	}
-
-	/**
-	 * Get Harmony Tokens Info
-	 */
-
-	private async getHarmonyTokensInfo(): Promise<FarmArmyTokensResponse> {
-		return await this.getFarmArmyEndpoint('harmonyTokens')
-	}
-
-	/**
-	 * Get Harmony Vaults Info
-	 */
-
-	private async getHarmonyVaultsInfo(): Promise<FarmArmyVaultsResponse> {
-		return await this.getFarmArmyEndpoint('harmonyVaults')
-	}
-
-	/**
-	 * Get Solana Tokens Info
-	 */
-
-	private async getSolanaTokensInfo(): Promise<ApeBoardToken[]> {
-		return await this.getApeBoardEndpoint('apeBoardSolWallet')
-	}
-
-	/**
-	 * Get Solana Vaults Info
-	 */
-
-	private async getSolanaVaultsInfo(): Promise<ApeBoardPositionsResponse> {
-		return await this.getApeBoardEndpoint('apeBoardSolfarm')
 	}
 }

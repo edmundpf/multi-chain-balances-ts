@@ -111,16 +111,4 @@ export default class DefiPrices extends DefiTransactions {
      * Add Token Time
      */
     private addTokenTime;
-    /**
-     * Is Valid Future Time
-     */
-    private isValidFutureTime;
-    /**
-     * Is Valid Past Time
-     */
-    private isValidPastTime;
-    /**
-     * Get Time in ms
-     */
-    private getTimeMs;
 }

@@ -8,6 +8,17 @@ import {
 	FIAT_CURRENCY,
 } from './values'
 import {
+	getApeBoardEndpoint,
+	getPrivateDebankEndpoint,
+	symbolWithDashes,
+	sterilizeTokenNameNoStub,
+	getAddressStub,
+	isContract,
+	isNativeToken,
+	isStableCoin,
+	addContract
+} from './utils'
+import {
 	DebankTransfer,
 	DebankHistory,
 	DebankTokens,
@@ -41,7 +52,7 @@ export default class DefiTransactions extends DefiBalances {
 				const chainName = this.chainNames[index]
 				if (!rawChains[index]) {
 					debankRequests.push(
-						this.getPrivateDebankEndpoint('debankHistory', { chain: chainName })
+						getPrivateDebankEndpoint('debankHistory', this.address, { chain: chainName })
 					)
 				} else {
 					debankRequests.push(undefined)
@@ -68,7 +79,7 @@ export default class DefiTransactions extends DefiBalances {
 				if (chainAlias && !rawChains[index]) {
 					const endpoint =
 						`${ENDPOINTS['apeBoardHistory']}/${chainAlias}` as any as keyof typeof ENDPOINTS
-					apeBoardRequests.push(this.getApeBoardEndpoint(endpoint))
+					apeBoardRequests.push(getApeBoardEndpoint(endpoint, this.address))
 				} else {
 					apeBoardRequests.push(undefined)
 				}
@@ -181,9 +192,9 @@ export default class DefiTransactions extends DefiBalances {
 			for (let i = chain.transactions.length - 1; i >= 0; i--) {
 				const transaction = chain.transactions[i]
 				const { quoteSymbol, quotePriceUSD, baseSymbol, type } = transaction
-				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol)
-				const baseName = this.sterilizeTokenNameNoStub(baseSymbol)
-				const quoteIsNative = this.isNativeToken(quoteName)
+				const quoteName = sterilizeTokenNameNoStub(quoteSymbol)
+				const baseName = sterilizeTokenNameNoStub(baseSymbol)
+				const quoteIsNative = isNativeToken(quoteName)
 				const isReceive = type == 'receive'
 				const isSwapOrSend = ['swap', 'send'].includes(type)
 				if (!quoteIsNative && !tokenInfo[quoteName]) {
@@ -213,8 +224,8 @@ export default class DefiTransactions extends DefiBalances {
 		for (const tokenName in tokenInfo) {
 			const token = tokenInfo[tokenName]
 			if (token.firstTransIsReceive && !token.hasSwapOrSend) {
-				const isStableCoin = this.isStableCoin(tokenName, token.price || 1)
-				if (!isStableCoin) this.unknownTokens.push(tokenName)
+				const isStable = isStableCoin(tokenName, token.price || 1)
+				if (!isStable) this.unknownTokens.push(tokenName)
 			}
 		}
 	}
@@ -232,7 +243,7 @@ export default class DefiTransactions extends DefiBalances {
 			const { blockchain, symbol, address } = record
 			const chainName = blockchain as keyof Chains
 			if (!chainSymbols[chainName]) chainSymbols[chainName] = {}
-			this.addContract(chainSymbols[chainName], symbol, address)
+			addContract(chainSymbols[chainName], symbol, address)
 		}
 		return chainSymbols
 	}
@@ -247,8 +258,7 @@ export default class DefiTransactions extends DefiBalances {
 			const addresses = this.chains[blockchain].tokenAddresses
 			for (const symbolWithStub in addresses) {
 				const address = addresses[symbolWithStub]
-				const symbol =
-					this.sterilizeTokenNameNoStub(symbolWithStub).toUpperCase()
+				const symbol = sterilizeTokenNameNoStub(symbolWithStub).toUpperCase()
 				requests.push(insertContract({ blockchain, symbol, address }))
 			}
 		}
@@ -533,7 +543,7 @@ export default class DefiTransactions extends DefiBalances {
 		existingAddresses: TokenAddresses = {}
 	) {
 		const symbols: TokenAddresses = { ...existingAddresses }
-		const addContract = this.addContract.bind(this, symbols)
+		const addNewContract = addContract.bind(null, symbols)
 
 		// Iterate Records
 		for (const record of records) {
@@ -542,22 +552,22 @@ export default class DefiTransactions extends DefiBalances {
 			if (debankRec?.sends?.length) {
 				for (const transfer of debankRec.sends) {
 					const address = transfer.token_id || ''
-					const symbol = tokenSymbols[address].symbol || ''
-					addContract(symbol, address)
+					const symbol = tokenSymbols[address]?.symbol || ''
+					addNewContract(symbol, address)
 				}
 			}
 			if (debankRec?.receives?.length) {
 				for (const transfer of debankRec.sends) {
 					const address = transfer.token_id || ''
-					const symbol = tokenSymbols[address].symbol || ''
-					addContract(symbol, address)
+					const symbol = tokenSymbols[address]?.symbol || ''
+					addNewContract(symbol, address)
 				}
 			}
 			if (apeBoardRec?.transfers?.length) {
 				for (const transfer of apeBoardRec.transfers) {
 					const address = transfer.tokenAddress || ''
 					const symbol = transfer.symbol || ''
-					addContract(symbol, address)
+					addNewContract(symbol, address)
 				}
 			}
 		}
@@ -574,24 +584,24 @@ export default class DefiTransactions extends DefiBalances {
 		chainName: keyof Chains,
 		tokenAddresses: TokenAddresses
 	) {
-		let newSymbol = this.symbolWithDashes(symbol)
+		let newSymbol = symbolWithDashes(symbol)
 		const upperSymbol = newSymbol.toUpperCase()
 		const upperChain = chainName.toUpperCase()
 		const lowerAddress = (address || '').toLowerCase()
 
 		// Capitalize Native Tokens
-		const isNativeToken = this.isNativeToken(upperSymbol)
-		if (isNativeToken) newSymbol = upperSymbol
+		const isNative= isNativeToken(upperSymbol)
+		if (isNative) newSymbol = upperSymbol
 
 		// Rename Duplicate Symbols
 		if (tokenAddresses[upperSymbol] && tokenAddresses[upperSymbol].length > 1) {
-			const addressStub = this.getAddressStub(lowerAddress)
+			const addressStub = getAddressStub(lowerAddress)
 			newSymbol = `${newSymbol}-${upperChain}-0x${addressStub}`
 		}
 
 		// Add New Token Addresses
 		if (this.chains[chainName].tokenAddresses[newSymbol] == null) {
-			this.chains[chainName].tokenAddresses[newSymbol] = this.isContract(
+			this.chains[chainName].tokenAddresses[newSymbol] = isContract(
 				lowerAddress
 			)
 				? lowerAddress
@@ -691,20 +701,6 @@ export default class DefiTransactions extends DefiBalances {
 			else newType = 'approve'
 		}
 		return newType
-	}
-
-	/**
-	 * Get Private Debank Endpoint
-	 */
-
-	private async getPrivateDebankEndpoint(
-		endpoint: keyof typeof ENDPOINTS,
-		params?: any
-	) {
-		return await this.getEndpoint('debankPrivate', endpoint, {
-			...params,
-			user_addr: this.address,
-		})
 	}
 
 	/**

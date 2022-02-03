@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiTransactions_1 = __importDefault(require("./DefiTransactions"));
-const misc_1 = require("./misc");
+const utils_1 = require("./utils");
 const localData_1 = require("./localData");
 const values_1 = require("./values");
 /**
@@ -100,7 +100,7 @@ class DefiPrices extends DefiTransactions_1.default {
                 for (const record of res) {
                     const { id, symbol, platforms } = record;
                     if (id && !tokenInfo[id]) {
-                        const tokenName = this.sterilizeTokenName(symbol);
+                        const tokenName = utils_1.sterilizeTokenName(symbol);
                         tokenInfo[id] = {
                             name: tokenName,
                             addresses: [],
@@ -159,10 +159,10 @@ class DefiPrices extends DefiTransactions_1.default {
             // Iterate Transactions
             for (const transaction of chain.transactions) {
                 const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, time: timeStr, } = transaction;
-                const time = this.getTimeMs(timeStr);
+                const time = utils_1.getTimeMs(timeStr);
                 const hasFeePrice = feePriceUSD ? true : false;
-                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
-                const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
+                const quoteName = utils_1.sterilizeTokenNameNoStub(quoteSymbol);
+                const baseName = utils_1.sterilizeTokenNameNoStub(baseSymbol);
                 const quoteIsLP = quoteName.endsWith('LP');
                 const baseIsLP = baseName.endsWith('LP');
                 const quoteSupported = supportedTokenNames.includes(quoteName) && !quoteIsLP;
@@ -387,9 +387,9 @@ class DefiPrices extends DefiTransactions_1.default {
                 // Iterate Transactions
                 for (const transaction of chain.transactions) {
                     const { quoteSymbol, baseSymbol, feeSymbol, feePriceUSD, quoteQuantity, baseQuantity, time: timeStr, } = transaction;
-                    const time = this.getTimeMs(timeStr);
-                    const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
-                    const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
+                    const time = utils_1.getTimeMs(timeStr);
+                    const quoteName = utils_1.sterilizeTokenNameNoStub(quoteSymbol);
+                    const baseName = utils_1.sterilizeTokenNameNoStub(baseSymbol);
                     const quoteTokenMatch = tokenName == quoteName;
                     const baseTokenMatch = tokenName == baseName;
                     const quoteFeeMatch = quoteSymbol == feeSymbol && feePriceUSD;
@@ -443,9 +443,9 @@ class DefiPrices extends DefiTransactions_1.default {
                 if (!quotePriceUSD)
                     continue;
                 if (['send', 'receive'].includes(type)) {
-                    const isNativeToken = this.isNativeToken(quoteSymbol);
-                    const isStableCoin = this.isStableCoin(quoteSymbol, quotePriceUSD);
-                    if (isNativeToken || isStableCoin) {
+                    const isNative = utils_1.isNativeToken(quoteSymbol);
+                    const isStable = utils_1.isStableCoin(quoteSymbol, quotePriceUSD);
+                    if (isNative || isStable) {
                         if (quoteValueUSD > maxWhitelistValue) {
                             maxWhitelistValue = quoteValueUSD;
                         }
@@ -455,8 +455,8 @@ class DefiPrices extends DefiTransactions_1.default {
             // Remove Garbage Prices
             for (const transaction of transactions) {
                 const { quoteSymbol, quoteValueUSD, baseSymbol, baseValueUSD } = transaction;
-                const quoteIsUnknown = this.isUnknownToken(quoteSymbol);
-                const baseIsUnknown = this.isUnknownToken(baseSymbol);
+                const quoteIsUnknown = utils_1.isUnknownToken(this.unknownTokens, quoteSymbol);
+                const baseIsUnknown = utils_1.isUnknownToken(this.unknownTokens, baseSymbol);
                 if (quoteIsUnknown && quoteValueUSD > maxWhitelistValue) {
                     transaction.quoteValueUSD = transaction.quotePriceUSD = 0;
                     if (transaction.baseSymbol == values_1.FIAT_CURRENCY) {
@@ -528,10 +528,10 @@ class DefiPrices extends DefiTransactions_1.default {
                         }
                         // Get Total Single Token Value
                         else {
-                            const isStableCoin = this.isStableCoin(symbol, price);
+                            const isStable = utils_1.isStableCoin(symbol, price);
                             const absRecordValueUSD = Math.abs(value);
                             // Set Eligible Indexes
-                            if (!isStableCoin) {
+                            if (!isStable) {
                                 eligibleIndexes.push(index);
                                 eligibleTotal += absRecordValueUSD;
                             }
@@ -629,8 +629,8 @@ class DefiPrices extends DefiTransactions_1.default {
     inferSingleSwap(record) {
         // Sterilize Swap
         const { quoteSymbol, quoteValueUSD, quotePriceUSD, baseSymbol, baseValueUSD, basePriceUSD, } = record;
-        const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD);
-        const baseIsStable = this.isStableCoin(baseSymbol, basePriceUSD);
+        const quoteIsStable = utils_1.isStableCoin(quoteSymbol, quotePriceUSD);
+        const baseIsStable = utils_1.isStableCoin(baseSymbol, basePriceUSD);
         let absQuoteValueUSD = Math.abs(quoteValueUSD);
         let absBaseValueUSD = Math.abs(baseValueUSD);
         // Missing Quote
@@ -673,18 +673,18 @@ class DefiPrices extends DefiTransactions_1.default {
         let absQuoteValueUSD = singleIsBase ? absMultiValueUSD : absSingleValueUSD;
         let absBaseValueUSD = singleIsBase ? absSingleValueUSD : absMultiValueUSD;
         let baseIsStable = singleIsBase
-            ? this.isStableCoin(transactions[0].baseSymbol, transactions[0].basePriceUSD)
+            ? utils_1.isStableCoin(transactions[0].baseSymbol, transactions[0].basePriceUSD)
             : true;
         let quoteIsStable = singleIsBase
             ? true
-            : this.isStableCoin(transactions[0].quoteSymbol, transactions[0].quotePriceUSD);
+            : utils_1.isStableCoin(transactions[0].quoteSymbol, transactions[0].quotePriceUSD);
         // Iterate Transactions to check for Stablecoins
         for (const record of transactions) {
             const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD } = record;
-            const isStableCoin = singleIsBase
-                ? this.isStableCoin(quoteSymbol, quotePriceUSD)
-                : this.isStableCoin(baseSymbol, basePriceUSD);
-            if (!isStableCoin) {
+            const isStable = singleIsBase
+                ? utils_1.isStableCoin(quoteSymbol, quotePriceUSD)
+                : utils_1.isStableCoin(baseSymbol, basePriceUSD);
+            if (!isStable) {
                 if (singleIsBase)
                     quoteIsStable = false;
                 else
@@ -812,10 +812,10 @@ class DefiPrices extends DefiTransactions_1.default {
                 validRecords.equal = info;
                 break;
             }
-            else if (this.isValidFutureTime(transTime, curTime)) {
+            else if (utils_1.isValidFutureTime(transTime, curTime)) {
                 validRecords.future = info;
             }
-            else if (this.isValidPastTime(transTime, curTime)) {
+            else if (utils_1.isValidPastTime(transTime, curTime)) {
                 validRecords.past = info;
             }
             if (validRecords.future && validRecords.past) {
@@ -867,7 +867,7 @@ class DefiPrices extends DefiTransactions_1.default {
      * Get Days Out List
      */
     getDaysOutList(times) {
-        const nowMs = this.getTimeMs();
+        const nowMs = utils_1.getTimeMs();
         const daysOutList = [];
         const firstCutoff = values_1.coinGeckoDayCutoffs[0];
         const firstCutoffMs = firstCutoff * values_1.ONE_DAY;
@@ -913,20 +913,20 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     getCoinGeckoEndpoint(endpoint, replaceArgs, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = misc_1.getFormattedURL(values_1.ENDPOINTS[endpoint], replaceArgs);
+            const url = utils_1.getFormattedURL(values_1.ENDPOINTS[endpoint], replaceArgs);
             // Get URL
             const getUrl = () => __awaiter(this, void 0, void 0, function* () {
                 this.manageApiLimits();
-                return yield this.getEndpoint('coinGecko', url, params);
+                return yield utils_1.getEndpoint('coinGecko', url, params);
             });
             // Manage API Limits
-            const nowMs = this.getTimeMs();
+            const nowMs = utils_1.getTimeMs();
             const diffMs = this.nextApiCallMs - nowMs;
             if (diffMs <= 0) {
                 return yield getUrl();
             }
             else {
-                yield misc_1.waitMs(diffMs);
+                yield utils_1.waitMs(diffMs);
                 return yield this.getCoinGeckoEndpoint(endpoint, replaceArgs, params);
             }
         });
@@ -935,7 +935,7 @@ class DefiPrices extends DefiTransactions_1.default {
      * Manage API Limits
      */
     manageApiLimits() {
-        const nowMs = this.getTimeMs();
+        const nowMs = utils_1.getTimeMs();
         const currentBlockMs = nowMs - values_1.coinGeckoLimits.ms;
         // Remove Old Calls
         for (let i = 0; i < this.recentApiCalls.length; i++) {
@@ -972,24 +972,6 @@ class DefiPrices extends DefiTransactions_1.default {
                 tokenTimes[tokenName].push(time);
             }
         }
-    }
-    /**
-     * Is Valid Future Time
-     */
-    isValidFutureTime(transTime, localTime) {
-        return localTime > transTime && localTime - transTime < values_1.ONE_DAY;
-    }
-    /**
-     * Is Valid Past Time
-     */
-    isValidPastTime(transTime, localTime) {
-        return transTime > localTime && transTime - localTime < values_1.ONE_DAY;
-    }
-    /**
-     * Get Time in ms
-     */
-    getTimeMs(dateStr) {
-        return dateStr ? new Date(dateStr).getTime() : new Date().getTime();
     }
 }
 exports.default = DefiPrices;

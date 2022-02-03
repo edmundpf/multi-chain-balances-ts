@@ -8,17 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const axios_1 = __importDefault(require("axios"));
-const path_1 = require("path");
-const fs_1 = require("fs");
-const misc_1 = require("./misc");
+const miscUtils_1 = require("./miscUtils");
 const envValues_1 = require("./envValues");
 const values_1 = require("./values");
-const { readFile, writeFile } = fs_1.promises;
+const utils_1 = require("./utils");
 /**
  * DefiBalances Class
  */
@@ -69,11 +63,11 @@ class DefiBalances {
     getBalances(filterUnkownTokens = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [
-                this.isEVM ? this.getTokenList() : [],
-                this.isEVM && filterUnkownTokens ? this.getKnownTokenList() : [],
-                this.isEVM ? this.getProtocolList() : [],
-                this.isEVM ? this.getBeefyApy() : {},
-                this.isEVM ? this.getBeefyVaults() : {},
+                this.isEVM ? utils_1.getTokenList(this.address) : [],
+                this.isEVM && filterUnkownTokens ? utils_1.getKnownTokenList(this.address) : [],
+                this.isEVM ? utils_1.getProtocolList(this.address) : [],
+                this.isEVM ? utils_1.getBeefyApy() : {},
+                this.isEVM ? utils_1.getBeefyVaults() : {},
                 this.isEVM ? this.getHarmonyTokensAndVaults() : [],
                 this.isEVM ? [] : this.getSolanaTokensAndVaults(),
             ];
@@ -153,7 +147,7 @@ class DefiBalances {
             chain.totalValue = chain.totalTokenValue + chain.totalVaultValue;
             // Update simplified assets
             for (const record of chain.tokens) {
-                if (this.isUnknownToken(record.symbol))
+                if (utils_1.isUnknownToken(this.unknownTokens, record.symbol))
                     continue;
                 addAsset(record, chainName);
                 addToken(record);
@@ -163,7 +157,7 @@ class DefiBalances {
                     addAsset(record, chainName, true);
                 }
                 for (const token of record.tokens) {
-                    if (this.isUnknownToken(record.symbol))
+                    if (utils_1.isUnknownToken(this.unknownTokens, record.symbol))
                         continue;
                     addToken(token);
                 }
@@ -173,120 +167,6 @@ class DefiBalances {
             this.totalVaultValue += chain.totalVaultValue;
         }
         this.totalValue = this.totalTokenValue + this.totalVaultValue;
-    }
-    /**
-     * Get Endpoint
-     */
-    getEndpoint(api, endpoint, params, headers) {
-        var _a, _b, _c;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const apiUrl = values_1.APIS[api];
-                const stub = values_1.ENDPOINTS[endpoint] || endpoint;
-                let paramStr = params ? new URLSearchParams(params).toString() : '';
-                if (paramStr)
-                    paramStr = '?' + paramStr;
-                const fullUrl = `${apiUrl}/${stub}${paramStr}`;
-                return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) ||
-                    {});
-            }
-            catch (err) {
-                return Object.assign(Object.assign({}, (((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {})), { hasError: true });
-            }
-        });
-    }
-    /**
-     * Get Ape Board Endpoint
-     */
-    getApeBoardEndpoint(endpoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = values_1.ENDPOINTS[endpoint] || endpoint;
-            return yield this.getEndpoint('apeBoard', `${url}/${this.address}`, undefined, {
-                passcode: values_1.apeBoardCredentials.passCode,
-                'ape-secret': values_1.apeBoardCredentials.secret,
-            });
-        });
-    }
-    /**
-     * Remove Token Contract Stub
-     */
-    sterilizeTokenNameNoStub(tokenName) {
-        let curName = tokenName;
-        if (tokenName.includes('-')) {
-            let dashParts = tokenName.split('-');
-            const lastPart = dashParts[dashParts.length - 1];
-            const isPool = lastPart == 'Pool';
-            const hasStub = lastPart.startsWith('0x') && lastPart.length == 6;
-            if (!isPool && hasStub) {
-                dashParts = dashParts.slice(0, dashParts.length - 2);
-                curName = dashParts.join('-');
-            }
-        }
-        return this.sterilizeTokenName(curName);
-    }
-    /**
-     * Add Contract
-     */
-    addContract(symbols, symbol, address) {
-        const upperSymbol = this.symbolWithDashes(symbol).toUpperCase();
-        const lowerAddress = address.toLowerCase();
-        const isContract = this.isContract(lowerAddress);
-        if (upperSymbol && isContract) {
-            if (!symbols[upperSymbol]) {
-                symbols[upperSymbol] = [lowerAddress];
-            }
-            else if (!symbols[upperSymbol].includes(lowerAddress)) {
-                symbols[upperSymbol].push(lowerAddress);
-            }
-        }
-    }
-    /**
-     * Is Stable Coin
-     */
-    isStableCoin(tokenName, price) {
-        const upperToken = tokenName.toUpperCase();
-        const isNormalStable = upperToken.includes(values_1.FIAT_CURRENCY);
-        const isOtherStable = values_1.stableCoinConfig.otherCoins.includes(tokenName);
-        const withinError = price >= 1 - values_1.stableCoinConfig.errorPercent &&
-            price <= 1 + values_1.stableCoinConfig.errorPercent;
-        return (isNormalStable || isOtherStable) && withinError;
-    }
-    /**
-     * Is Native Token
-     */
-    isNativeToken(tokenName) {
-        return Object.values(values_1.NATIVE_TOKENS).includes(tokenName);
-    }
-    /**
-     * Is Unknown Token
-     */
-    isUnknownToken(symbol) {
-        const sterileSymbol = this.sterilizeTokenNameNoStub(symbol);
-        return this.unknownTokens.includes(sterileSymbol);
-    }
-    /**
-     * Sterilize Token Name
-     */
-    sterilizeTokenName(token) {
-        return (token || '').replace(/ /g, '-').toUpperCase();
-    }
-    /**
-     * Get Address Stub
-     */
-    getAddressStub(address) {
-        return address.substring(2, 6).toUpperCase();
-    }
-    /**
-     * Is Contract
-     */
-    isContract(address) {
-        return address.startsWith('0x');
-    }
-    /**
-     * Dashed Symbol
-     */
-    symbolWithDashes(symbol) {
-        return (symbol || '').replace(/ /g, '-');
     }
     /**
      * Parse Token Data
@@ -329,7 +209,7 @@ class DefiBalances {
                     }
                     // Add Unknown Tokens
                     else {
-                        const tokenName = this.sterilizeTokenNameNoStub(symbol);
+                        const tokenName = utils_1.sterilizeTokenNameNoStub(symbol);
                         if (!this.unknownTokens.includes(tokenName)) {
                             this.unknownTokens.push(tokenName);
                         }
@@ -339,7 +219,7 @@ class DefiBalances {
                         chainInfo.nativeToken = tokenData;
                     }
                     // Exclude Unknown Token Totals
-                    if (shouldDisplay && !this.isUnknownToken(symbol)) {
+                    if (shouldDisplay && !utils_1.isUnknownToken(this.unknownTokens, symbol)) {
                         chainInfo.totalTokenValue += value;
                     }
                 }
@@ -416,14 +296,14 @@ class DefiBalances {
                     tokens.push(token.symbol);
                 }
                 // Format Symbols for Parsing
-                let symbolsStr = misc_1.titleCase(tokens.join(' ').toLowerCase().replace(/\.e/g, 'e')).toLowerCase();
-                const numericSymbol = misc_1.hasNumber(symbolsStr);
+                let symbolsStr = miscUtils_1.titleCase(tokens.join(' ').toLowerCase().replace(/\.e/g, 'e')).toLowerCase();
+                const numericSymbol = miscUtils_1.hasNumber(symbolsStr);
                 // Numeric Symbol Format
                 if (numericSymbol) {
                     let numIndex = 0;
                     for (let i = 0; i < symbolsStr.length; i++) {
                         const curLetter = symbolsStr[i];
-                        if (misc_1.hasNumber(curLetter)) {
+                        if (miscUtils_1.hasNumber(curLetter)) {
                             numIndex = i;
                             break;
                         }
@@ -445,7 +325,7 @@ class DefiBalances {
                     }
                     // Format Beefy Receipts for Parsing
                     receiptStr = receiptStr.replace(/\.E/g, 'E').replace(/\.e/g, 'E');
-                    receiptStr = misc_1.titleCase(receiptStr).toLowerCase();
+                    receiptStr = miscUtils_1.titleCase(receiptStr).toLowerCase();
                     const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
                     const receiptWords = receiptStr.split(' ');
                     const receiptWordsEnd = receiptWords.slice(receiptWords.length - symbols.length);
@@ -511,58 +391,13 @@ class DefiBalances {
         }
     }
     /**
-     * Get Beefy Vaults
-     */
-    getBeefyVaults() {
-        var _a, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            let savedVaults = {};
-            const vaultFile = path_1.resolve(values_1.SAVED_VAULTS_FILE);
-            // Get Saved Vaults
-            try {
-                savedVaults = JSON.parse(yield readFile(vaultFile, 'utf-8'));
-            }
-            catch (err) {
-                // Do Nothing
-            }
-            // Init Vaults
-            const vaults = Object.assign({}, savedVaults);
-            // Iterage URL's
-            for (const key in values_1.BEEFY_VAULT_URLS) {
-                // Get Plain Text
-                const pool = values_1.BEEFY_VAULT_URLS[key];
-                const jsText = ((_b = (_a = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, {
-                    responseType: 'text',
-                }))) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.trim()) || '';
-                // Parse Text
-                if (jsText.includes('[')) {
-                    try {
-                        const data = eval(jsText.substring(jsText.indexOf('['), jsText.length - 1));
-                        // Add Vault
-                        for (const record of data) {
-                            const { id, earnedToken } = record;
-                            const formattedToken = earnedToken.toLowerCase().replace(/w/g, '');
-                            vaults[formattedToken] = id;
-                        }
-                    }
-                    catch (err) {
-                        // Do Nothing
-                    }
-                }
-            }
-            // Write File
-            writeFile(vaultFile, JSON.stringify(vaults, null, 2));
-            return vaults;
-        });
-    }
-    /**
      * Get Solana Tokens and Vaults
      */
     getSolanaTokensAndVaults() {
         return __awaiter(this, void 0, void 0, function* () {
             const responses = yield Promise.all([
-                this.getSolanaTokensInfo(),
-                this.getSolanaVaultsInfo(),
+                utils_1.getSolanaTokensInfo(this.address),
+                utils_1.getSolanaVaultsInfo(this.address),
             ]);
             const tokensResponse = responses[0];
             const vaultsResponse = responses[1];
@@ -635,8 +470,8 @@ class DefiBalances {
     getHarmonyTokensAndVaults() {
         return __awaiter(this, void 0, void 0, function* () {
             const responses = yield Promise.all([
-                this.getHarmonyTokensInfo(),
-                this.getHarmonyVaultsInfo(),
+                utils_1.getHarmonyTokensInfo(this.address),
+                utils_1.getHarmonyVaultsInfo(this.address),
             ]);
             const tokensResponse = responses[0];
             const vaultsResponse = responses[1];
@@ -700,95 +535,6 @@ class DefiBalances {
                 tokens,
             });
         }
-    }
-    /**
-     * Get Beefy Endpoint
-     */
-    getBeefyEndpoint(endpoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('beefy', endpoint);
-        });
-    }
-    /**
-     * Get Debank Endpoint
-     */
-    getDebankEndpoint(endpoint, args) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { id: this.address }));
-        });
-    }
-    /**
-     * Get Farm.Army Endpoint
-     */
-    getFarmArmyEndpoint(endpoint, params) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = misc_1.getFormattedURL(values_1.ENDPOINTS[endpoint], { $address: this.address });
-            return yield this.getEndpoint('farmArmy', url, params);
-        });
-    }
-    /**
-     * Get Token List
-     */
-    getTokenList() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getDebankEndpoint('tokenList');
-        });
-    }
-    /**
-     * Get Known Token List
-     */
-    getKnownTokenList() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getDebankEndpoint('tokenList', { is_all: false });
-        });
-    }
-    /**
-     * Get Protocol List
-     */
-    getProtocolList() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getDebankEndpoint('protocolList');
-        });
-    }
-    /**
-     * Get Beefy APY
-     */
-    getBeefyApy() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getBeefyEndpoint('beefyApy');
-        });
-    }
-    /**
-     * Get Harmony Tokens Info
-     */
-    getHarmonyTokensInfo() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getFarmArmyEndpoint('harmonyTokens');
-        });
-    }
-    /**
-     * Get Harmony Vaults Info
-     */
-    getHarmonyVaultsInfo() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getFarmArmyEndpoint('harmonyVaults');
-        });
-    }
-    /**
-     * Get Solana Tokens Info
-     */
-    getSolanaTokensInfo() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getApeBoardEndpoint('apeBoardSolWallet');
-        });
-    }
-    /**
-     * Get Solana Vaults Info
-     */
-    getSolanaVaultsInfo() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getApeBoardEndpoint('apeBoardSolfarm');
-        });
     }
 }
 exports.default = DefiBalances;

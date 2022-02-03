@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const DefiBalances_1 = __importDefault(require("./DefiBalances"));
 const localData_1 = require("./localData");
 const values_1 = require("./values");
+const utils_1 = require("./utils");
 /**
  * DefiTransactions Class
  */
@@ -34,7 +35,7 @@ class DefiTransactions extends DefiBalances_1.default {
                 for (const index in this.chainNames) {
                     const chainName = this.chainNames[index];
                     if (!rawChains[index]) {
-                        debankRequests.push(this.getPrivateDebankEndpoint('debankHistory', { chain: chainName }));
+                        debankRequests.push(utils_1.getPrivateDebankEndpoint('debankHistory', this.address, { chain: chainName }));
                     }
                     else {
                         debankRequests.push(undefined);
@@ -61,7 +62,7 @@ class DefiTransactions extends DefiBalances_1.default {
                     const chainAlias = values_1.APEBOARD_CHAIN_ALIASES[chainName] || '';
                     if (chainAlias && !rawChains[index]) {
                         const endpoint = `${values_1.ENDPOINTS['apeBoardHistory']}/${chainAlias}`;
-                        apeBoardRequests.push(this.getApeBoardEndpoint(endpoint));
+                        apeBoardRequests.push(utils_1.getApeBoardEndpoint(endpoint, this.address));
                     }
                     else {
                         apeBoardRequests.push(undefined);
@@ -147,9 +148,9 @@ class DefiTransactions extends DefiBalances_1.default {
             for (let i = chain.transactions.length - 1; i >= 0; i--) {
                 const transaction = chain.transactions[i];
                 const { quoteSymbol, quotePriceUSD, baseSymbol, type } = transaction;
-                const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol);
-                const baseName = this.sterilizeTokenNameNoStub(baseSymbol);
-                const quoteIsNative = this.isNativeToken(quoteName);
+                const quoteName = utils_1.sterilizeTokenNameNoStub(quoteSymbol);
+                const baseName = utils_1.sterilizeTokenNameNoStub(baseSymbol);
+                const quoteIsNative = utils_1.isNativeToken(quoteName);
                 const isReceive = type == 'receive';
                 const isSwapOrSend = ['swap', 'send'].includes(type);
                 if (!quoteIsNative && !tokenInfo[quoteName]) {
@@ -172,8 +173,8 @@ class DefiTransactions extends DefiBalances_1.default {
         for (const tokenName in tokenInfo) {
             const token = tokenInfo[tokenName];
             if (token.firstTransIsReceive && !token.hasSwapOrSend) {
-                const isStableCoin = this.isStableCoin(tokenName, token.price || 1);
-                if (!isStableCoin)
+                const isStable = utils_1.isStableCoin(tokenName, token.price || 1);
+                if (!isStable)
                     this.unknownTokens.push(tokenName);
             }
         }
@@ -191,7 +192,7 @@ class DefiTransactions extends DefiBalances_1.default {
                 const chainName = blockchain;
                 if (!chainSymbols[chainName])
                     chainSymbols[chainName] = {};
-                this.addContract(chainSymbols[chainName], symbol, address);
+                utils_1.addContract(chainSymbols[chainName], symbol, address);
             }
             return chainSymbols;
         });
@@ -206,7 +207,7 @@ class DefiTransactions extends DefiBalances_1.default {
                 const addresses = this.chains[blockchain].tokenAddresses;
                 for (const symbolWithStub in addresses) {
                     const address = addresses[symbolWithStub];
-                    const symbol = this.sterilizeTokenNameNoStub(symbolWithStub).toUpperCase();
+                    const symbol = utils_1.sterilizeTokenNameNoStub(symbolWithStub).toUpperCase();
                     requests.push(localData_1.insertContract({ blockchain, symbol, address }));
                 }
             }
@@ -414,9 +415,9 @@ class DefiTransactions extends DefiBalances_1.default {
      * Get Token Addresses
      */
     getTokenAddresses(records, tokenSymbols, existingAddresses = {}) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d, _e;
         const symbols = Object.assign({}, existingAddresses);
-        const addContract = this.addContract.bind(this, symbols);
+        const addNewContract = utils_1.addContract.bind(null, symbols);
         // Iterate Records
         for (const record of records) {
             const debankRec = record;
@@ -424,22 +425,22 @@ class DefiTransactions extends DefiBalances_1.default {
             if ((_a = debankRec === null || debankRec === void 0 ? void 0 : debankRec.sends) === null || _a === void 0 ? void 0 : _a.length) {
                 for (const transfer of debankRec.sends) {
                     const address = transfer.token_id || '';
-                    const symbol = tokenSymbols[address].symbol || '';
-                    addContract(symbol, address);
+                    const symbol = ((_b = tokenSymbols[address]) === null || _b === void 0 ? void 0 : _b.symbol) || '';
+                    addNewContract(symbol, address);
                 }
             }
-            if ((_b = debankRec === null || debankRec === void 0 ? void 0 : debankRec.receives) === null || _b === void 0 ? void 0 : _b.length) {
+            if ((_c = debankRec === null || debankRec === void 0 ? void 0 : debankRec.receives) === null || _c === void 0 ? void 0 : _c.length) {
                 for (const transfer of debankRec.sends) {
                     const address = transfer.token_id || '';
-                    const symbol = tokenSymbols[address].symbol || '';
-                    addContract(symbol, address);
+                    const symbol = ((_d = tokenSymbols[address]) === null || _d === void 0 ? void 0 : _d.symbol) || '';
+                    addNewContract(symbol, address);
                 }
             }
-            if ((_c = apeBoardRec === null || apeBoardRec === void 0 ? void 0 : apeBoardRec.transfers) === null || _c === void 0 ? void 0 : _c.length) {
+            if ((_e = apeBoardRec === null || apeBoardRec === void 0 ? void 0 : apeBoardRec.transfers) === null || _e === void 0 ? void 0 : _e.length) {
                 for (const transfer of apeBoardRec.transfers) {
                     const address = transfer.tokenAddress || '';
                     const symbol = transfer.symbol || '';
-                    addContract(symbol, address);
+                    addNewContract(symbol, address);
                 }
             }
         }
@@ -449,22 +450,22 @@ class DefiTransactions extends DefiBalances_1.default {
      * Get Token Name
      */
     getTokenName(symbol, address, chainName, tokenAddresses) {
-        let newSymbol = this.symbolWithDashes(symbol);
+        let newSymbol = utils_1.symbolWithDashes(symbol);
         const upperSymbol = newSymbol.toUpperCase();
         const upperChain = chainName.toUpperCase();
         const lowerAddress = (address || '').toLowerCase();
         // Capitalize Native Tokens
-        const isNativeToken = this.isNativeToken(upperSymbol);
-        if (isNativeToken)
+        const isNative = utils_1.isNativeToken(upperSymbol);
+        if (isNative)
             newSymbol = upperSymbol;
         // Rename Duplicate Symbols
         if (tokenAddresses[upperSymbol] && tokenAddresses[upperSymbol].length > 1) {
-            const addressStub = this.getAddressStub(lowerAddress);
+            const addressStub = utils_1.getAddressStub(lowerAddress);
             newSymbol = `${newSymbol}-${upperChain}-0x${addressStub}`;
         }
         // Add New Token Addresses
         if (this.chains[chainName].tokenAddresses[newSymbol] == null) {
-            this.chains[chainName].tokenAddresses[newSymbol] = this.isContract(lowerAddress)
+            this.chains[chainName].tokenAddresses[newSymbol] = utils_1.isContract(lowerAddress)
                 ? lowerAddress
                 : '';
         }
@@ -538,14 +539,6 @@ class DefiTransactions extends DefiBalances_1.default {
                 newType = 'approve';
         }
         return newType;
-    }
-    /**
-     * Get Private Debank Endpoint
-     */
-    getPrivateDebankEndpoint(endpoint, params) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, params), { user_addr: this.address }));
-        });
     }
     /**
      * Get Transaction ID

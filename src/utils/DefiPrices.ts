@@ -1,5 +1,17 @@
 import DefiTransactions from './DefiTransactions'
-import { waitMs, getFormattedURL } from './misc'
+import {
+	waitMs,
+	getFormattedURL,
+	getEndpoint,
+	sterilizeTokenName,
+	sterilizeTokenNameNoStub,
+	isNativeToken,
+	isStableCoin,
+	isUnknownToken,
+	getTimeMs,
+	isValidFutureTime,
+	isValidPastTime,
+} from './utils'
 import { prepareDB, selectPrices, insertPrice } from './localData'
 import {
 	CoinGeckoToken,
@@ -140,7 +152,7 @@ export default class DefiPrices extends DefiTransactions {
 			for (const record of res) {
 				const { id, symbol, platforms } = record
 				if (id && !tokenInfo[id]) {
-					const tokenName = this.sterilizeTokenName(symbol)
+					const tokenName = sterilizeTokenName(symbol)
 					tokenInfo[id] = {
 						name: tokenName,
 						addresses: [],
@@ -212,10 +224,10 @@ export default class DefiPrices extends DefiTransactions {
 					feePriceUSD,
 					time: timeStr,
 				} = transaction
-				const time = this.getTimeMs(timeStr)
+				const time = getTimeMs(timeStr)
 				const hasFeePrice = feePriceUSD ? true : false
-				const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol)
-				const baseName = this.sterilizeTokenNameNoStub(baseSymbol)
+				const quoteName = sterilizeTokenNameNoStub(quoteSymbol)
+				const baseName = sterilizeTokenNameNoStub(baseSymbol)
 				const quoteIsLP = quoteName.endsWith('LP')
 				const baseIsLP = baseName.endsWith('LP')
 				const quoteSupported =
@@ -494,9 +506,9 @@ export default class DefiPrices extends DefiTransactions {
 						baseQuantity,
 						time: timeStr,
 					} = transaction
-					const time = this.getTimeMs(timeStr)
-					const quoteName = this.sterilizeTokenNameNoStub(quoteSymbol)
-					const baseName = this.sterilizeTokenNameNoStub(baseSymbol)
+					const time = getTimeMs(timeStr)
+					const quoteName = sterilizeTokenNameNoStub(quoteSymbol)
+					const baseName = sterilizeTokenNameNoStub(baseSymbol)
 					const quoteTokenMatch = tokenName == quoteName
 					const baseTokenMatch = tokenName == baseName
 					const quoteFeeMatch = quoteSymbol == feeSymbol && feePriceUSD
@@ -561,9 +573,9 @@ export default class DefiPrices extends DefiTransactions {
 				const { type, quoteSymbol, quoteValueUSD, quotePriceUSD } = transaction
 				if (!quotePriceUSD) continue
 				if (['send', 'receive'].includes(type)) {
-					const isNativeToken = this.isNativeToken(quoteSymbol)
-					const isStableCoin = this.isStableCoin(quoteSymbol, quotePriceUSD)
-					if (isNativeToken || isStableCoin) {
+					const isNative = isNativeToken(quoteSymbol)
+					const isStable = isStableCoin(quoteSymbol, quotePriceUSD)
+					if (isNative || isStable) {
 						if (quoteValueUSD > maxWhitelistValue) {
 							maxWhitelistValue = quoteValueUSD
 						}
@@ -575,8 +587,8 @@ export default class DefiPrices extends DefiTransactions {
 			for (const transaction of transactions) {
 				const { quoteSymbol, quoteValueUSD, baseSymbol, baseValueUSD } =
 					transaction
-				const quoteIsUnknown = this.isUnknownToken(quoteSymbol)
-				const baseIsUnknown = this.isUnknownToken(baseSymbol)
+				const quoteIsUnknown = isUnknownToken(this.unknownTokens, quoteSymbol)
+				const baseIsUnknown = isUnknownToken(this.unknownTokens, baseSymbol)
 				if (quoteIsUnknown && quoteValueUSD > maxWhitelistValue) {
 					transaction.quoteValueUSD = transaction.quotePriceUSD = 0
 					if (transaction.baseSymbol == FIAT_CURRENCY) {
@@ -678,11 +690,11 @@ export default class DefiPrices extends DefiTransactions {
 
 						// Get Total Single Token Value
 						else {
-							const isStableCoin = this.isStableCoin(symbol, price)
+							const isStable = isStableCoin(symbol, price)
 							const absRecordValueUSD = Math.abs(value)
 
 							// Set Eligible Indexes
-							if (!isStableCoin) {
+							if (!isStable) {
 								eligibleIndexes.push(index)
 								eligibleTotal += absRecordValueUSD
 							}
@@ -806,8 +818,8 @@ export default class DefiPrices extends DefiTransactions {
 			baseValueUSD,
 			basePriceUSD,
 		} = record
-		const quoteIsStable = this.isStableCoin(quoteSymbol, quotePriceUSD)
-		const baseIsStable = this.isStableCoin(baseSymbol, basePriceUSD)
+		const quoteIsStable = isStableCoin(quoteSymbol, quotePriceUSD)
+		const baseIsStable = isStableCoin(baseSymbol, basePriceUSD)
 		let absQuoteValueUSD = Math.abs(quoteValueUSD)
 		let absBaseValueUSD = Math.abs(baseValueUSD)
 
@@ -875,14 +887,14 @@ export default class DefiPrices extends DefiTransactions {
 		let absQuoteValueUSD = singleIsBase ? absMultiValueUSD : absSingleValueUSD
 		let absBaseValueUSD = singleIsBase ? absSingleValueUSD : absMultiValueUSD
 		let baseIsStable = singleIsBase
-			? this.isStableCoin(
+			? isStableCoin(
 					transactions[0].baseSymbol,
 					transactions[0].basePriceUSD
 			  )
 			: true
 		let quoteIsStable = singleIsBase
 			? true
-			: this.isStableCoin(
+			: isStableCoin(
 					transactions[0].quoteSymbol,
 					transactions[0].quotePriceUSD
 			  )
@@ -890,10 +902,10 @@ export default class DefiPrices extends DefiTransactions {
 		// Iterate Transactions to check for Stablecoins
 		for (const record of transactions) {
 			const { quoteSymbol, baseSymbol, quotePriceUSD, basePriceUSD } = record
-			const isStableCoin = singleIsBase
-				? this.isStableCoin(quoteSymbol, quotePriceUSD)
-				: this.isStableCoin(baseSymbol, basePriceUSD)
-			if (!isStableCoin) {
+			const isStable = singleIsBase
+				? isStableCoin(quoteSymbol, quotePriceUSD)
+				: isStableCoin(baseSymbol, basePriceUSD)
+			if (!isStable) {
 				if (singleIsBase) quoteIsStable = false
 				else baseIsStable = false
 				break
@@ -1049,9 +1061,9 @@ export default class DefiPrices extends DefiTransactions {
 			if (transTime == curTime) {
 				validRecords.equal = info
 				break
-			} else if (this.isValidFutureTime(transTime, curTime)) {
+			} else if (isValidFutureTime(transTime, curTime)) {
 				validRecords.future = info
-			} else if (this.isValidPastTime(transTime, curTime)) {
+			} else if (isValidPastTime(transTime, curTime)) {
 				validRecords.past = info
 			}
 			if (validRecords.future && validRecords.past) {
@@ -1111,7 +1123,7 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private getDaysOutList(times: number[]) {
-		const nowMs = this.getTimeMs()
+		const nowMs = getTimeMs()
 		const daysOutList: number[] = []
 		const firstCutoff = coinGeckoDayCutoffs[0]
 		const firstCutoffMs = firstCutoff * ONE_DAY
@@ -1170,7 +1182,7 @@ export default class DefiPrices extends DefiTransactions {
 		// Get URL
 		const getUrl = async () => {
 			this.manageApiLimits()
-			return await this.getEndpoint(
+			return await getEndpoint(
 				'coinGecko',
 				url as keyof typeof ENDPOINTS,
 				params
@@ -1178,7 +1190,7 @@ export default class DefiPrices extends DefiTransactions {
 		}
 
 		// Manage API Limits
-		const nowMs = this.getTimeMs()
+		const nowMs = getTimeMs()
 		const diffMs = this.nextApiCallMs - nowMs
 
 		if (diffMs <= 0) {
@@ -1194,7 +1206,7 @@ export default class DefiPrices extends DefiTransactions {
 	 */
 
 	private manageApiLimits() {
-		const nowMs = this.getTimeMs()
+		const nowMs = getTimeMs()
 		const currentBlockMs = nowMs - coinGeckoLimits.ms
 
 		// Remove Old Calls
@@ -1238,29 +1250,5 @@ export default class DefiPrices extends DefiTransactions {
 				tokenTimes[tokenName].push(time)
 			}
 		}
-	}
-
-	/**
-	 * Is Valid Future Time
-	 */
-
-	private isValidFutureTime(transTime: number, localTime: number) {
-		return localTime > transTime && localTime - transTime < ONE_DAY
-	}
-
-	/**
-	 * Is Valid Past Time
-	 */
-
-	private isValidPastTime(transTime: number, localTime: number) {
-		return transTime > localTime && transTime - localTime < ONE_DAY
-	}
-
-	/**
-	 * Get Time in ms
-	 */
-
-	private getTimeMs(dateStr?: string) {
-		return dateStr ? new Date(dateStr).getTime() : new Date().getTime()
 	}
 }
