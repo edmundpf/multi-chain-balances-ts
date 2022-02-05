@@ -444,9 +444,6 @@ export default class DefiBalances {
 				// Get Closest Match using Vault/Receipt Amounts
 				let receiptMatch = ''
 				let currentDiff = 0
-				if (vault.symbol == 'amWBTC-renBTC-Pool') {
-					console.log(matches)
-				}
 				for (const receiptName in matches) {
 					const matchValue = matches[receiptName]
 
