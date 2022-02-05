@@ -46,6 +46,7 @@ export const TOKEN_ALIASES: any = {
 
 export const RECEIPT_ALIASES: any = {
 	'3crv': ['dai', 'usd', 'usd'],
+	'curveren': ['amwbtc', 'renbtc']
 }
 
 // Default URL's

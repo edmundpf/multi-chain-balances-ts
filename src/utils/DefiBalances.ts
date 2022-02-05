@@ -345,7 +345,7 @@ export default class DefiBalances {
 
 			// Iterate Vault Info
 			for (const vault of chain.vaults) {
-				const matches: NumDict = {}
+				const matches: { [index: string]: number | true } = {}
 				const tokens: string[] = []
 
 				// Get Token Names in Vault
@@ -436,15 +436,29 @@ export default class DefiBalances {
 					// Add Match to Compare Vault/Receipt Amounts
 					if (isMatch) {
 						const vaultAmount = vault.amount || 0
-						matches[receiptName] = Math.abs(vaultAmount - receiptAmount)
+						matches[receiptName] =
+							isReceiptAlias || Math.abs(vaultAmount - receiptAmount)
 					}
 				}
 
 				// Get Closest Match using Vault/Receipt Amounts
 				let receiptMatch = ''
 				let currentDiff = 0
+				if (vault.symbol == 'amWBTC-renBTC-Pool') {
+					console.log(matches)
+				}
 				for (const receiptName in matches) {
-					const diff = matches[receiptName]
+					const matchValue = matches[receiptName]
+
+					// Get Match by Alias
+					const isAlias = matchValue === true
+					if (isAlias) {
+						receiptMatch = receiptName
+						break
+					}
+
+					// Get Match using receipt difference
+					const diff = isAlias ? 0 : matchValue as number
 					if (!receiptMatch || diff < currentDiff) {
 						receiptMatch = receiptName
 						currentDiff = diff

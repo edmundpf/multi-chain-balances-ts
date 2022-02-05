@@ -73,8 +73,8 @@ main({
 	useDebank: true,
 	filterUnknownTokens: true,
 	getBalances: true,
-	getTransactions: true,
-	getPrices: true,
+	getTransactions: false,
+	getPrices: false,
 	logTransactions: true,
 	logAssets: true,
 })
