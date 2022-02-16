@@ -45,7 +45,7 @@ export const TOKEN_ALIASES: any = {
 // Receipt Aliases
 
 export const RECEIPT_ALIASES: any = {
-	'3crv': ['dai', 'usd', 'usd'],
+	'3crv': ['dai', 'usdc', 'usdt'],
 	'curveren': ['amwbtc', 'renbtc']
 }
 

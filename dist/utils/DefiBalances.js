@@ -330,20 +330,20 @@ class DefiBalances {
                     const receiptWords = receiptStr.split(' ');
                     const receiptWordsEnd = receiptWords.slice(receiptWords.length - symbols.length);
                     // Add Alias Token Names
-                    for (const word of receiptWordsEnd) {
+                    for (const word of symbols) {
                         if (values_1.TOKEN_ALIASES[word] &&
-                            !receiptWordsEnd.includes(values_1.TOKEN_ALIASES[word])) {
-                            receiptWordsEnd.push(values_1.TOKEN_ALIASES[word]);
+                            !symbols.includes(values_1.TOKEN_ALIASES[word])) {
+                            symbols.push(values_1.TOKEN_ALIASES[word]);
                         }
                     }
                     const hasMultipleSymbols = symbols.length >= 2;
-                    const tokensMatchReceiptTokens = symbols.every((sym) => receiptWordsEnd.some((receiptSym) => sym.includes(receiptSym)));
+                    const tokensMatchReceiptTokens = receiptWordsEnd.every((receiptSym) => symbols.some((sym) => sym.includes(receiptSym)));
                     // Check if receipt has alias
                     let isReceiptAlias = false;
                     for (const part in values_1.RECEIPT_ALIASES) {
                         if (receiptStrNoSpaces.includes(part)) {
                             const aliasTokens = values_1.RECEIPT_ALIASES[part];
-                            isReceiptAlias = symbols.every((sym) => aliasTokens.some((receiptSym) => sym.includes(receiptSym)));
+                            isReceiptAlias = aliasTokens.every((aliasSym) => symbols.some((receiptSym) => receiptSym.includes(aliasSym)));
                         }
                     }
                     // Check for Match comparing Symbols vs. Receipts

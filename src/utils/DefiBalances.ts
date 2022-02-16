@@ -397,17 +397,17 @@ export default class DefiBalances {
 					)
 
 					// Add Alias Token Names
-					for (const word of receiptWordsEnd) {
+					for (const word of symbols) {
 						if (
 							TOKEN_ALIASES[word] &&
-							!receiptWordsEnd.includes(TOKEN_ALIASES[word])
+							!symbols.includes(TOKEN_ALIASES[word])
 						) {
-							receiptWordsEnd.push(TOKEN_ALIASES[word])
+							symbols.push(TOKEN_ALIASES[word])
 						}
 					}
 					const hasMultipleSymbols = symbols.length >= 2
-					const tokensMatchReceiptTokens = symbols.every((sym: string) =>
-						receiptWordsEnd.some((receiptSym: string) =>
+					const tokensMatchReceiptTokens = receiptWordsEnd.every((receiptSym: string) =>
+						symbols.some((sym: string) =>
 							sym.includes(receiptSym)
 						)
 					)
@@ -417,9 +417,9 @@ export default class DefiBalances {
 					for (const part in RECEIPT_ALIASES) {
 						if (receiptStrNoSpaces.includes(part)) {
 							const aliasTokens: string[] = RECEIPT_ALIASES[part]
-							isReceiptAlias = symbols.every((sym: string) =>
-								aliasTokens.some((receiptSym: string) =>
-									sym.includes(receiptSym)
+							isReceiptAlias = aliasTokens.every((aliasSym: string) =>
+								symbols.some((receiptSym: string) =>
+									receiptSym.includes(aliasSym)
 								)
 							)
 						}
