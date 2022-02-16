@@ -150,7 +150,7 @@ export default class DefiPrices extends DefiTransactions {
 		if (res?.length) {
 			// Iterate ID's
 			for (const record of res) {
-				const { id, symbol, platforms } = record
+				const { id, symbol } = record
 				if (id && !tokenInfo[id]) {
 					const tokenName = sterilizeTokenName(symbol)
 					tokenInfo[id] = {
@@ -158,12 +158,17 @@ export default class DefiPrices extends DefiTransactions {
 						addresses: [],
 					}
 				}
+			}
 
-				// Iterate Platforms
-				for (const key in platforms) {
-					const address = platforms[key]
-					if (platforms[key]) {
-						tokenInfo[id].addresses.push(address)
+			// Iterate Platforms
+			for (const record of res) {
+				const { id, platforms } = record
+				if (tokenInfo[id]) {
+					for (const key in platforms) {
+						const address = platforms[key]
+						if (platforms[key] && !tokenInfo[id].addresses.includes(address)) {
+							tokenInfo[id].addresses.push(address)
+						}
 					}
 				}
 			}
