@@ -1,4 +1,3 @@
-import { titleCase, hasNumber } from './miscUtils'
 import { ENV_ADDRESS, ENV_MIN_VALUE } from './envValues'
 import {
 	NATIVE_TOKENS,
@@ -7,19 +6,24 @@ import {
 	TOKEN_ALIASES,
 	RECEIPT_ALIASES,
 	TULIP_URL,
+	ANCHOR_URL,
 } from './values'
 import {
+	titleCase,
+	hasNumber,
 	getTokenList,
 	getKnownTokenList,
 	getProtocolList,
 	getSolanaTokensInfo,
 	getSolanaVaultsInfo,
+	getTerraTokensInfo,
+	getTerraAnchorInfo,
 	getHarmonyTokensInfo,
 	getHarmonyVaultsInfo,
 	getBeefyApy,
 	getBeefyVaults,
 	sterilizeTokenNameNoStub,
-	isUnknownToken
+	isUnknownToken,
 } from './utils'
 import {
 	Token,
@@ -34,6 +38,7 @@ import {
 	FarmArmyVaultsResponse,
 	ApeBoardToken,
 	ApeBoardPositionsResponse,
+	ApeBoardAnchorResponse
 } from './types'
 
 /**
@@ -96,6 +101,7 @@ export default class DefiBalances {
 			this.isEVM ? getBeefyVaults() : {},
 			this.isEVM ? this.getHarmonyTokensAndVaults() : [],
 			this.isEVM ? [] : this.getSolanaTokensAndVaults(),
+			this.isEVM ? [] : this.getTerraTokensAndVaults(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
@@ -105,7 +111,8 @@ export default class DefiBalances {
 		const vaultData = res[4] as any
 		const harmonyTokenData = res[5] as Token[]
 		const solanaTokenData = res[6] as Token[]
-		const allTokenData = [...tokenData, ...harmonyTokenData, ...solanaTokenData]
+		const terraTokenData = res[7] as Token[]
+		const allTokenData = [...tokenData, ...harmonyTokenData, ...solanaTokenData, ...terraTokenData]
 		this.parseTokenData(allTokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData, vaultData)
@@ -487,32 +494,16 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Get Solana Tokens and Vaults
+	 * Parse ApeBoard Tokens
 	 */
 
-	private async getSolanaTokensAndVaults() {
-		const responses = await Promise.all([
-			getSolanaTokensInfo(this.address),
-			getSolanaVaultsInfo(this.address),
-		])
-		const tokensResponse = responses[0]
-		const vaultsResponse = responses[1]
-		const parsedTokens = this.parseSolanaTokens(tokensResponse)
-		this.parseSolanaVaults(vaultsResponse)
-		return parsedTokens
-	}
-
-	/**
-	 * Parse Solana Tokens
-	 */
-
-	private parseSolanaTokens(response: ApeBoardToken[]) {
+	private parseApeboardTokens(chain: keyof Chains, response: ApeBoardToken[]) {
 		const parsedTokens: Token[] = []
 		const tokens = response?.length ? response : []
 		for (const token of tokens) {
 			const { symbol, balance: amount, price } = token
 			parsedTokens.push({
-				chain: 'sol',
+				chain,
 				symbol: symbol.toUpperCase(),
 				price,
 				amount,
@@ -522,11 +513,19 @@ export default class DefiBalances {
 	}
 
 	/**
-	 * Parse Solana Vaults
+	 * Parse ApeBoard Vaults
 	 */
 
-	private parseSolanaVaults(response: ApeBoardPositionsResponse) {
-		const vaults = response?.positions || []
+	private parseApeboardVaults(
+		chain: keyof Chains,
+		platformId: string,
+		platformUrl: string,
+		response: ApeBoardPositionsResponse | ApeBoardAnchorResponse
+	) {
+		const vaults =
+			(response as ApeBoardPositionsResponse)?.positions ||
+			(response as ApeBoardAnchorResponse)?.savings ||
+			[]
 
 		// Iterate Vaults
 		for (const vault of vaults) {
@@ -552,20 +551,85 @@ export default class DefiBalances {
 			// Get Pool and Vault Symbols
 			const tokensStr = tokenNames.join('-')
 			const symbol = `${tokensStr}-Pool`
-			const vaultName = `tulip-${tokensStr.toLowerCase()}`
+			const vaultName = `${platformId}-${tokensStr.toLowerCase()}`
+			const platform = titleCase(platformId)
 
 			// Push Vault
-			this.chains.sol.vaults.push({
+			this.chains[chain].vaults.push({
 				symbol,
 				value: vaultValue,
-				platform: 'Tulip',
-				platformUrl: TULIP_URL,
+				platform,
+				platformUrl,
 				vaultName,
 				receiptName: vaultName,
 				apy: 0,
 				tokens,
 			})
 		}
+	}
+
+	/**
+	 * Get Solana Tokens and Vaults
+	 */
+
+	private async getSolanaTokensAndVaults() {
+		const responses = await Promise.all([
+			getSolanaTokensInfo(this.address),
+			getSolanaVaultsInfo(this.address),
+		])
+		const tokensResponse = responses[0]
+		const vaultsResponse = responses[1]
+		const parsedTokens = this.parseSolanaTokens(tokensResponse)
+		this.parseSolanaVaults(vaultsResponse)
+		return parsedTokens
+	}
+
+	/**
+	 * Parse Solana Tokens
+	 */
+
+	private parseSolanaTokens(response: ApeBoardToken[]) {
+		return this.parseApeboardTokens('sol', response)
+	}
+
+	/**
+	 * Parse Solana Vaults
+	 */
+
+	private parseSolanaVaults(response: ApeBoardPositionsResponse) {
+		return this.parseApeboardVaults('sol', 'tulip', TULIP_URL, response)
+	}
+
+	/**
+	 * Get Terra Tokens and Vaults
+	 */
+
+	private async getTerraTokensAndVaults() {
+		const responses = await Promise.all([
+			getTerraTokensInfo(this.address),
+			getTerraAnchorInfo(this.address),
+		])
+		const tokensResponse = responses[0]
+		const vaultsResponse = responses[1]
+		const parsedTokens = this.parseTerraTokens(tokensResponse)
+		this.parseTerraVaults(vaultsResponse)
+		return parsedTokens
+	}
+
+	/**
+	 * Parse Terra Tokens
+	 */
+
+	private parseTerraTokens(response: ApeBoardToken[]) {
+		return this.parseApeboardTokens('terra', response)
+	}
+
+	/**
+	 * Parse Solana Vaults
+	 */
+
+	private parseTerraVaults(response: ApeBoardAnchorResponse) {
+		return this.parseApeboardVaults('terra', 'anchor', ANCHOR_URL, response)
 	}
 
 	/**

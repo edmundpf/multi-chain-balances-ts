@@ -141,6 +141,14 @@ export const getSolanaTokensInfo = async (address: string) =>
 export const getSolanaVaultsInfo = async (address: string) =>
 	await getApeBoardEndpoint('apeBoardSolfarm', address)
 
+// Get Terra Tokens Info
+export const getTerraTokensInfo = async (address: string) =>
+	await getApeBoardEndpoint('apeBoardTerraWallet', address)
+
+// Get Terra Anchor Info
+export const getTerraAnchorInfo = async (address: string) =>
+	await getApeBoardEndpoint('apeBoardTerraAnchor', address)
+
 /**
  * Farm Army Calls
  */

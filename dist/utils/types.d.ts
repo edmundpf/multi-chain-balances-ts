@@ -70,6 +70,7 @@ export declare type Chains = {
     movr: Chain;
     one: Chain;
     sol: Chain;
+    terra: Chain;
 };
 export declare type HistoryRecord = {
     id: string;
@@ -200,6 +201,9 @@ export declare type ApeBoardToken = {
 };
 export declare type ApeBoardPositionsResponse = {
     positions: ApeBoardPosition[];
+};
+export declare type ApeBoardAnchorResponse = {
+    savings: ApeBoardPosition[];
 };
 export declare type ApeBoardTransfer = {
     from: string;

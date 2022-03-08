@@ -16,14 +16,19 @@ export declare const NATIVE_TOKENS: {
     movr: string;
     one: string;
     sol: string;
+    terra: string;
 };
 export declare const APEBOARD_CHAIN_ALIASES: {
     avax: string;
     bsc: string;
+    cro: string;
     eth: string;
     ftm: string;
     matic: string;
+    movr: string;
+    one: string;
     sol: string;
+    terra: string;
 };
 export declare const TOKEN_ALIASES: any;
 export declare const RECEIPT_ALIASES: any;
@@ -37,6 +42,7 @@ export declare const DEFAULT_URLS: {
     movr: string;
     one: string;
     sol: string;
+    terra: string;
 };
 export declare const BEEFY_VAULT_URLS: {
     avax: string;
@@ -66,7 +72,9 @@ export declare const ENDPOINTS: {
     protocolList: string;
     debankHistory: string;
     apeBoardSolWallet: string;
+    apeBoardTerraWallet: string;
     apeBoardSolfarm: string;
+    apeBoardTerraAnchor: string;
     apeBoardHistory: string;
     coinGeckoList: string;
     coinGeckoPrices: string;
@@ -101,3 +109,4 @@ export declare const initChains: () => Chains;
 export declare const ONE_DAY: number;
 export declare const SAVED_VAULTS_FILE = "saved_vaults.json";
 export declare const TULIP_URL = "https://tulip.gardens";
+export declare const ANCHOR_URL = "https://anchorprotocol.com";

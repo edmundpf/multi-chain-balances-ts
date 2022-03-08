@@ -22,6 +22,7 @@ export const NATIVE_TOKENS = {
 	movr: 'MOVR',
 	one: 'ONE',
 	sol: 'SOL',
+	terra: 'LUNA',
 }
 
 // Ape Board Chain Aliases
@@ -29,10 +30,14 @@ export const NATIVE_TOKENS = {
 export const APEBOARD_CHAIN_ALIASES = {
 	avax: 'avax',
 	bsc: 'bsc',
+	cro: 'cronos',
 	eth: 'ethereum',
 	ftm: 'fantom',
 	matic: 'polygon',
+	movr: 'moonriver',
+	one: 'harmony',
 	sol: 'solana',
+	terra: 'terra',
 }
 
 // Token Aliases
@@ -61,6 +66,7 @@ export const DEFAULT_URLS = {
 	movr: 'https://moonriver.moonscan.io',
 	one: 'https://explorer.harmony.one',
 	sol: 'https://solscan.io',
+	terra: 'https://finder.terra.money'
 }
 
 // Beefy Vault URL's
@@ -101,7 +107,9 @@ export const ENDPOINTS = {
 	protocolList: 'complex_protocol_list',
 	debankHistory: 'history/list',
 	apeBoardSolWallet: 'wallet/solana',
+	apeBoardTerraWallet: 'wallet/terra',
 	apeBoardSolfarm: 'solfarmSolana',
+	apeBoardTerraAnchor: 'anchorTerra',
 	apeBoardHistory: 'transaction-history',
 	coinGeckoList: 'coins/list',
 	coinGeckoPrices: 'coins/$id/market_chart',
@@ -113,10 +121,10 @@ export const ENDPOINTS = {
 
 export const apeBoardCredentials = {
 	secret:
-		'U2FsdGVkX19COuJCyW6vO9L8HPHKzedxSbDyJwvCkp+PD3WLM1SbGH4v0gwBiH4xbINmxU67' +
-		'QUMSa4nBt0o4sc5xN2DD9mjQ+QjMVkJp568PKmsvfadUKb2Rgm56urKjF6WOY95TjUY/tgNr' +
-		'5BGwUw==',
-	passCode: '5a102a34f60fa7ec9d643a8a0e72cab9',
+		'U2FsdGVkX1/AWj2FNHupd5aL3OXIm/hZX7YSBEA15AmcmDExr4K+UuuivX+RvmcbEsBArol' +
+		'y3iRCoHbTK7v7BUmhaBnZTPpFgvORL1EbkawEUIvDl2/lMIPeyC+wJ2YF6yUnrHRkt94v82' +
+		'TnZB465Q==',
+	passCode: 'A63uGa8775Ne89wwqADwKYGeyceXAxmHL',
 }
 
 // Coin Gecko Limits
@@ -228,6 +236,7 @@ export const initChains = () => {
 		movr: initChain('movr'),
 		one: initChain('one'),
 		sol: initChain('sol'),
+		terra: initChain('terra'),
 	} as Chains
 }
 
@@ -258,3 +267,7 @@ export const SAVED_VAULTS_FILE = 'saved_vaults.json'
 // Tulip URL
 
 export const TULIP_URL = 'https://tulip.gardens'
+
+// Anchor URL
+
+export const ANCHOR_URL = 'https://anchorprotocol.com'

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBeefyVaults = exports.getBeefyApy = exports.getHarmonyVaultsInfo = exports.getHarmonyTokensInfo = exports.getSolanaVaultsInfo = exports.getSolanaTokensInfo = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getFarmArmyEndpoint = exports.getApeBoardEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
+exports.getBeefyVaults = exports.getBeefyApy = exports.getHarmonyVaultsInfo = exports.getHarmonyTokensInfo = exports.getTerraAnchorInfo = exports.getTerraTokensInfo = exports.getSolanaVaultsInfo = exports.getSolanaTokensInfo = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getFarmArmyEndpoint = exports.getApeBoardEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = require("fs");
 const path_1 = require("path");
@@ -104,6 +104,12 @@ exports.getSolanaTokensInfo = getSolanaTokensInfo;
 // Get Solana Vaults Info
 const getSolanaVaultsInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardSolfarm', address); });
 exports.getSolanaVaultsInfo = getSolanaVaultsInfo;
+// Get Terra Tokens Info
+const getTerraTokensInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardTerraWallet', address); });
+exports.getTerraTokensInfo = getTerraTokensInfo;
+// Get Terra Anchor Info
+const getTerraAnchorInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardTerraAnchor', address); });
+exports.getTerraAnchorInfo = getTerraAnchorInfo;
 /**
  * Farm Army Calls
  */

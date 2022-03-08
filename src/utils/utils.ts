@@ -12,6 +12,8 @@ export {
 	getProtocolList,
 	getSolanaTokensInfo,
 	getSolanaVaultsInfo,
+	getTerraTokensInfo,
+	getTerraAnchorInfo,
 	getHarmonyTokensInfo,
 	getHarmonyVaultsInfo,
 	getBeefyApy,

@@ -23,6 +23,8 @@ export declare const getProtocolList: (address: string) => Promise<any>;
  */
 export declare const getSolanaTokensInfo: (address: string) => Promise<any>;
 export declare const getSolanaVaultsInfo: (address: string) => Promise<any>;
+export declare const getTerraTokensInfo: (address: string) => Promise<any>;
+export declare const getTerraAnchorInfo: (address: string) => Promise<any>;
 /**
  * Farm Army Calls
  */

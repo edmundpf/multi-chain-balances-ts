@@ -112,6 +112,7 @@ export type Chains = {
 	movr: Chain
 	one: Chain
 	sol: Chain
+	terra: Chain
 }
 
 // History Record Type
@@ -301,6 +302,12 @@ export type ApeBoardToken = {
 
 export type ApeBoardPositionsResponse = {
 	positions: ApeBoardPosition[]
+}
+
+// Ape Board Anchor Reponse
+
+export type ApeBoardAnchorResponse = {
+	savings: ApeBoardPosition[]
 }
 
 // Ape Board Transfer Type
