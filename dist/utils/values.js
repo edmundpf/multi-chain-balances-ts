@@ -43,7 +43,8 @@ exports.TOKEN_ALIASES = {
 exports.RECEIPT_ALIASES = {
     '3crv': ['dai', 'usdc', 'usdt'],
     'curveren': ['amwbtc', 'renbtc'],
-    'fugue': ['usdc', 'ust', 'mim']
+    'fugue': ['usdc', 'ust', 'mim'],
+    'beetgod': ['dei', 'usdc'],
 };
 // Default URL's
 exports.DEFAULT_URLS = {

@@ -51,8 +51,9 @@ export const TOKEN_ALIASES: any = {
 
 export const RECEIPT_ALIASES: any = {
 	'3crv': ['dai', 'usdc', 'usdt'],
-	'curveren': ['amwbtc', 'renbtc'],
-	'fugue': ['usdc', 'ust', 'mim']
+	curveren: ['amwbtc', 'renbtc'],
+	fugue: ['usdc', 'ust', 'mim'],
+	beetgod: ['dei', 'usdc'],
 }
 
 // Default URL's
@@ -67,7 +68,7 @@ export const DEFAULT_URLS = {
 	movr: 'https://moonriver.moonscan.io',
 	one: 'https://explorer.harmony.one',
 	sol: 'https://solscan.io',
-	terra: 'https://finder.terra.money'
+	terra: 'https://finder.terra.money',
 }
 
 // Beefy Vault URL's
