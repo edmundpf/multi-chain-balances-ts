@@ -892,17 +892,11 @@ export default class DefiPrices extends DefiTransactions {
 		let absQuoteValueUSD = singleIsBase ? absMultiValueUSD : absSingleValueUSD
 		let absBaseValueUSD = singleIsBase ? absSingleValueUSD : absMultiValueUSD
 		let baseIsStable = singleIsBase
-			? isStableCoin(
-					transactions[0].baseSymbol,
-					transactions[0].basePriceUSD
-			  )
+			? isStableCoin(transactions[0].baseSymbol, transactions[0].basePriceUSD)
 			: true
 		let quoteIsStable = singleIsBase
 			? true
-			: isStableCoin(
-					transactions[0].quoteSymbol,
-					transactions[0].quotePriceUSD
-			  )
+			: isStableCoin(transactions[0].quoteSymbol, transactions[0].quotePriceUSD)
 
 		// Iterate Transactions to check for Stablecoins
 		for (const record of transactions) {

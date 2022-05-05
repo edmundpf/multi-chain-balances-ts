@@ -6,7 +6,7 @@ import {
 	ENDPOINTS,
 	SAVED_VAULTS_FILE,
 	BEEFY_VAULT_URLS,
-	apeBoardCredentials
+	apeBoardCredentials,
 } from './values'
 const { readFile, writeFile } = promises
 
@@ -31,8 +31,8 @@ export const getFormattedURL = (endpoint: string, replaceArgs: any) => {
 export const getEndpoint = async (
 	api: keyof typeof APIS,
 	endpoint: keyof typeof ENDPOINTS,
-	params ?: any,
-	headers ?: any
+	params?: any,
+	headers?: any
 ) => {
 	try {
 		const apiUrl = APIS[api]
@@ -41,8 +41,7 @@ export const getEndpoint = async (
 		if (paramStr) paramStr = '?' + paramStr
 		const fullUrl = `${apiUrl}/${stub}${paramStr}`
 		return (
-			(await axios.get(fullUrl, headers ? { headers } : undefined))?.data ||
-			{}
+			(await axios.get(fullUrl, headers ? { headers } : undefined))?.data || {}
 		)
 	} catch (err) {
 		return {
@@ -75,7 +74,7 @@ export const getPrivateDebankEndpoint = async (
 ) =>
 	await getEndpoint('debankPrivate', endpoint, {
 		...args,
-		user_addr: address
+		user_addr: address,
 	})
 
 // Get Apeboard Endpoint
@@ -102,11 +101,7 @@ export const getFarmArmyEndpoint = async (
 	params?: any
 ) => {
 	const url = getFormattedURL(ENDPOINTS[endpoint], { $address: address })
-	return await getEndpoint(
-		'farmArmy',
-		url as keyof typeof ENDPOINTS,
-		params
-	)
+	return await getEndpoint('farmArmy', url as keyof typeof ENDPOINTS, params)
 }
 
 // Get Beefy Endpoint

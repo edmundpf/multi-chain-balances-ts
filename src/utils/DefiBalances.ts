@@ -38,7 +38,7 @@ import {
 	FarmArmyVaultsResponse,
 	ApeBoardToken,
 	ApeBoardPositionsResponse,
-	ApeBoardAnchorResponse
+	ApeBoardAnchorResponse,
 } from './types'
 
 /**
@@ -112,7 +112,12 @@ export default class DefiBalances {
 		const harmonyTokenData = res[5] as Token[]
 		const solanaTokenData = res[6] as Token[]
 		const terraTokenData = res[7] as Token[]
-		const allTokenData = [...tokenData, ...harmonyTokenData, ...solanaTokenData, ...terraTokenData]
+		const allTokenData = [
+			...tokenData,
+			...harmonyTokenData,
+			...solanaTokenData,
+			...terraTokenData,
+		]
 		this.parseTokenData(allTokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData, vaultData)
@@ -405,18 +410,14 @@ export default class DefiBalances {
 
 					// Add Alias Token Names
 					for (const word of symbols) {
-						if (
-							TOKEN_ALIASES[word] &&
-							!symbols.includes(TOKEN_ALIASES[word])
-						) {
+						if (TOKEN_ALIASES[word] && !symbols.includes(TOKEN_ALIASES[word])) {
 							symbols.push(TOKEN_ALIASES[word])
 						}
 					}
 					const hasMultipleSymbols = symbols.length >= 2
-					const tokensMatchReceiptTokens = receiptWordsEnd.every((receiptSym: string) =>
-						symbols.some((sym: string) =>
-							sym.includes(receiptSym)
-						)
+					const tokensMatchReceiptTokens = receiptWordsEnd.every(
+						(receiptSym: string) =>
+							symbols.some((sym: string) => sym.includes(receiptSym))
 					)
 
 					// Check if receipt has alias
@@ -462,7 +463,7 @@ export default class DefiBalances {
 					}
 
 					// Get Match using receipt difference
-					const diff = isAlias ? 0 : matchValue as number
+					const diff = isAlias ? 0 : (matchValue as number)
 					if (!receiptMatch || diff < currentDiff) {
 						receiptMatch = receiptName
 						currentDiff = diff

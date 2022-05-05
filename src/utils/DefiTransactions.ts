@@ -16,7 +16,7 @@ import {
 	isContract,
 	isNativeToken,
 	isStableCoin,
-	addContract
+	addContract,
 } from './utils'
 import {
 	DebankTransfer,
@@ -52,7 +52,9 @@ export default class DefiTransactions extends DefiBalances {
 				const chainName = this.chainNames[index]
 				if (!rawChains[index]) {
 					debankRequests.push(
-						getPrivateDebankEndpoint('debankHistory', this.address, { chain: chainName })
+						getPrivateDebankEndpoint('debankHistory', this.address, {
+							chain: chainName,
+						})
 					)
 				} else {
 					debankRequests.push(undefined)
@@ -590,7 +592,7 @@ export default class DefiTransactions extends DefiBalances {
 		const lowerAddress = (address || '').toLowerCase()
 
 		// Capitalize Native Tokens
-		const isNative= isNativeToken(upperSymbol)
+		const isNative = isNativeToken(upperSymbol)
 		if (isNative) newSymbol = upperSymbol
 
 		// Rename Duplicate Symbols

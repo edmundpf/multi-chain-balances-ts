@@ -44,8 +44,7 @@ const getEndpoint = (api, endpoint, params, headers) => __awaiter(void 0, void 0
         if (paramStr)
             paramStr = '?' + paramStr;
         const fullUrl = `${apiUrl}/${stub}${paramStr}`;
-        return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) ||
-            {});
+        return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) || {});
     }
     catch (err) {
         return Object.assign(Object.assign({}, (((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {})), { hasError: true });

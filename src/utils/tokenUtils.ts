@@ -69,7 +69,9 @@ export const isUnknownToken = (unknownTokens: string[], symbol: string) => {
 
 // Add Contract Symbol/Address
 export const addContract = (
-	symbols: TokenAddresses, symbol: string, address: string
+	symbols: TokenAddresses,
+	symbol: string,
+	address: string
 ) => {
 	if (symbol) {
 		const upperSymbol = symbolWithDashes(symbol).toUpperCase()

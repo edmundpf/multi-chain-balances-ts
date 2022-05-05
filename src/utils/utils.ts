@@ -17,7 +17,7 @@ export {
 	getHarmonyTokensInfo,
 	getHarmonyVaultsInfo,
 	getBeefyApy,
-	getBeefyVaults
+	getBeefyVaults,
 } from './apiUtils'
 
 // Token Utils
@@ -30,19 +30,11 @@ export {
 	isNativeToken,
 	isStableCoin,
 	isUnknownToken,
-	addContract
+	addContract,
 } from './tokenUtils'
 
 // Calc Utils
-export {
-	isValidFutureTime,
-	isValidPastTime,
-	getTimeMs
-} from './calcUtils'
+export { isValidFutureTime, isValidPastTime, getTimeMs } from './calcUtils'
 
 // Misc Utils
-export {
-	titleCase,
-	hasNumber,
-	waitMs
-} from './miscUtils'
+export { titleCase, hasNumber, waitMs } from './miscUtils'

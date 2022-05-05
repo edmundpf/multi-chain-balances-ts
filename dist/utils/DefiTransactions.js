@@ -35,7 +35,9 @@ class DefiTransactions extends DefiBalances_1.default {
                 for (const index in this.chainNames) {
                     const chainName = this.chainNames[index];
                     if (!rawChains[index]) {
-                        debankRequests.push(utils_1.getPrivateDebankEndpoint('debankHistory', this.address, { chain: chainName }));
+                        debankRequests.push(utils_1.getPrivateDebankEndpoint('debankHistory', this.address, {
+                            chain: chainName,
+                        }));
                     }
                     else {
                         debankRequests.push(undefined);

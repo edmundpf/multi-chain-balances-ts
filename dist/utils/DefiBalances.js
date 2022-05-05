@@ -80,7 +80,12 @@ class DefiBalances {
             const harmonyTokenData = res[5];
             const solanaTokenData = res[6];
             const terraTokenData = res[7];
-            const allTokenData = [...tokenData, ...harmonyTokenData, ...solanaTokenData, ...terraTokenData];
+            const allTokenData = [
+                ...tokenData,
+                ...harmonyTokenData,
+                ...solanaTokenData,
+                ...terraTokenData,
+            ];
             this.parseTokenData(allTokenData, knownTokenData);
             this.parseProtocolData(protocolData);
             this.parseApyData(apyData, vaultData);
@@ -332,8 +337,7 @@ class DefiBalances {
                     const receiptWordsEnd = receiptWords.slice(receiptWords.length - symbols.length);
                     // Add Alias Token Names
                     for (const word of symbols) {
-                        if (values_1.TOKEN_ALIASES[word] &&
-                            !symbols.includes(values_1.TOKEN_ALIASES[word])) {
+                        if (values_1.TOKEN_ALIASES[word] && !symbols.includes(values_1.TOKEN_ALIASES[word])) {
                             symbols.push(values_1.TOKEN_ALIASES[word]);
                         }
                     }
