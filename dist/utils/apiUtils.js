@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBeefyVaults = exports.getBeefyApy = exports.getHarmonyVaultsInfo = exports.getHarmonyTokensInfo = exports.getTerraAnchorInfo = exports.getTerraTokensInfo = exports.getSolanaVaultsInfo = exports.getSolanaTokensInfo = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getFarmArmyEndpoint = exports.getApeBoardEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
+exports.getBeefyVaults = exports.getBeefyApy = exports.getTerraAnchorInfo = exports.getTerraTokensInfo = exports.getSolanaVaultsInfo = exports.getSolanaTokensInfo = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getApeBoardEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = require("fs");
 const path_1 = require("path");
@@ -73,12 +73,6 @@ const getApeBoardEndpoint = (endpoint, address) => __awaiter(void 0, void 0, voi
     });
 });
 exports.getApeBoardEndpoint = getApeBoardEndpoint;
-// Get Farm Army Endpoint
-const getFarmArmyEndpoint = (endpoint, address, params) => __awaiter(void 0, void 0, void 0, function* () {
-    const url = exports.getFormattedURL(values_1.ENDPOINTS[endpoint], { $address: address });
-    return yield exports.getEndpoint('farmArmy', url, params);
-});
-exports.getFarmArmyEndpoint = getFarmArmyEndpoint;
 // Get Beefy Endpoint
 const getBeefyEndpoint = (endpoint) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getEndpoint('beefy', endpoint); });
 exports.getBeefyEndpoint = getBeefyEndpoint;
@@ -109,15 +103,6 @@ exports.getTerraTokensInfo = getTerraTokensInfo;
 // Get Terra Anchor Info
 const getTerraAnchorInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardTerraAnchor', address); });
 exports.getTerraAnchorInfo = getTerraAnchorInfo;
-/**
- * Farm Army Calls
- */
-// Get Harmony Tokens Info
-const getHarmonyTokensInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getFarmArmyEndpoint('harmonyTokens', address); });
-exports.getHarmonyTokensInfo = getHarmonyTokensInfo;
-// Get Harmony Vaults Info
-const getHarmonyVaultsInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getFarmArmyEndpoint('harmonyVaults', address); });
-exports.getHarmonyVaultsInfo = getHarmonyVaultsInfo;
 /**
  * Beefy Calls
  */

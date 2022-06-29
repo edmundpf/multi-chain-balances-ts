@@ -67,7 +67,6 @@ class DefiBalances {
                 this.isEVM ? utils_1.getProtocolList(this.address) : [],
                 this.isEVM ? utils_1.getBeefyApy() : {},
                 this.isEVM ? utils_1.getBeefyVaults() : {},
-                this.isEVM ? this.getHarmonyTokensAndVaults() : [],
                 this.isEVM ? [] : this.getSolanaTokensAndVaults(),
                 this.isEVM ? [] : this.getTerraTokensAndVaults(),
             ];
@@ -77,12 +76,10 @@ class DefiBalances {
             const protocolData = res[2];
             const apyData = res[3];
             const vaultData = res[4];
-            const harmonyTokenData = res[5];
-            const solanaTokenData = res[6];
-            const terraTokenData = res[7];
+            const solanaTokenData = res[5];
+            const terraTokenData = res[6];
             const allTokenData = [
                 ...tokenData,
-                ...harmonyTokenData,
                 ...solanaTokenData,
                 ...terraTokenData,
             ];
@@ -316,7 +313,9 @@ class DefiBalances {
                     }
                     symbolsStr = symbolsStr.substring(numIndex);
                 }
-                const symbols = symbolsStr.split(' ');
+                let symbols = symbolsStr.split(' ');
+                // Remove Numeric Symbols
+                symbols = symbols.filter((sym) => isNaN(Number(sym)));
                 // Iterate Beefy Receipts
                 for (const receiptName in chain.receipts) {
                     const receiptAmount = chain.receipts[receiptName];
@@ -341,23 +340,22 @@ class DefiBalances {
                             symbols.push(values_1.TOKEN_ALIASES[word]);
                         }
                     }
-                    const hasMultipleSymbols = symbols.length >= 2;
-                    const tokensMatchReceiptTokens = receiptWordsEnd.every((receiptSym) => symbols.some((sym) => sym.includes(receiptSym)));
+                    const tokensMatchReceiptTokens = receiptWordsEnd.every((receiptSym) => symbols.some((sym) => sym.includes(receiptSym) || receiptSym.includes(sym)));
                     // Check if receipt has alias
                     let isReceiptAlias = false;
                     for (const part in values_1.RECEIPT_ALIASES) {
                         if (receiptStrNoSpaces.includes(part)) {
                             const aliasTokens = values_1.RECEIPT_ALIASES[part];
-                            isReceiptAlias = aliasTokens.every((aliasSym) => symbols.some((receiptSym) => receiptSym.includes(aliasSym)));
+                            isReceiptAlias = aliasTokens.every((aliasSym) => symbols.some((receiptSym) => receiptSym.includes(aliasSym) || aliasSym.includes(receiptSym)));
+                            if (isReceiptAlias)
+                                break;
                         }
                     }
                     // Check for Match comparing Symbols vs. Receipts
-                    const isMatch = isPair
-                        ? hasMultipleSymbols && tokensMatchReceiptTokens
-                        : receiptStr.includes(symbolsStr) ||
-                            receiptStrNoSpaces.includes(symbolsStr) ||
-                            (!hasMultipleSymbols && tokensMatchReceiptTokens) ||
-                            isReceiptAlias;
+                    const isMatch = receiptStr.includes(symbolsStr) ||
+                        receiptStrNoSpaces.includes(symbolsStr) ||
+                        tokensMatchReceiptTokens ||
+                        isReceiptAlias;
                     // Add Match to Compare Vault/Receipt Amounts
                     if (isMatch) {
                         const vaultAmount = vault.amount || 0;
@@ -521,78 +519,6 @@ class DefiBalances {
      */
     parseTerraVaults(response) {
         return this.parseApeboardVaults('terra', 'anchor', values_1.ANCHOR_URL, response);
-    }
-    /**
-     * Get Harmony Tokens and Vaults
-     */
-    getHarmonyTokensAndVaults() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const responses = yield Promise.all([
-                utils_1.getHarmonyTokensInfo(this.address),
-                utils_1.getHarmonyVaultsInfo(this.address),
-            ]);
-            const tokensResponse = responses[0];
-            const vaultsResponse = responses[1];
-            const parsedTokens = this.parseHarmonyTokens(tokensResponse);
-            this.parseHarmonyVaults(vaultsResponse);
-            return parsedTokens;
-        });
-    }
-    /**
-     * Parse Harmony Tokens
-     */
-    parseHarmonyTokens(response) {
-        const parsedTokens = [];
-        const tokens = (response === null || response === void 0 ? void 0 : response.tokens) || [];
-        for (const token of tokens) {
-            const { symbol, amount, usd } = token;
-            const price = usd / amount;
-            parsedTokens.push({
-                chain: 'one',
-                symbol: symbol.toUpperCase(),
-                price,
-                amount,
-            });
-        }
-        return parsedTokens;
-    }
-    /**
-     * Parse Harmony Vaults
-     */
-    parseHarmonyVaults(response) {
-        var _a, _b, _c;
-        const vaults = ((_a = response === null || response === void 0 ? void 0 : response.hbeefy) === null || _a === void 0 ? void 0 : _a.farms) || [];
-        const platformUrl = ((_b = response === null || response === void 0 ? void 0 : response.hbeefy) === null || _b === void 0 ? void 0 : _b.url) || '';
-        // Iterate Vaults
-        for (const vault of vaults) {
-            const { deposit, farm } = vault;
-            const symbol = `${farm.name.toUpperCase()}-Pool`;
-            const value = deposit.usd || 0;
-            const apy = ((_c = farm.yield) === null || _c === void 0 ? void 0 : _c.apy) || 0;
-            const vaultName = farm.id.split('_')[1] || '';
-            const receiptName = `moo${vaultName}`;
-            const tokenNames = farm.token.split('-');
-            const tokens = [];
-            // Iterate Token Names
-            for (const tokenName of tokenNames) {
-                tokens.push({
-                    symbol: tokenName.toUpperCase(),
-                    value: 0,
-                    amount: 0,
-                });
-            }
-            // Push Vault
-            this.chains.one.vaults.push({
-                symbol,
-                value,
-                platform: 'Beefy',
-                platformUrl,
-                vaultName,
-                receiptName,
-                apy,
-                tokens,
-            });
-        }
     }
 }
 exports.default = DefiBalances;

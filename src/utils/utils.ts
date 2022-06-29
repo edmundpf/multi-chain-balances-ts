@@ -5,7 +5,6 @@ export {
 	getDebankEndpoint,
 	getPrivateDebankEndpoint,
 	getApeBoardEndpoint,
-	getFarmArmyEndpoint,
 	getBeefyEndpoint,
 	getTokenList,
 	getKnownTokenList,
@@ -14,8 +13,6 @@ export {
 	getSolanaVaultsInfo,
 	getTerraTokensInfo,
 	getTerraAnchorInfo,
-	getHarmonyTokensInfo,
-	getHarmonyVaultsInfo,
 	getBeefyApy,
 	getBeefyVaults,
 } from './apiUtils'

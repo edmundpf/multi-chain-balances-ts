@@ -18,8 +18,6 @@ import {
 	getSolanaVaultsInfo,
 	getTerraTokensInfo,
 	getTerraAnchorInfo,
-	getHarmonyTokensInfo,
-	getHarmonyVaultsInfo,
 	getBeefyApy,
 	getBeefyVaults,
 	sterilizeTokenNameNoStub,
@@ -34,8 +32,6 @@ import {
 	NumDict,
 	MainRequest,
 	Assets,
-	FarmArmyTokensResponse,
-	FarmArmyVaultsResponse,
 	ApeBoardToken,
 	ApeBoardPositionsResponse,
 	ApeBoardAnchorResponse,
@@ -99,7 +95,6 @@ export default class DefiBalances {
 			this.isEVM ? getProtocolList(this.address) : [],
 			this.isEVM ? getBeefyApy() : {},
 			this.isEVM ? getBeefyVaults() : {},
-			this.isEVM ? this.getHarmonyTokensAndVaults() : [],
 			this.isEVM ? [] : this.getSolanaTokensAndVaults(),
 			this.isEVM ? [] : this.getTerraTokensAndVaults(),
 		]
@@ -109,15 +104,9 @@ export default class DefiBalances {
 		const protocolData = res[2] as Protocol[]
 		const apyData = res[3] as NumDict
 		const vaultData = res[4] as any
-		const harmonyTokenData = res[5] as Token[]
-		const solanaTokenData = res[6] as Token[]
-		const terraTokenData = res[7] as Token[]
-		const allTokenData = [
-			...tokenData,
-			...harmonyTokenData,
-			...solanaTokenData,
-			...terraTokenData,
-		]
+		const solanaTokenData = res[5] as Token[]
+		const terraTokenData = res[6] as Token[]
+		const allTokenData = [...tokenData, ...solanaTokenData, ...terraTokenData]
 		this.parseTokenData(allTokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData, vaultData)
@@ -383,7 +372,10 @@ export default class DefiBalances {
 					}
 					symbolsStr = symbolsStr.substring(numIndex)
 				}
-				const symbols = symbolsStr.split(' ')
+				let symbols = symbolsStr.split(' ')
+
+				// Remove Numeric Symbols
+				symbols = symbols.filter((sym: string) => isNaN(Number(sym)))
 
 				// Iterate Beefy Receipts
 				for (const receiptName in chain.receipts) {
@@ -414,10 +406,12 @@ export default class DefiBalances {
 							symbols.push(TOKEN_ALIASES[word])
 						}
 					}
-					const hasMultipleSymbols = symbols.length >= 2
 					const tokensMatchReceiptTokens = receiptWordsEnd.every(
 						(receiptSym: string) =>
-							symbols.some((sym: string) => sym.includes(receiptSym))
+							symbols.some(
+								(sym: string) =>
+									sym.includes(receiptSym) || receiptSym.includes(sym)
+							)
 					)
 
 					// Check if receipt has alias
@@ -426,20 +420,22 @@ export default class DefiBalances {
 						if (receiptStrNoSpaces.includes(part)) {
 							const aliasTokens: string[] = RECEIPT_ALIASES[part]
 							isReceiptAlias = aliasTokens.every((aliasSym: string) =>
-								symbols.some((receiptSym: string) =>
-									receiptSym.includes(aliasSym)
+								symbols.some(
+									(receiptSym: string) =>
+										receiptSym.includes(aliasSym) ||
+										aliasSym.includes(receiptSym)
 								)
 							)
+							if (isReceiptAlias) break
 						}
 					}
 
 					// Check for Match comparing Symbols vs. Receipts
-					const isMatch = isPair
-						? hasMultipleSymbols && tokensMatchReceiptTokens
-						: receiptStr.includes(symbolsStr) ||
-						  receiptStrNoSpaces.includes(symbolsStr) ||
-						  (!hasMultipleSymbols && tokensMatchReceiptTokens) ||
-						  isReceiptAlias
+					const isMatch =
+						receiptStr.includes(symbolsStr) ||
+						receiptStrNoSpaces.includes(symbolsStr) ||
+						tokensMatchReceiptTokens ||
+						isReceiptAlias
 
 					// Add Match to Compare Vault/Receipt Amounts
 					if (isMatch) {
@@ -631,83 +627,5 @@ export default class DefiBalances {
 
 	private parseTerraVaults(response: ApeBoardAnchorResponse) {
 		return this.parseApeboardVaults('terra', 'anchor', ANCHOR_URL, response)
-	}
-
-	/**
-	 * Get Harmony Tokens and Vaults
-	 */
-
-	private async getHarmonyTokensAndVaults() {
-		const responses = await Promise.all([
-			getHarmonyTokensInfo(this.address),
-			getHarmonyVaultsInfo(this.address),
-		])
-		const tokensResponse = responses[0]
-		const vaultsResponse = responses[1]
-		const parsedTokens = this.parseHarmonyTokens(tokensResponse)
-		this.parseHarmonyVaults(vaultsResponse)
-		return parsedTokens
-	}
-
-	/**
-	 * Parse Harmony Tokens
-	 */
-
-	private parseHarmonyTokens(response: FarmArmyTokensResponse) {
-		const parsedTokens: Token[] = []
-		const tokens = response?.tokens || []
-		for (const token of tokens) {
-			const { symbol, amount, usd } = token
-			const price = usd / amount
-			parsedTokens.push({
-				chain: 'one',
-				symbol: symbol.toUpperCase(),
-				price,
-				amount,
-			})
-		}
-		return parsedTokens
-	}
-
-	/**
-	 * Parse Harmony Vaults
-	 */
-
-	private parseHarmonyVaults(response: FarmArmyVaultsResponse) {
-		const vaults = response?.hbeefy?.farms || []
-		const platformUrl = response?.hbeefy?.url || ''
-
-		// Iterate Vaults
-		for (const vault of vaults) {
-			const { deposit, farm } = vault
-			const symbol = `${farm.name.toUpperCase()}-Pool`
-			const value = deposit.usd || 0
-			const apy = farm.yield?.apy || 0
-			const vaultName = farm.id.split('_')[1] || ''
-			const receiptName = `moo${vaultName}`
-			const tokenNames = farm.token.split('-')
-			const tokens: TokenData[] = []
-
-			// Iterate Token Names
-			for (const tokenName of tokenNames) {
-				tokens.push({
-					symbol: tokenName.toUpperCase(),
-					value: 0,
-					amount: 0,
-				})
-			}
-
-			// Push Vault
-			this.chains.one.vaults.push({
-				symbol,
-				value,
-				platform: 'Beefy',
-				platformUrl,
-				vaultName,
-				receiptName,
-				apy,
-				tokens,
-			})
-		}
 	}
 }

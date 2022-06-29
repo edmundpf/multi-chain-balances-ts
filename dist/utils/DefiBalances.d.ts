@@ -69,16 +69,4 @@ export default class DefiBalances {
      * Parse Solana Vaults
      */
     private parseTerraVaults;
-    /**
-     * Get Harmony Tokens and Vaults
-     */
-    private getHarmonyTokensAndVaults;
-    /**
-     * Parse Harmony Tokens
-     */
-    private parseHarmonyTokens;
-    /**
-     * Parse Harmony Vaults
-     */
-    private parseHarmonyVaults;
 }

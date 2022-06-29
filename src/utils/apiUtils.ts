@@ -94,16 +94,6 @@ export const getApeBoardEndpoint = async (
 	)
 }
 
-// Get Farm Army Endpoint
-export const getFarmArmyEndpoint = async (
-	endpoint: keyof typeof ENDPOINTS,
-	address: string,
-	params?: any
-) => {
-	const url = getFormattedURL(ENDPOINTS[endpoint], { $address: address })
-	return await getEndpoint('farmArmy', url as keyof typeof ENDPOINTS, params)
-}
-
 // Get Beefy Endpoint
 export const getBeefyEndpoint = async (endpoint: keyof typeof ENDPOINTS) =>
 	await getEndpoint('beefy', endpoint)
@@ -143,18 +133,6 @@ export const getTerraTokensInfo = async (address: string) =>
 // Get Terra Anchor Info
 export const getTerraAnchorInfo = async (address: string) =>
 	await getApeBoardEndpoint('apeBoardTerraAnchor', address)
-
-/**
- * Farm Army Calls
- */
-
-// Get Harmony Tokens Info
-export const getHarmonyTokensInfo = async (address: string) =>
-	await getFarmArmyEndpoint('harmonyTokens', address)
-
-// Get Harmony Vaults Info
-export const getHarmonyVaultsInfo = async (address: string) =>
-	await getFarmArmyEndpoint('harmonyVaults', address)
 
 /**
  * Beefy Calls

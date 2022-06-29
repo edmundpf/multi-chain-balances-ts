@@ -110,7 +110,7 @@ export type Chains = {
 	ftm: Chain
 	matic: Chain
 	movr: Chain
-	one: Chain
+	hmy: Chain
 	sol: Chain
 	terra: Chain
 }

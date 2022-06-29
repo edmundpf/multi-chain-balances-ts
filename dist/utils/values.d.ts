@@ -14,7 +14,7 @@ export declare const NATIVE_TOKENS: {
     ftm: string;
     matic: string;
     movr: string;
-    one: string;
+    hmy: string;
     sol: string;
     terra: string;
 };
@@ -26,7 +26,7 @@ export declare const APEBOARD_CHAIN_ALIASES: {
     ftm: string;
     matic: string;
     movr: string;
-    one: string;
+    hmy: string;
     sol: string;
     terra: string;
 };
@@ -40,7 +40,7 @@ export declare const DEFAULT_URLS: {
     ftm: string;
     matic: string;
     movr: string;
-    one: string;
+    hmy: string;
     sol: string;
     terra: string;
 };
@@ -51,7 +51,7 @@ export declare const BEEFY_VAULT_URLS: {
     frm: string;
     matic: string;
     movr: string;
-    one: string;
+    hmy: string;
 };
 /**
  * API Info
@@ -62,7 +62,6 @@ export declare const APIS: {
     debank: string;
     debankPrivate: string;
     coinGecko: string;
-    farmArmy: string;
     githubVaults: string;
 };
 export declare const ENDPOINTS: {
@@ -78,8 +77,6 @@ export declare const ENDPOINTS: {
     apeBoardHistory: string;
     coinGeckoList: string;
     coinGeckoPrices: string;
-    harmonyTokens: string;
-    harmonyVaults: string;
 };
 export declare const apeBoardCredentials: {
     secret: string;

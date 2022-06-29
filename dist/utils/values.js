@@ -17,7 +17,7 @@ exports.NATIVE_TOKENS = {
     ftm: 'FTM',
     matic: 'MATIC',
     movr: 'MOVR',
-    one: 'ONE',
+    hmy: 'ONE',
     sol: 'SOL',
     terra: 'LUNA',
 };
@@ -30,7 +30,7 @@ exports.APEBOARD_CHAIN_ALIASES = {
     ftm: 'fantom',
     matic: 'polygon',
     movr: 'moonriver',
-    one: 'harmony',
+    hmy: 'harmony',
     sol: 'solana',
     terra: 'terra',
 };
@@ -41,10 +41,12 @@ exports.TOKEN_ALIASES = {
 };
 // Receipt Aliases
 exports.RECEIPT_ALIASES = {
-    '3crv': ['dai', 'usdc', 'usdt'],
     curveren: ['amwbtc', 'renbtc'],
     fugue: ['usdc', 'ust', 'mim'],
     beetgod: ['dei', 'usdc'],
+    av3crv: ['mai', 'dai', 'usdc', 'usdt'],
+    abrcdbr: ['mim', 'usdt', 'usdc'],
+    hector: ['tor', 'dai', 'usdc']
 };
 // Default URL's
 exports.DEFAULT_URLS = {
@@ -55,7 +57,7 @@ exports.DEFAULT_URLS = {
     ftm: 'https://ftmscan.com',
     matic: 'https://polygonscan.com',
     movr: 'https://moonriver.moonscan.io',
-    one: 'https://explorer.harmony.one',
+    hmy: 'https://explorer.harmony.one',
     sol: 'https://solscan.io',
     terra: 'https://finder.terra.money',
 };
@@ -67,7 +69,7 @@ exports.BEEFY_VAULT_URLS = {
     frm: 'fantom',
     matic: 'polygon',
     movr: 'moonriver',
-    one: 'harmony',
+    hmy: 'harmony',
 };
 /**
  * API Info
@@ -79,7 +81,6 @@ exports.APIS = {
     debank: 'https://openapi.debank.com/v1/user',
     debankPrivate: 'https://api.debank.com',
     coinGecko: 'https://api.coingecko.com/api/v3',
-    farmArmy: 'https://farm.army',
     githubVaults: 'https://raw.githubusercontent.com/beefyfinance/beefy-app/prod/src/features/configure/vault',
 };
 // Endpoints
@@ -96,8 +97,6 @@ exports.ENDPOINTS = {
     apeBoardHistory: 'transaction-history',
     coinGeckoList: 'coins/list',
     coinGeckoPrices: 'coins/$id/market_chart',
-    harmonyTokens: 'farms/harmony/$address/wallet.json',
-    harmonyVaults: 'farms/harmony/$address/platform/0.json',
 };
 // Ape Board Credentials
 exports.apeBoardCredentials = {
@@ -192,7 +191,7 @@ const initChains = () => {
         ftm: initChain('ftm'),
         matic: initChain('matic'),
         movr: initChain('movr'),
-        one: initChain('one'),
+        hmy: initChain('hmy'),
         sol: initChain('sol'),
         terra: initChain('terra'),
     };
