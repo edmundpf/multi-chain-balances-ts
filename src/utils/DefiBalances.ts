@@ -5,8 +5,6 @@ import {
 	initChains,
 	TOKEN_ALIASES,
 	RECEIPT_ALIASES,
-	TULIP_URL,
-	ANCHOR_URL,
 } from './values'
 import {
 	titleCase,
@@ -14,10 +12,6 @@ import {
 	getTokenList,
 	getKnownTokenList,
 	getProtocolList,
-	getSolanaTokensInfo,
-	getSolanaVaultsInfo,
-	getTerraTokensInfo,
-	getTerraAnchorInfo,
 	getBeefyApy,
 	getBeefyVaults,
 	sterilizeTokenNameNoStub,
@@ -32,9 +26,6 @@ import {
 	NumDict,
 	MainRequest,
 	Assets,
-	ApeBoardToken,
-	ApeBoardPositionsResponse,
-	ApeBoardAnchorResponse,
 } from './types'
 
 /**
@@ -95,8 +86,6 @@ export default class DefiBalances {
 			this.isEVM ? getProtocolList(this.address) : [],
 			this.isEVM ? getBeefyApy() : {},
 			this.isEVM ? getBeefyVaults() : {},
-			this.isEVM ? [] : this.getSolanaTokensAndVaults(),
-			this.isEVM ? [] : this.getTerraTokensAndVaults(),
 		]
 		const res: MainRequest[] = await Promise.all(requests)
 		const tokenData = res[0] as Token[]
@@ -104,10 +93,7 @@ export default class DefiBalances {
 		const protocolData = res[2] as Protocol[]
 		const apyData = res[3] as NumDict
 		const vaultData = res[4] as any
-		const solanaTokenData = res[5] as Token[]
-		const terraTokenData = res[6] as Token[]
-		const allTokenData = [...tokenData, ...solanaTokenData, ...terraTokenData]
-		this.parseTokenData(allTokenData, knownTokenData)
+		this.parseTokenData(tokenData, knownTokenData)
 		this.parseProtocolData(protocolData)
 		this.parseApyData(apyData, vaultData)
 		this.getAssetsAndTotalValues()
@@ -341,7 +327,6 @@ export default class DefiBalances {
 	private parseApyData(apyData: NumDict, vaultData: any) {
 		// Iterate Chains
 		for (const chainName in this.chains) {
-			if (chainName == 'sol') continue
 			const chain = this.chains[chainName as keyof Chains]
 
 			// Iterate Vault Info
@@ -488,144 +473,5 @@ export default class DefiBalances {
 				}
 			}
 		}
-	}
-
-	/**
-	 * Parse ApeBoard Tokens
-	 */
-
-	private parseApeboardTokens(chain: keyof Chains, response: ApeBoardToken[]) {
-		const parsedTokens: Token[] = []
-		const tokens = response?.length ? response : []
-		for (const token of tokens) {
-			const { symbol, balance: amount, price } = token
-			parsedTokens.push({
-				chain,
-				symbol: symbol.toUpperCase(),
-				price,
-				amount,
-			})
-		}
-		return parsedTokens
-	}
-
-	/**
-	 * Parse ApeBoard Vaults
-	 */
-
-	private parseApeboardVaults(
-		chain: keyof Chains,
-		platformId: string,
-		platformUrl: string,
-		response: ApeBoardPositionsResponse | ApeBoardAnchorResponse
-	) {
-		const vaults =
-			(response as ApeBoardPositionsResponse)?.positions ||
-			(response as ApeBoardAnchorResponse)?.savings ||
-			[]
-
-		// Iterate Vaults
-		for (const vault of vaults) {
-			const tokens: TokenData[] = []
-			const tokenNames: string[] = []
-			const tokenInfo = vault.tokens
-			let vaultValue = 0
-
-			// Iterate Tokens
-			for (const token of tokenInfo) {
-				const { symbol, balance: amount, price } = token
-				const tokenName = symbol.toUpperCase()
-				const tokenValue = amount * price
-				vaultValue += tokenValue
-				tokenNames.push(tokenName)
-				tokens.push({
-					symbol: tokenName,
-					value: tokenValue,
-					amount,
-				})
-			}
-
-			// Get Pool and Vault Symbols
-			const tokensStr = tokenNames.join('-')
-			const symbol = `${tokensStr}-Pool`
-			const vaultName = `${platformId}-${tokensStr.toLowerCase()}`
-			const platform = titleCase(platformId)
-
-			// Push Vault
-			this.chains[chain].vaults.push({
-				symbol,
-				value: vaultValue,
-				platform,
-				platformUrl,
-				vaultName,
-				receiptName: vaultName,
-				apy: 0,
-				tokens,
-			})
-		}
-	}
-
-	/**
-	 * Get Solana Tokens and Vaults
-	 */
-
-	private async getSolanaTokensAndVaults() {
-		const responses = await Promise.all([
-			getSolanaTokensInfo(this.address),
-			getSolanaVaultsInfo(this.address),
-		])
-		const tokensResponse = responses[0]
-		const vaultsResponse = responses[1]
-		const parsedTokens = this.parseSolanaTokens(tokensResponse)
-		this.parseSolanaVaults(vaultsResponse)
-		return parsedTokens
-	}
-
-	/**
-	 * Parse Solana Tokens
-	 */
-
-	private parseSolanaTokens(response: ApeBoardToken[]) {
-		return this.parseApeboardTokens('sol', response)
-	}
-
-	/**
-	 * Parse Solana Vaults
-	 */
-
-	private parseSolanaVaults(response: ApeBoardPositionsResponse) {
-		return this.parseApeboardVaults('sol', 'tulip', TULIP_URL, response)
-	}
-
-	/**
-	 * Get Terra Tokens and Vaults
-	 */
-
-	private async getTerraTokensAndVaults() {
-		const responses = await Promise.all([
-			getTerraTokensInfo(this.address),
-			getTerraAnchorInfo(this.address),
-		])
-		const tokensResponse = responses[0]
-		const vaultsResponse = responses[1]
-		const parsedTokens = this.parseTerraTokens(tokensResponse)
-		this.parseTerraVaults(vaultsResponse)
-		return parsedTokens
-	}
-
-	/**
-	 * Parse Terra Tokens
-	 */
-
-	private parseTerraTokens(response: ApeBoardToken[]) {
-		return this.parseApeboardTokens('terra', response)
-	}
-
-	/**
-	 * Parse Solana Vaults
-	 */
-
-	private parseTerraVaults(response: ApeBoardAnchorResponse) {
-		return this.parseApeboardVaults('terra', 'anchor', ANCHOR_URL, response)
 	}
 }

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBeefyVaults = exports.getBeefyApy = exports.getTerraAnchorInfo = exports.getTerraTokensInfo = exports.getSolanaVaultsInfo = exports.getSolanaTokensInfo = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getApeBoardEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
+exports.getBeefyVaults = exports.getBeefyApy = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = require("fs");
 const path_1 = require("path");
@@ -64,15 +64,6 @@ const getPrivateDebankEndpoint = (endpoint, address, args) => __awaiter(void 0, 
     return yield exports.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, args), { user_addr: address }));
 });
 exports.getPrivateDebankEndpoint = getPrivateDebankEndpoint;
-// Get Apeboard Endpoint
-const getApeBoardEndpoint = (endpoint, address) => __awaiter(void 0, void 0, void 0, function* () {
-    const url = values_1.ENDPOINTS[endpoint] || endpoint;
-    return yield exports.getEndpoint('apeBoard', `${url}/${address}`, undefined, {
-        passcode: values_1.apeBoardCredentials.passCode,
-        'ape-secret': values_1.apeBoardCredentials.secret,
-    });
-});
-exports.getApeBoardEndpoint = getApeBoardEndpoint;
 // Get Beefy Endpoint
 const getBeefyEndpoint = (endpoint) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getEndpoint('beefy', endpoint); });
 exports.getBeefyEndpoint = getBeefyEndpoint;
@@ -88,21 +79,6 @@ exports.getKnownTokenList = getKnownTokenList;
 // Get Protocol List
 const getProtocolList = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getDebankEndpoint('protocolList', address); });
 exports.getProtocolList = getProtocolList;
-/**
- * Apeboard Calls
- */
-// Get Solana Tokens Info
-const getSolanaTokensInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardSolWallet', address); });
-exports.getSolanaTokensInfo = getSolanaTokensInfo;
-// Get Solana Vaults Info
-const getSolanaVaultsInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardSolfarm', address); });
-exports.getSolanaVaultsInfo = getSolanaVaultsInfo;
-// Get Terra Tokens Info
-const getTerraTokensInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardTerraWallet', address); });
-exports.getTerraTokensInfo = getTerraTokensInfo;
-// Get Terra Anchor Info
-const getTerraAnchorInfo = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getApeBoardEndpoint('apeBoardTerraAnchor', address); });
-exports.getTerraAnchorInfo = getTerraAnchorInfo;
 /**
  * Beefy Calls
  */

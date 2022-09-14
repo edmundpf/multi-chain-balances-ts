@@ -21,23 +21,6 @@ export const NATIVE_TOKENS = {
 	matic: 'MATIC',
 	movr: 'MOVR',
 	hmy: 'ONE',
-	sol: 'SOL',
-	terra: 'LUNA',
-}
-
-// Ape Board Chain Aliases
-
-export const APEBOARD_CHAIN_ALIASES = {
-	avax: 'avax',
-	bsc: 'bsc',
-	cro: 'cronos',
-	eth: 'ethereum',
-	ftm: 'fantom',
-	matic: 'polygon',
-	movr: 'moonriver',
-	hmy: 'harmony',
-	sol: 'solana',
-	terra: 'terra',
 }
 
 // Token Aliases
@@ -69,8 +52,6 @@ export const DEFAULT_URLS = {
 	matic: 'https://polygonscan.com',
 	movr: 'https://moonriver.moonscan.io',
 	hmy: 'https://explorer.harmony.one',
-	sol: 'https://solscan.io',
-	terra: 'https://finder.terra.money',
 }
 
 // Beefy Vault URL's
@@ -93,7 +74,6 @@ export const BEEFY_VAULT_URLS = {
 
 export const APIS = {
 	beefy: 'https://api.beefy.finance',
-	apeBoard: 'https://api.apeboard.finance',
 	debank: 'https://openapi.debank.com/v1/user',
 	debankPrivate: 'https://api.debank.com',
 	coinGecko: 'https://api.coingecko.com/api/v3',
@@ -109,23 +89,8 @@ export const ENDPOINTS = {
 	tokenList: 'token_list',
 	protocolList: 'complex_protocol_list',
 	debankHistory: 'history/list',
-	apeBoardSolWallet: 'wallet/solana',
-	apeBoardTerraWallet: 'wallet/terra',
-	apeBoardSolfarm: 'solfarmSolana',
-	apeBoardTerraAnchor: 'anchorTerra',
-	apeBoardHistory: 'transaction-history',
 	coinGeckoList: 'coins/list',
 	coinGeckoPrices: 'coins/$id/market_chart',
-}
-
-// Ape Board Credentials
-
-export const apeBoardCredentials = {
-	secret:
-		'U2FsdGVkX1/AWj2FNHupd5aL3OXIm/hZX7YSBEA15AmcmDExr4K+UuuivX+RvmcbEsBArol' +
-		'y3iRCoHbTK7v7BUmhaBnZTPpFgvORL1EbkawEUIvDl2/lMIPeyC+wJ2YF6yUnrHRkt94v82' +
-		'TnZB465Q==',
-	passCode: 'A63uGa8775Ne89wwqADwKYGeyceXAxmHL',
 }
 
 // Coin Gecko Limits
@@ -146,7 +111,6 @@ export const coinGeckoDayCutoffs = [1, 90]
 // Default Driver Args
 
 export const defaultDriverArgs: DriverArgs = {
-	useDebank: true,
 	getTransactions: true,
 	getPrices: true,
 	getBalances: true,
@@ -236,8 +200,6 @@ export const initChains = () => {
 		matic: initChain('matic'),
 		movr: initChain('movr'),
 		hmy: initChain('hmy'),
-		sol: initChain('sol'),
-		terra: initChain('terra'),
 	} as Chains
 }
 
@@ -264,11 +226,3 @@ export const ONE_DAY = 24 * ONE_HOUR
 // Saved Vaults File
 
 export const SAVED_VAULTS_FILE = 'saved_vaults.json'
-
-// Tulip URL
-
-export const TULIP_URL = 'https://tulip.gardens'
-
-// Anchor URL
-
-export const ANCHOR_URL = 'https://anchorprotocol.com'

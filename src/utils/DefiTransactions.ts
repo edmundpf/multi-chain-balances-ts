@@ -2,13 +2,10 @@ import DefiBalances from './DefiBalances'
 import { selectContracts, insertContract } from './localData'
 import {
 	NATIVE_TOKENS,
-	ENDPOINTS,
-	APEBOARD_CHAIN_ALIASES,
 	defaultHistoryRecord,
 	FIAT_CURRENCY,
 } from './values'
 import {
-	getApeBoardEndpoint,
 	getPrivateDebankEndpoint,
 	symbolWithDashes,
 	sterilizeTokenNameNoStub,
@@ -23,9 +20,6 @@ import {
 	DebankHistory,
 	DebankTokens,
 	DebankTransResponse,
-	ApeBoardTransfer,
-	ApeBoardHistory,
-	ApeBoardTransResponse,
 	TokenRecords,
 	HistoryRecord,
 	Chains,
@@ -41,10 +35,9 @@ export default class DefiTransactions extends DefiBalances {
 	 * Get Transactions
 	 */
 
-	async getTransactions(useDebank = true) {
+	async getTransactions() {
 		const debankRequests: (Promise<DebankTransResponse> | undefined)[] = []
-		const apeBoardRequests: (Promise<ApeBoardTransResponse> | undefined)[] = []
-		const rawChains: (DebankHistory[] | ApeBoardHistory[] | undefined)[] = []
+		const rawChains: (DebankHistory[] | undefined)[] = []
 		const debankTokens: DebankTokens[] = []
 		// Get Info from Debank
 		const getInfoFromDebank = async () => {
@@ -73,43 +66,8 @@ export default class DefiTransactions extends DefiBalances {
 			}
 		}
 
-		// Get Info from Ape Board
-		const getInfoFromApeBoard = async () => {
-			for (const index in this.chainNames) {
-				const chainName = this.chainNames[index]
-				const chainAlias = (APEBOARD_CHAIN_ALIASES as any)[chainName] || ''
-				if (chainAlias && !rawChains[index]) {
-					const endpoint =
-						`${ENDPOINTS['apeBoardHistory']}/${chainAlias}` as any as keyof typeof ENDPOINTS
-					apeBoardRequests.push(getApeBoardEndpoint(endpoint, this.address))
-				} else {
-					apeBoardRequests.push(undefined)
-				}
-			}
-			const res = await Promise.all(apeBoardRequests)
-			const isFilled = rawChains.length == this.chainNames.length
-			for (const index in res) {
-				const result = res[index]
-				if (
-					result &&
-					!(result as any)?.statusCode &&
-					!(result as any)?.hasError
-				) {
-					rawChains[index] = result
-				} else if (!rawChains[index]) {
-					rawChains[index] = isFilled ? [] : undefined
-				}
-			}
-		}
-
 		// Get Info
-		if (useDebank) {
-			await getInfoFromDebank()
-			await getInfoFromApeBoard()
-		} else {
-			await getInfoFromApeBoard()
-			await getInfoFromDebank()
-		}
+		await getInfoFromDebank()
 
 		// Get Existing Token Addresses
 		const existingAddresses = await this.getExistingTokenAddresses()
@@ -117,7 +75,7 @@ export default class DefiTransactions extends DefiBalances {
 		// Iterate Chain Results
 		for (const index in rawChains) {
 			const chainName = this.chainNames[index]
-			const records = rawChains[index] as ApeBoardHistory[] | DebankHistory[]
+			const records = rawChains[index] as DebankHistory[]
 			const transactionHashes: string[] = []
 			let historyRecords: HistoryRecord[] = this.chains[chainName].transactions
 
@@ -272,14 +230,13 @@ export default class DefiTransactions extends DefiBalances {
 	 */
 
 	private sterilizeHistoryRecord(
-		record: DebankHistory | ApeBoardHistory,
+		record: DebankHistory,
 		chainName: keyof typeof NATIVE_TOKENS,
 		tokenSymbols: DebankTokens,
 		tokenAddresses: TokenAddresses,
 		dustInfo?: TokenRecords
 	) {
 		const debankRec = record as DebankHistory
-		const apeBoardRec = record as ApeBoardHistory
 		const tokens: TokenRecords = { ...dustInfo }
 		const dustTokens: TokenRecords = {}
 
@@ -301,30 +258,27 @@ export default class DefiTransactions extends DefiBalances {
 		// Get Universal Info
 		const hash = this.getTransactionID(record)
 		const date = new Date(
-			debankRec.time_at * 1000 || apeBoardRec.timestamp
+			debankRec.time_at * 1000
 		).toISOString()
 		const feeSymbol = NATIVE_TOKENS[chainName]
-		const hasError = debankRec.tx?.status == 0 || apeBoardRec.isError
+		const hasError = debankRec.tx?.status == 0
 		let type =
 			debankRec.cate_id ||
 			debankRec.tx?.name ||
-			apeBoardRec.interactions?.[0]?.function ||
 			''
 		let toAddress = (
 			debankRec.tx?.to_addr ||
-			apeBoardRec.interactions?.[0]?.to ||
 			this.address
 		).toLowerCase()
 		let fromAddress = (
 			debankRec.tx?.from_addr ||
 			debankRec.other_addr ||
-			apeBoardRec.interactions?.[0]?.from ||
 			this.address
 		).toLowerCase()
 		let feeQuantity =
-			debankRec.tx?.eth_gas_fee || apeBoardRec.fee?.[0]?.amount || 0
-		let feePriceUSD = apeBoardRec.fee?.[0]?.price || 0
+			debankRec.tx?.eth_gas_fee || 0
 		let feeValueUSD = debankRec.tx?.usd_gas_fee || 0
+		let feePriceUSD = 0
 
 		// Dust Info
 		if (dustInfo) {
@@ -337,40 +291,29 @@ export default class DefiTransactions extends DefiBalances {
 
 		// Normal Records
 		else {
-			feePriceUSD = feePriceUSD || feeValueUSD / feeQuantity || 0
+			feePriceUSD = feeValueUSD / feeQuantity || 0
 			feeValueUSD = feeValueUSD || feeQuantity * feePriceUSD || 0
 
 			// Get Tokens Info
-			if (apeBoardRec.transfers) {
-				for (const record of apeBoardRec.transfers) {
-					const tokenInfo = this.sterilizeApeBoardTransfer(
-						record,
-						chainName,
-						tokenAddresses
-					)
-					addToken(tokenInfo)
-				}
-			} else {
-				for (const record of debankRec.sends) {
-					const tokenInfo = this.sterilizeDebankTransfer(
-						record,
-						chainName,
-						true,
-						tokenSymbols,
-						tokenAddresses
-					)
-					addToken(tokenInfo)
-				}
-				for (const record of debankRec.receives) {
-					const tokenInfo = this.sterilizeDebankTransfer(
-						record,
-						chainName,
-						false,
-						tokenSymbols,
-						tokenAddresses
-					)
-					addToken(tokenInfo)
-				}
+			for (const record of debankRec.sends) {
+				const tokenInfo = this.sterilizeDebankTransfer(
+					record,
+					chainName,
+					true,
+					tokenSymbols,
+					tokenAddresses
+				)
+				addToken(tokenInfo)
+			}
+			for (const record of debankRec.receives) {
+				const tokenInfo = this.sterilizeDebankTransfer(
+					record,
+					chainName,
+					false,
+					tokenSymbols,
+					tokenAddresses
+				)
+				addToken(tokenInfo)
 			}
 		}
 
@@ -540,7 +483,7 @@ export default class DefiTransactions extends DefiBalances {
 	 */
 
 	private getTokenAddresses(
-		records: ApeBoardHistory[] | DebankHistory[],
+		records: DebankHistory[],
 		tokenSymbols: DebankTokens,
 		existingAddresses: TokenAddresses = {}
 	) {
@@ -550,7 +493,6 @@ export default class DefiTransactions extends DefiBalances {
 		// Iterate Records
 		for (const record of records) {
 			const debankRec = record as DebankHistory
-			const apeBoardRec = record as ApeBoardHistory
 			if (debankRec?.sends?.length) {
 				for (const transfer of debankRec.sends) {
 					const address = transfer.token_id || ''
@@ -562,13 +504,6 @@ export default class DefiTransactions extends DefiBalances {
 				for (const transfer of debankRec.sends) {
 					const address = transfer.token_id || ''
 					const symbol = tokenSymbols[address]?.symbol || ''
-					addNewContract(symbol, address)
-				}
-			}
-			if (apeBoardRec?.transfers?.length) {
-				for (const transfer of apeBoardRec.transfers) {
-					const address = transfer.tokenAddress || ''
-					const symbol = transfer.symbol || ''
 					addNewContract(symbol, address)
 				}
 			}
@@ -610,30 +545,6 @@ export default class DefiTransactions extends DefiBalances {
 				: ''
 		}
 		return newSymbol || lowerAddress
-	}
-
-	/**
-	 * Sterilize Ape Board Transfer
-	 */
-
-	private sterilizeApeBoardTransfer(
-		record: ApeBoardTransfer,
-		chainName: keyof Chains,
-		tokenAddresses: TokenAddresses
-	) {
-		const { symbol, tokenAddress, balance, type } = record
-		const token = this.getTokenName(
-			symbol,
-			tokenAddress,
-			chainName,
-			tokenAddresses
-		)
-		const isDebit = type == 'out'
-		const quantity = isDebit ? balance * -1 : balance
-		return {
-			token,
-			quantity,
-		}
 	}
 
 	/**
@@ -709,10 +620,9 @@ export default class DefiTransactions extends DefiBalances {
 	 * Get Transaction ID
 	 */
 
-	private getTransactionID(record: DebankHistory | ApeBoardHistory) {
+	private getTransactionID(record: DebankHistory) {
 		return (
 			(record as DebankHistory).id ||
-			(record as ApeBoardHistory).hash ||
 			''
 		).toLowerCase()
 	}

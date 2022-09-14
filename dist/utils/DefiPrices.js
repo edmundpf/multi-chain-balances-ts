@@ -32,7 +32,7 @@ class DefiPrices extends DefiTransactions_1.default {
      */
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { useDebank, getTransactions, getPrices, getBalances, filterUnknownTokens, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
+            const { getTransactions, getPrices, getBalances, filterUnknownTokens, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
             this.filterUnknownTokens = filterUnknownTokens ? true : false;
             if (priorTransactions === null || priorTransactions === void 0 ? void 0 : priorTransactions.length) {
                 this.importPriorTransactions(priorTransactions);
@@ -40,7 +40,7 @@ class DefiPrices extends DefiTransactions_1.default {
             // Get Transactions
             if (getTransactions || getPrices) {
                 yield localData_1.prepareDB();
-                yield this.getTransactions(useDebank);
+                yield this.getTransactions();
                 if (this.filterUnknownTokens && !getPrices)
                     this.getUnknownTokens();
             }

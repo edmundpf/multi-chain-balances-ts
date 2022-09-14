@@ -67,8 +67,6 @@ class DefiBalances {
                 this.isEVM ? utils_1.getProtocolList(this.address) : [],
                 this.isEVM ? utils_1.getBeefyApy() : {},
                 this.isEVM ? utils_1.getBeefyVaults() : {},
-                this.isEVM ? [] : this.getSolanaTokensAndVaults(),
-                this.isEVM ? [] : this.getTerraTokensAndVaults(),
             ];
             const res = yield Promise.all(requests);
             const tokenData = res[0];
@@ -76,14 +74,7 @@ class DefiBalances {
             const protocolData = res[2];
             const apyData = res[3];
             const vaultData = res[4];
-            const solanaTokenData = res[5];
-            const terraTokenData = res[6];
-            const allTokenData = [
-                ...tokenData,
-                ...solanaTokenData,
-                ...terraTokenData,
-            ];
-            this.parseTokenData(allTokenData, knownTokenData);
+            this.parseTokenData(tokenData, knownTokenData);
             this.parseProtocolData(protocolData);
             this.parseApyData(apyData, vaultData);
             this.getAssetsAndTotalValues();
@@ -287,8 +278,6 @@ class DefiBalances {
     parseApyData(apyData, vaultData) {
         // Iterate Chains
         for (const chainName in this.chains) {
-            if (chainName == 'sol')
-                continue;
             const chain = this.chains[chainName];
             // Iterate Vault Info
             for (const vault of chain.vaults) {
@@ -346,7 +335,8 @@ class DefiBalances {
                     for (const part in values_1.RECEIPT_ALIASES) {
                         if (receiptStrNoSpaces.includes(part)) {
                             const aliasTokens = values_1.RECEIPT_ALIASES[part];
-                            isReceiptAlias = aliasTokens.every((aliasSym) => symbols.some((receiptSym) => receiptSym.includes(aliasSym) || aliasSym.includes(receiptSym)));
+                            isReceiptAlias = aliasTokens.every((aliasSym) => symbols.some((receiptSym) => receiptSym.includes(aliasSym) ||
+                                aliasSym.includes(receiptSym)));
                             if (isReceiptAlias)
                                 break;
                         }
@@ -401,124 +391,6 @@ class DefiBalances {
                 }
             }
         }
-    }
-    /**
-     * Parse ApeBoard Tokens
-     */
-    parseApeboardTokens(chain, response) {
-        const parsedTokens = [];
-        const tokens = (response === null || response === void 0 ? void 0 : response.length) ? response : [];
-        for (const token of tokens) {
-            const { symbol, balance: amount, price } = token;
-            parsedTokens.push({
-                chain,
-                symbol: symbol.toUpperCase(),
-                price,
-                amount,
-            });
-        }
-        return parsedTokens;
-    }
-    /**
-     * Parse ApeBoard Vaults
-     */
-    parseApeboardVaults(chain, platformId, platformUrl, response) {
-        var _a, _b;
-        const vaults = ((_a = response) === null || _a === void 0 ? void 0 : _a.positions) ||
-            ((_b = response) === null || _b === void 0 ? void 0 : _b.savings) ||
-            [];
-        // Iterate Vaults
-        for (const vault of vaults) {
-            const tokens = [];
-            const tokenNames = [];
-            const tokenInfo = vault.tokens;
-            let vaultValue = 0;
-            // Iterate Tokens
-            for (const token of tokenInfo) {
-                const { symbol, balance: amount, price } = token;
-                const tokenName = symbol.toUpperCase();
-                const tokenValue = amount * price;
-                vaultValue += tokenValue;
-                tokenNames.push(tokenName);
-                tokens.push({
-                    symbol: tokenName,
-                    value: tokenValue,
-                    amount,
-                });
-            }
-            // Get Pool and Vault Symbols
-            const tokensStr = tokenNames.join('-');
-            const symbol = `${tokensStr}-Pool`;
-            const vaultName = `${platformId}-${tokensStr.toLowerCase()}`;
-            const platform = utils_1.titleCase(platformId);
-            // Push Vault
-            this.chains[chain].vaults.push({
-                symbol,
-                value: vaultValue,
-                platform,
-                platformUrl,
-                vaultName,
-                receiptName: vaultName,
-                apy: 0,
-                tokens,
-            });
-        }
-    }
-    /**
-     * Get Solana Tokens and Vaults
-     */
-    getSolanaTokensAndVaults() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const responses = yield Promise.all([
-                utils_1.getSolanaTokensInfo(this.address),
-                utils_1.getSolanaVaultsInfo(this.address),
-            ]);
-            const tokensResponse = responses[0];
-            const vaultsResponse = responses[1];
-            const parsedTokens = this.parseSolanaTokens(tokensResponse);
-            this.parseSolanaVaults(vaultsResponse);
-            return parsedTokens;
-        });
-    }
-    /**
-     * Parse Solana Tokens
-     */
-    parseSolanaTokens(response) {
-        return this.parseApeboardTokens('sol', response);
-    }
-    /**
-     * Parse Solana Vaults
-     */
-    parseSolanaVaults(response) {
-        return this.parseApeboardVaults('sol', 'tulip', values_1.TULIP_URL, response);
-    }
-    /**
-     * Get Terra Tokens and Vaults
-     */
-    getTerraTokensAndVaults() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const responses = yield Promise.all([
-                utils_1.getTerraTokensInfo(this.address),
-                utils_1.getTerraAnchorInfo(this.address),
-            ]);
-            const tokensResponse = responses[0];
-            const vaultsResponse = responses[1];
-            const parsedTokens = this.parseTerraTokens(tokensResponse);
-            this.parseTerraVaults(vaultsResponse);
-            return parsedTokens;
-        });
-    }
-    /**
-     * Parse Terra Tokens
-     */
-    parseTerraTokens(response) {
-        return this.parseApeboardTokens('terra', response);
-    }
-    /**
-     * Parse Solana Vaults
-     */
-    parseTerraVaults(response) {
-        return this.parseApeboardVaults('terra', 'anchor', values_1.ANCHOR_URL, response);
     }
 }
 exports.default = DefiBalances;

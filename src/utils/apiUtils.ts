@@ -6,7 +6,6 @@ import {
 	ENDPOINTS,
 	SAVED_VAULTS_FILE,
 	BEEFY_VAULT_URLS,
-	apeBoardCredentials,
 } from './values'
 const { readFile, writeFile } = promises
 
@@ -77,23 +76,6 @@ export const getPrivateDebankEndpoint = async (
 		user_addr: address,
 	})
 
-// Get Apeboard Endpoint
-export const getApeBoardEndpoint = async (
-	endpoint: keyof typeof ENDPOINTS,
-	address: string
-) => {
-	const url = ENDPOINTS[endpoint] || endpoint
-	return await getEndpoint(
-		'apeBoard',
-		`${url}/${address}` as any as keyof typeof ENDPOINTS,
-		undefined,
-		{
-			passcode: apeBoardCredentials.passCode,
-			'ape-secret': apeBoardCredentials.secret,
-		}
-	)
-}
-
 // Get Beefy Endpoint
 export const getBeefyEndpoint = async (endpoint: keyof typeof ENDPOINTS) =>
 	await getEndpoint('beefy', endpoint)
@@ -113,26 +95,6 @@ export const getKnownTokenList = async (address: string) =>
 // Get Protocol List
 export const getProtocolList = async (address: string) =>
 	await getDebankEndpoint('protocolList', address)
-
-/**
- * Apeboard Calls
- */
-
-// Get Solana Tokens Info
-export const getSolanaTokensInfo = async (address: string) =>
-	await getApeBoardEndpoint('apeBoardSolWallet', address)
-
-// Get Solana Vaults Info
-export const getSolanaVaultsInfo = async (address: string) =>
-	await getApeBoardEndpoint('apeBoardSolfarm', address)
-
-// Get Terra Tokens Info
-export const getTerraTokensInfo = async (address: string) =>
-	await getApeBoardEndpoint('apeBoardTerraWallet', address)
-
-// Get Terra Anchor Info
-export const getTerraAnchorInfo = async (address: string) =>
-	await getApeBoardEndpoint('apeBoardTerraAnchor', address)
 
 /**
  * Beefy Calls

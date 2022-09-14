@@ -6,7 +6,7 @@ export default class DefiTransactions extends DefiBalances {
     /**
      * Get Transactions
      */
-    getTransactions(useDebank?: boolean): Promise<void>;
+    getTransactions(): Promise<void>;
     /**
      * Get Unknown Tokens
      */
@@ -35,10 +35,6 @@ export default class DefiTransactions extends DefiBalances {
      * Get Token Name
      */
     private getTokenName;
-    /**
-     * Sterilize Ape Board Transfer
-     */
-    private sterilizeApeBoardTransfer;
     /**
      * Sterilize Debank Transfer
      */

@@ -9,7 +9,6 @@ export declare const getEndpoint: (api: keyof typeof APIS, endpoint: keyof typeo
  */
 export declare const getDebankEndpoint: (endpoint: keyof typeof ENDPOINTS, address: string, args?: any) => Promise<any>;
 export declare const getPrivateDebankEndpoint: (endpoint: keyof typeof ENDPOINTS, address: string, args?: any) => Promise<any>;
-export declare const getApeBoardEndpoint: (endpoint: keyof typeof ENDPOINTS, address: string) => Promise<any>;
 export declare const getBeefyEndpoint: (endpoint: keyof typeof ENDPOINTS) => Promise<any>;
 /**
  * Debank Calls
@@ -17,13 +16,6 @@ export declare const getBeefyEndpoint: (endpoint: keyof typeof ENDPOINTS) => Pro
 export declare const getTokenList: (address: string) => Promise<any>;
 export declare const getKnownTokenList: (address: string) => Promise<any>;
 export declare const getProtocolList: (address: string) => Promise<any>;
-/**
- * Apeboard Calls
- */
-export declare const getSolanaTokensInfo: (address: string) => Promise<any>;
-export declare const getSolanaVaultsInfo: (address: string) => Promise<any>;
-export declare const getTerraTokensInfo: (address: string) => Promise<any>;
-export declare const getTerraAnchorInfo: (address: string) => Promise<any>;
 /**
  * Beefy Calls
  */

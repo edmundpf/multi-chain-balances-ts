@@ -69,8 +69,6 @@ export declare type Chains = {
     matic: Chain;
     movr: Chain;
     hmy: Chain;
-    sol: Chain;
-    terra: Chain;
 };
 export declare type HistoryRecord = {
     id: string;
@@ -96,7 +94,6 @@ export declare type HistoryRecord = {
     tokens?: TokenRecords;
 };
 export declare type DriverArgs = {
-    useDebank?: boolean;
     getTransactions?: boolean;
     getPrices?: boolean;
     getBalances?: boolean;
@@ -176,52 +173,6 @@ export declare type DebankHistory = {
     receives: DebankTransfer[];
     tx?: DebankTransactionInfo;
 };
-/**
- * Ape Board Types
- */
-declare type ApeBoardInteraction = {
-    from: string;
-    to: string;
-    function?: string;
-};
-declare type ApeBoardFee = {
-    amount: number;
-    price: number;
-    symbol: string;
-};
-declare type ApeBoardPosition = {
-    balance: number;
-    tokens: ApeBoardToken[];
-};
-export declare type ApeBoardToken = {
-    address: string;
-    symbol: string;
-    balance: number;
-    price: number;
-};
-export declare type ApeBoardPositionsResponse = {
-    positions: ApeBoardPosition[];
-};
-export declare type ApeBoardAnchorResponse = {
-    savings: ApeBoardPosition[];
-};
-export declare type ApeBoardTransfer = {
-    from: string;
-    to: string;
-    symbol: string;
-    tokenAddress: string;
-    balance: number;
-    type: 'in' | 'out';
-};
-export declare type ApeBoardHistory = {
-    hash: string;
-    timestamp: number;
-    transfers: ApeBoardTransfer[];
-    interactions: ApeBoardInteraction[];
-    isError: boolean;
-    fee: ApeBoardFee[];
-};
-export declare type ApeBoardTransResponse = ApeBoardHistory[];
 /**
  * Beefy Types
  */

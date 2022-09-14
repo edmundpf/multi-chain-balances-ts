@@ -53,7 +53,6 @@ export default class DefiPrices extends DefiTransactions {
 
 	async driver(args?: typeof defaultDriverArgs) {
 		const {
-			useDebank,
 			getTransactions,
 			getPrices,
 			getBalances,
@@ -72,7 +71,7 @@ export default class DefiPrices extends DefiTransactions {
 		// Get Transactions
 		if (getTransactions || getPrices) {
 			await prepareDB()
-			await this.getTransactions(useDebank)
+			await this.getTransactions()
 			if (this.filterUnknownTokens && !getPrices) this.getUnknownTokens()
 		}
 

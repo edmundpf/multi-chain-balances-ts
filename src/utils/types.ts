@@ -111,8 +111,6 @@ export type Chains = {
 	matic: Chain
 	movr: Chain
 	hmy: Chain
-	sol: Chain
-	terra: Chain
 }
 
 // History Record Type
@@ -144,7 +142,6 @@ export type HistoryRecord = {
 // Driver Args Type
 
 export type DriverArgs = {
-	useDebank?: boolean
 	getTransactions?: boolean
 	getPrices?: boolean
 	getBalances?: boolean
@@ -261,80 +258,6 @@ export type DebankHistory = {
 	receives: DebankTransfer[]
 	tx?: DebankTransactionInfo
 }
-
-/**
- * Ape Board Types
- */
-
-// Ape Board Interaction Type
-
-type ApeBoardInteraction = {
-	from: string
-	to: string
-	function?: string
-}
-
-// Ape Board Fee Type
-
-type ApeBoardFee = {
-	amount: number
-	price: number
-	symbol: string
-}
-
-// Ape Board Position
-
-type ApeBoardPosition = {
-	balance: number
-	tokens: ApeBoardToken[]
-}
-
-// Ape Board Token
-
-export type ApeBoardToken = {
-	address: string
-	symbol: string
-	balance: number
-	price: number
-}
-
-// Ape Board Positions Response
-
-export type ApeBoardPositionsResponse = {
-	positions: ApeBoardPosition[]
-}
-
-// Ape Board Anchor Reponse
-
-export type ApeBoardAnchorResponse = {
-	savings: ApeBoardPosition[]
-}
-
-// Ape Board Transfer Type
-
-export type ApeBoardTransfer = {
-	from: string
-	to: string
-	symbol: string
-	tokenAddress: string
-	balance: number
-	type: 'in' | 'out'
-}
-
-// Ape Board History Type
-
-export type ApeBoardHistory = {
-	hash: string
-	timestamp: number
-	transfers: ApeBoardTransfer[]
-	interactions: ApeBoardInteraction[]
-	isError: boolean
-	fee: ApeBoardFee[]
-}
-
-// Ape Board Transactions Response Type
-
-export type ApeBoardTransResponse = ApeBoardHistory[]
 
 /**
  * Beefy Types
