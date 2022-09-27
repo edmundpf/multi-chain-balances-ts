@@ -43,7 +43,6 @@ export declare const BEEFY_VAULT_URLS: {
 export declare const APIS: {
     beefy: string;
     debank: string;
-    debankPrivate: string;
     coinGecko: string;
     githubVaults: string;
 };
@@ -52,7 +51,7 @@ export declare const ENDPOINTS: {
     beefyVaults: string;
     tokenList: string;
     protocolList: string;
-    debankHistory: string;
+    history: string;
     coinGeckoList: string;
     coinGeckoPrices: string;
 };

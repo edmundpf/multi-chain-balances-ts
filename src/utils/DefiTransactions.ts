@@ -6,7 +6,7 @@ import {
 	FIAT_CURRENCY,
 } from './values'
 import {
-	getPrivateDebankEndpoint,
+	getHistory,
 	symbolWithDashes,
 	sterilizeTokenNameNoStub,
 	getAddressStub,
@@ -19,7 +19,6 @@ import {
 	DebankTransfer,
 	DebankHistory,
 	DebankTokens,
-	DebankTransResponse,
 	TokenRecords,
 	HistoryRecord,
 	Chains,
@@ -36,7 +35,7 @@ export default class DefiTransactions extends DefiBalances {
 	 */
 
 	async getTransactions() {
-		const debankRequests: (Promise<DebankTransResponse> | undefined)[] = []
+		const debankRequests: (ReturnType<typeof getHistory> | undefined)[] = []
 		const rawChains: (DebankHistory[] | undefined)[] = []
 		const debankTokens: DebankTokens[] = []
 		// Get Info from Debank
@@ -44,11 +43,7 @@ export default class DefiTransactions extends DefiBalances {
 			for (const index in this.chainNames) {
 				const chainName = this.chainNames[index]
 				if (!rawChains[index]) {
-					debankRequests.push(
-						getPrivateDebankEndpoint('debankHistory', this.address, {
-							chain: chainName,
-						})
-					)
+					debankRequests.push(getHistory(this.address, chainName))
 				} else {
 					debankRequests.push(undefined)
 				}
@@ -57,12 +52,12 @@ export default class DefiTransactions extends DefiBalances {
 			const isFilled = rawChains.length == this.chainNames.length
 			for (const index in res) {
 				const result = res[index]
-				if (result?.data?.history_list && !(result as any)?.error_msg) {
-					rawChains[index] = result.data.history_list
+				if (result?.history) {
+					rawChains[index] = result.history
 				} else if (!rawChains[index]) {
 					rawChains[index] = isFilled ? [] : undefined
 				}
-				debankTokens.push(result?.data?.token_dict || {})
+				debankTokens.push(result?.tokens || {})
 			}
 		}
 

@@ -10,3 +10,11 @@ export const hasNumber = (str: string) => /\d/.test(str)
 // Wait Milliseconds
 export const waitMs = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms))
+
+// Native to Decimal
+export const nativeToDecimal = (nativeNum: number | string, decimals = 18) => {
+	const nativeStr = String(nativeNum).padStart(decimals, '0')
+	const startStr = nativeStr.substring(0, nativeStr.length - decimals) || '0'
+	const endStr = nativeStr.substring(nativeStr.length - decimals)
+	return Number(startStr + '.' + endStr)
+}

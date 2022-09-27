@@ -1,16 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.waitMs = exports.hasNumber = exports.titleCase = exports.getTimeMs = exports.isValidPastTime = exports.isValidFutureTime = exports.addContract = exports.isUnknownToken = exports.isStableCoin = exports.isNativeToken = exports.isContract = exports.sterilizeTokenNameNoStub = exports.sterilizeTokenName = exports.getAddressStub = exports.symbolWithDashes = exports.getBeefyVaults = exports.getBeefyApy = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
+exports.nativeToDecimal = exports.waitMs = exports.hasNumber = exports.titleCase = exports.getTimeMs = exports.isValidPastTime = exports.isValidFutureTime = exports.addContract = exports.isUnknownToken = exports.isStableCoin = exports.isNativeToken = exports.isContract = exports.sterilizeTokenNameNoStub = exports.sterilizeTokenName = exports.getAddressStub = exports.symbolWithDashes = exports.getBeefyVaults = exports.getBeefyApy = exports.getHistory = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 // API Utils
 var apiUtils_1 = require("./apiUtils");
 Object.defineProperty(exports, "getFormattedURL", { enumerable: true, get: function () { return apiUtils_1.getFormattedURL; } });
 Object.defineProperty(exports, "getEndpoint", { enumerable: true, get: function () { return apiUtils_1.getEndpoint; } });
 Object.defineProperty(exports, "getDebankEndpoint", { enumerable: true, get: function () { return apiUtils_1.getDebankEndpoint; } });
-Object.defineProperty(exports, "getPrivateDebankEndpoint", { enumerable: true, get: function () { return apiUtils_1.getPrivateDebankEndpoint; } });
 Object.defineProperty(exports, "getBeefyEndpoint", { enumerable: true, get: function () { return apiUtils_1.getBeefyEndpoint; } });
 Object.defineProperty(exports, "getTokenList", { enumerable: true, get: function () { return apiUtils_1.getTokenList; } });
 Object.defineProperty(exports, "getKnownTokenList", { enumerable: true, get: function () { return apiUtils_1.getKnownTokenList; } });
 Object.defineProperty(exports, "getProtocolList", { enumerable: true, get: function () { return apiUtils_1.getProtocolList; } });
+Object.defineProperty(exports, "getHistory", { enumerable: true, get: function () { return apiUtils_1.getHistory; } });
 Object.defineProperty(exports, "getBeefyApy", { enumerable: true, get: function () { return apiUtils_1.getBeefyApy; } });
 Object.defineProperty(exports, "getBeefyVaults", { enumerable: true, get: function () { return apiUtils_1.getBeefyVaults; } });
 // Token Utils
@@ -34,3 +34,4 @@ var miscUtils_1 = require("./miscUtils");
 Object.defineProperty(exports, "titleCase", { enumerable: true, get: function () { return miscUtils_1.titleCase; } });
 Object.defineProperty(exports, "hasNumber", { enumerable: true, get: function () { return miscUtils_1.hasNumber; } });
 Object.defineProperty(exports, "waitMs", { enumerable: true, get: function () { return miscUtils_1.waitMs; } });
+Object.defineProperty(exports, "nativeToDecimal", { enumerable: true, get: function () { return miscUtils_1.nativeToDecimal; } });

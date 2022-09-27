@@ -16,6 +16,7 @@ import {
 	getBeefyVaults,
 	sterilizeTokenNameNoStub,
 	isUnknownToken,
+	nativeToDecimal
 } from './utils'
 import {
 	Token,
@@ -81,8 +82,8 @@ export default class DefiBalances {
 
 	async getBalances(filterUnkownTokens = true) {
 		const requests: (Promise<MainRequest> | Token[] | any)[] = [
-			this.isEVM ? getTokenList(this.address) : [],
-			this.isEVM && filterUnkownTokens ? getKnownTokenList(this.address) : [],
+			this.isEVM ? getTokenList(this.address, this.chainNames) : [],
+			this.isEVM && filterUnkownTokens ? getKnownTokenList(this.address, this.chainNames) : [],
 			this.isEVM ? getProtocolList(this.address) : [],
 			this.isEVM ? getBeefyApy() : {},
 			this.isEVM ? getBeefyVaults() : {},
@@ -206,7 +207,8 @@ export default class DefiBalances {
 		// Iterate All Tokens
 		for (const record of data) {
 			// Token Info
-			const { chain, symbol, price: recPrice, amount: recAmount } = record
+			const { chain, symbol, price: recPrice, balance, decimals } = record
+			const recAmount = nativeToDecimal(balance || 0, decimals)
 			const price = recPrice || 0
 			const amount = recAmount || 0
 			const value = price * amount
@@ -270,7 +272,7 @@ export default class DefiBalances {
 				chain,
 				name: platform,
 				site_url: platformUrl,
-				portfolio_item_list: vaults,
+				portfolio_list: vaults,
 			} = record
 
 			// Check if Chain exists
@@ -289,7 +291,8 @@ export default class DefiBalances {
 
 						// Token Info
 						for (const token of tokens) {
-							const { symbol, price: recPrice, amount: recAmount } = token
+							const { symbol, price: recPrice, balance, decimals } = token
+							const recAmount = nativeToDecimal(balance || 0, decimals)
 							if (symbol) {
 								const price = recPrice || 0
 								const amount = recAmount || 0

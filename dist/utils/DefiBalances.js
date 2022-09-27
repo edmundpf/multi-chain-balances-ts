@@ -62,8 +62,8 @@ class DefiBalances {
     getBalances(filterUnkownTokens = true) {
         return __awaiter(this, void 0, void 0, function* () {
             const requests = [
-                this.isEVM ? utils_1.getTokenList(this.address) : [],
-                this.isEVM && filterUnkownTokens ? utils_1.getKnownTokenList(this.address) : [],
+                this.isEVM ? utils_1.getTokenList(this.address, this.chainNames) : [],
+                this.isEVM && filterUnkownTokens ? utils_1.getKnownTokenList(this.address, this.chainNames) : [],
                 this.isEVM ? utils_1.getProtocolList(this.address) : [],
                 this.isEVM ? utils_1.getBeefyApy() : {},
                 this.isEVM ? utils_1.getBeefyVaults() : {},
@@ -174,7 +174,8 @@ class DefiBalances {
         // Iterate All Tokens
         for (const record of data) {
             // Token Info
-            const { chain, symbol, price: recPrice, amount: recAmount } = record;
+            const { chain, symbol, price: recPrice, balance, decimals } = record;
+            const recAmount = utils_1.nativeToDecimal(balance || 0, decimals);
             const price = recPrice || 0;
             const amount = recAmount || 0;
             const value = price * amount;
@@ -227,7 +228,7 @@ class DefiBalances {
         var _a, _b;
         for (const record of data) {
             // Platform Info
-            const { chain, name: platform, site_url: platformUrl, portfolio_item_list: vaults, } = record;
+            const { chain, name: platform, site_url: platformUrl, portfolio_list: vaults, } = record;
             // Check if Chain exists
             if (this.chainNames.includes(chain)) {
                 const chainInfo = this.chains[chain];
@@ -241,7 +242,8 @@ class DefiBalances {
                         const tokenData = [];
                         // Token Info
                         for (const token of tokens) {
-                            const { symbol, price: recPrice, amount: recAmount } = token;
+                            const { symbol, price: recPrice, balance, decimals } = token;
+                            const recAmount = utils_1.nativeToDecimal(balance || 0, decimals);
                             if (symbol) {
                                 const price = recPrice || 0;
                                 const amount = recAmount || 0;

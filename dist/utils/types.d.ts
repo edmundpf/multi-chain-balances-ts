@@ -148,13 +148,14 @@ export declare type Token = {
     chain: keyof Chains;
     symbol: string;
     price: number;
-    amount: number;
+    balance: number;
+    decimals: number;
 };
 export declare type Protocol = {
     chain: keyof Chains;
     name: string;
     site_url: string;
-    portfolio_item_list: PortfolioItemList[];
+    portfolio_list: PortfolioItemList[];
 };
 export declare type DebankTransResponse = {
     data: {
@@ -191,39 +192,6 @@ export declare type CoinGeckoToken = {
 };
 export declare type CoinGeckoPricesResponse = {
     prices: number[][];
-};
-/**
- * Farm.Army Types
- */
-declare type FarmArmyToken = {
-    token: string;
-    symbol: string;
-    amount: number;
-    usd: number;
-};
-declare type FarmArmyVault = {
-    deposit: {
-        symbol: string;
-        amount: number;
-        usd: number;
-    };
-    farm: {
-        name: string;
-        token: string;
-        id: string;
-        yield: {
-            apy: number;
-        };
-    };
-};
-export declare type FarmArmyTokensResponse = {
-    tokens: FarmArmyToken[];
-};
-export declare type FarmArmyVaultsResponse = {
-    hbeefy: {
-        farms: FarmArmyVault[];
-        url: string;
-    };
 };
 /**
  * Local DB Types

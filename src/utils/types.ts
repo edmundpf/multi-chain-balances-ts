@@ -224,7 +224,8 @@ export type Token = {
 	chain: keyof Chains
 	symbol: string
 	price: number
-	amount: number
+	balance: number
+	decimals: number
 }
 
 // Protocol Type
@@ -233,7 +234,7 @@ export type Protocol = {
 	chain: keyof Chains
 	name: string
 	site_url: string
-	portfolio_item_list: PortfolioItemList[]
+	portfolio_list: PortfolioItemList[]
 }
 
 // Debank Trans Response Type
@@ -287,52 +288,6 @@ export type CoinGeckoToken = {
 
 export type CoinGeckoPricesResponse = {
 	prices: number[][]
-}
-
-/**
- * Farm.Army Types
- */
-
-// Farm.Army Token
-
-type FarmArmyToken = {
-	token: string
-	symbol: string
-	amount: number
-	usd: number
-}
-
-// Farm.Army Vault
-
-type FarmArmyVault = {
-	deposit: {
-		symbol: string
-		amount: number
-		usd: number
-	}
-	farm: {
-		name: string
-		token: string
-		id: string
-		yield: {
-			apy: number
-		}
-	}
-}
-
-// Farm.Army Tokens Response
-
-export type FarmArmyTokensResponse = {
-	tokens: FarmArmyToken[]
-}
-
-// Farm.Army Vaults Response
-
-export type FarmArmyVaultsResponse = {
-	hbeefy: {
-		farms: FarmArmyVault[]
-		url: string
-	}
 }
 
 /**

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBeefyVaults = exports.getBeefyApy = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getPrivateDebankEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
+exports.getBeefyVaults = exports.getBeefyApy = exports.getHistory = exports.getProtocolList = exports.getKnownTokenList = exports.getTokenList = exports.getBeefyEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = require("fs");
 const path_1 = require("path");
@@ -55,30 +55,77 @@ exports.getEndpoint = getEndpoint;
  * API Methods
  */
 // Get Debank Endpoint
-const getDebankEndpoint = (endpoint, address, args) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { id: address }));
+const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }));
+    console.log(result);
+    return result;
 });
 exports.getDebankEndpoint = getDebankEndpoint;
-// Get Private Debank Endpoint
-const getPrivateDebankEndpoint = (endpoint, address, args) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield exports.getEndpoint('debankPrivate', endpoint, Object.assign(Object.assign({}, args), { user_addr: address }));
-});
-exports.getPrivateDebankEndpoint = getPrivateDebankEndpoint;
 // Get Beefy Endpoint
 const getBeefyEndpoint = (endpoint) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getEndpoint('beefy', endpoint); });
 exports.getBeefyEndpoint = getBeefyEndpoint;
 /**
  * Debank Calls
  */
+// Get Token List from Chain
+const getTokenListFromChain = (address, chainName) => __awaiter(void 0, void 0, void 0, function* () { var _d; return ((_d = (yield exports.getDebankEndpoint('tokenList', address, { chain: chainName }))) === null || _d === void 0 ? void 0 : _d.data) || []; });
+// Get Known Token List from Chain
+const getKnownTokenListFromChain = (address, chainName) => __awaiter(void 0, void 0, void 0, function* () { var _e; return ((_e = (yield exports.getDebankEndpoint('tokenList', address, { chain: chainName, is_all: false }))) === null || _e === void 0 ? void 0 : _e.data) || []; });
+// Get Token List from all Chains
+const getTokenListFromAllChains = (address, chainNames, listAll = true) => __awaiter(void 0, void 0, void 0, function* () {
+    let tokens = [];
+    const requests = [];
+    const method = listAll ? getTokenListFromChain : getKnownTokenListFromChain;
+    // Iterate Chains
+    for (const chainName of chainNames) {
+        requests.push(method(address, chainName));
+    }
+    const responses = yield Promise.all(requests);
+    // Iterate Responses
+    for (const response of responses) {
+        if (response.length)
+            tokens = [...tokens, ...response];
+    }
+    return tokens;
+});
 // Get Token List
-const getTokenList = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getDebankEndpoint('tokenList', address); });
+const getTokenList = (address, chainNames) => __awaiter(void 0, void 0, void 0, function* () { return yield getTokenListFromAllChains(address, chainNames); });
 exports.getTokenList = getTokenList;
 // Get Known Token List
-const getKnownTokenList = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getDebankEndpoint('tokenList', address, { is_all: false }); });
+const getKnownTokenList = (address, chainNames) => __awaiter(void 0, void 0, void 0, function* () { return yield getTokenListFromAllChains(address, chainNames, false); });
 exports.getKnownTokenList = getKnownTokenList;
 // Get Protocol List
-const getProtocolList = (address) => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getDebankEndpoint('protocolList', address); });
+const getProtocolList = (address) => __awaiter(void 0, void 0, void 0, function* () { var _f; return ((_f = (yield exports.getDebankEndpoint('protocolList', address))) === null || _f === void 0 ? void 0 : _f.data) || []; });
 exports.getProtocolList = getProtocolList;
+// Get Single Page History
+const getSinglePageHistory = (address, chainName, startTime = 0) => __awaiter(void 0, void 0, void 0, function* () {
+    var _g;
+    const response = ((_g = (yield exports.getDebankEndpoint('history', address, { chain: chainName, page_count: 20, start_time: startTime }))) === null || _g === void 0 ? void 0 : _g.data) || {};
+    const history = response.history_list || [];
+    const tokens = response.token_dict || {};
+    const lastTime = history.length ? (history[history.length - 1].time_at || 0) : 0;
+    return {
+        tokens,
+        history,
+        lastTime
+    };
+});
+// Get History
+const getHistory = (address, chainName, getSinglePage = true) => __awaiter(void 0, void 0, void 0, function* () {
+    let startTime = 0;
+    let shouldEnd = false;
+    let allTokens = {};
+    let allHistory = [];
+    while (!shouldEnd) {
+        const { tokens, history, lastTime } = yield getSinglePageHistory(address, chainName, startTime);
+        allTokens = Object.assign(Object.assign({}, tokens), allTokens);
+        allHistory = [...allHistory, ...history];
+        shouldEnd = getSinglePage || !history.length || lastTime <= startTime;
+        startTime = shouldEnd ? startTime : lastTime;
+    }
+    return { history: allHistory, tokens: allTokens };
+});
+exports.getHistory = getHistory;
 /**
  * Beefy Calls
  */
@@ -87,7 +134,7 @@ const getBeefyApy = () => __awaiter(void 0, void 0, void 0, function* () { retur
 exports.getBeefyApy = getBeefyApy;
 // Get Beefy Vaults
 const getBeefyVaults = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _d, _e;
+    var _h, _j;
     let savedVaults = {};
     const vaultFile = path_1.resolve(values_1.SAVED_VAULTS_FILE);
     // Get Saved Vaults
@@ -103,9 +150,9 @@ const getBeefyVaults = () => __awaiter(void 0, void 0, void 0, function* () {
     for (const key in values_1.BEEFY_VAULT_URLS) {
         // Get Plain Text
         const pool = values_1.BEEFY_VAULT_URLS[key];
-        const jsText = ((_e = (_d = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, {
+        const jsText = ((_j = (_h = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, {
             responseType: 'text',
-        }))) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.trim()) || '';
+        }))) === null || _h === void 0 ? void 0 : _h.data) === null || _j === void 0 ? void 0 : _j.trim()) || '';
         // Parse Text
         if (jsText.includes('[')) {
             try {

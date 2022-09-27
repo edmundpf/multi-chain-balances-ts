@@ -30,13 +30,10 @@ class DefiTransactions extends DefiBalances_1.default {
             const debankTokens = [];
             // Get Info from Debank
             const getInfoFromDebank = () => __awaiter(this, void 0, void 0, function* () {
-                var _a, _b, _c;
                 for (const index in this.chainNames) {
                     const chainName = this.chainNames[index];
                     if (!rawChains[index]) {
-                        debankRequests.push(utils_1.getPrivateDebankEndpoint('debankHistory', this.address, {
-                            chain: chainName,
-                        }));
+                        debankRequests.push(utils_1.getHistory(this.address, chainName));
                     }
                     else {
                         debankRequests.push(undefined);
@@ -46,13 +43,13 @@ class DefiTransactions extends DefiBalances_1.default {
                 const isFilled = rawChains.length == this.chainNames.length;
                 for (const index in res) {
                     const result = res[index];
-                    if (((_a = result === null || result === void 0 ? void 0 : result.data) === null || _a === void 0 ? void 0 : _a.history_list) && !((_b = result) === null || _b === void 0 ? void 0 : _b.error_msg)) {
-                        rawChains[index] = result.data.history_list;
+                    if (result === null || result === void 0 ? void 0 : result.history) {
+                        rawChains[index] = result.history;
                     }
                     else if (!rawChains[index]) {
                         rawChains[index] = isFilled ? [] : undefined;
                     }
-                    debankTokens.push(((_c = result === null || result === void 0 ? void 0 : result.data) === null || _c === void 0 ? void 0 : _c.token_dict) || {});
+                    debankTokens.push((result === null || result === void 0 ? void 0 : result.tokens) || {});
                 }
             });
             // Get Info

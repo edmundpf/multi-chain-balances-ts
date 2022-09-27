@@ -60,8 +60,7 @@ exports.BEEFY_VAULT_URLS = {
 // API Url's
 exports.APIS = {
     beefy: 'https://api.beefy.finance',
-    debank: 'https://openapi.debank.com/v1/user',
-    debankPrivate: 'https://api.debank.com',
+    debank: 'https://api.debank.com',
     coinGecko: 'https://api.coingecko.com/api/v3',
     githubVaults: 'https://raw.githubusercontent.com/beefyfinance/beefy-app/prod/src/features/configure/vault',
 };
@@ -69,9 +68,9 @@ exports.APIS = {
 exports.ENDPOINTS = {
     beefyApy: 'apy',
     beefyVaults: 'vaults',
-    tokenList: 'token_list',
-    protocolList: 'complex_protocol_list',
-    debankHistory: 'history/list',
+    tokenList: 'token/balance_list',
+    protocolList: 'portfolio/project_list',
+    history: 'history/list',
     coinGeckoList: 'coins/list',
     coinGeckoPrices: 'coins/$id/market_chart',
 };

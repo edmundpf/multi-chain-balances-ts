@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { promises } from 'fs'
 import { resolve } from 'path'
+import { DebankHistory } from './types'
 import {
 	APIS,
 	ENDPOINTS,
@@ -58,23 +59,16 @@ export const getEndpoint = async (
 export const getDebankEndpoint = async (
 	endpoint: keyof typeof ENDPOINTS,
 	address: string,
-	args?: any
-) =>
-	await getEndpoint('debank', endpoint, {
+	args?: any,
+	hasShortAddressArg = false
+) => {
+	const result = await getEndpoint('debank', endpoint, {
 		...args,
-		id: address,
+		[hasShortAddressArg ? 'addr' : 'user_addr']: address,
 	})
-
-// Get Private Debank Endpoint
-export const getPrivateDebankEndpoint = async (
-	endpoint: keyof typeof ENDPOINTS,
-	address: string,
-	args?: any
-) =>
-	await getEndpoint('debankPrivate', endpoint, {
-		...args,
-		user_addr: address,
-	})
+	console.log(result)
+	return result
+}
 
 // Get Beefy Endpoint
 export const getBeefyEndpoint = async (endpoint: keyof typeof ENDPOINTS) =>
@@ -84,17 +78,73 @@ export const getBeefyEndpoint = async (endpoint: keyof typeof ENDPOINTS) =>
  * Debank Calls
  */
 
+// Get Token List from Chain
+const getTokenListFromChain = async (address: string, chainName: string) =>
+	(await getDebankEndpoint('tokenList', address, { chain: chainName }))?.data || []
+
+// Get Known Token List from Chain
+const getKnownTokenListFromChain = async (address: string, chainName: string) =>
+	(await getDebankEndpoint('tokenList', address, { chain: chainName, is_all: false }))?.data || []
+
+// Get Token List from all Chains
+const getTokenListFromAllChains = async (address: string, chainNames: string[], listAll = true) => {
+	let tokens: any[] = []
+	const requests: Promise<any[]>[] = []
+	const method = listAll ? getTokenListFromChain : getKnownTokenListFromChain
+
+	// Iterate Chains
+	for (const chainName of chainNames) {
+		requests.push(method(address, chainName))
+	}
+	const responses = await Promise.all(requests)
+
+	// Iterate Responses
+	for (const response of responses) {
+		if (response.length) tokens = [...tokens, ...response]
+	}
+	return tokens
+}
+
 // Get Token List
-export const getTokenList = async (address: string) =>
-	await getDebankEndpoint('tokenList', address)
+export const getTokenList = async (address: string, chainNames: string[]) =>
+	await getTokenListFromAllChains(address, chainNames)
 
 // Get Known Token List
-export const getKnownTokenList = async (address: string) =>
-	await getDebankEndpoint('tokenList', address, { is_all: false })
+export const getKnownTokenList = async (address: string, chainNames: string[]) =>
+	await getTokenListFromAllChains(address, chainNames, false)
 
 // Get Protocol List
 export const getProtocolList = async (address: string) =>
-	await getDebankEndpoint('protocolList', address)
+	(await getDebankEndpoint('protocolList', address))?.data || []
+
+// Get Single Page History
+const getSinglePageHistory = async (address: string, chainName: string, startTime = 0) => {
+	const response = (await getDebankEndpoint('history', address, { chain: chainName, page_count: 20, start_time: startTime }))?.data || {}
+	const history: DebankHistory[] = response.history_list || []
+	const tokens: any = response.token_dict || {}
+	const lastTime = history.length ? (history[history.length - 1].time_at || 0) : 0
+	return {
+		tokens,
+		history,
+		lastTime
+	}
+}
+
+// Get History
+export const getHistory = async (address: string, chainName: string, getSinglePage = true) => {
+	let startTime = 0
+	let shouldEnd = false
+	let allTokens: any = {}
+	let allHistory: DebankHistory[] = []
+	while (!shouldEnd) {
+		const { tokens, history, lastTime } = await getSinglePageHistory(address, chainName, startTime)
+		allTokens = { ...tokens, ...allTokens }
+		allHistory = [...allHistory, ...history]
+		shouldEnd = getSinglePage || !history.length || lastTime <= startTime
+		startTime = shouldEnd ? startTime : lastTime
+	}
+	return { history: allHistory, tokens: allTokens }
+}
 
 /**
  * Beefy Calls

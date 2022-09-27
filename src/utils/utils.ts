@@ -3,11 +3,11 @@ export {
 	getFormattedURL,
 	getEndpoint,
 	getDebankEndpoint,
-	getPrivateDebankEndpoint,
 	getBeefyEndpoint,
 	getTokenList,
 	getKnownTokenList,
 	getProtocolList,
+	getHistory,
 	getBeefyApy,
 	getBeefyVaults,
 } from './apiUtils'
@@ -29,4 +29,4 @@ export {
 export { isValidFutureTime, isValidPastTime, getTimeMs } from './calcUtils'
 
 // Misc Utils
-export { titleCase, hasNumber, waitMs } from './miscUtils'
+export { titleCase, hasNumber, waitMs, nativeToDecimal } from './miscUtils'

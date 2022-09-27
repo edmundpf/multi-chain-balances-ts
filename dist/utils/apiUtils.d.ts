@@ -1,3 +1,4 @@
+import { DebankHistory } from './types';
 import { APIS, ENDPOINTS } from './values';
 /**
  * Misc
@@ -7,15 +8,15 @@ export declare const getEndpoint: (api: keyof typeof APIS, endpoint: keyof typeo
 /**
  * API Methods
  */
-export declare const getDebankEndpoint: (endpoint: keyof typeof ENDPOINTS, address: string, args?: any) => Promise<any>;
-export declare const getPrivateDebankEndpoint: (endpoint: keyof typeof ENDPOINTS, address: string, args?: any) => Promise<any>;
+export declare const getDebankEndpoint: (endpoint: keyof typeof ENDPOINTS, address: string, args?: any, hasShortAddressArg?: boolean) => Promise<any>;
 export declare const getBeefyEndpoint: (endpoint: keyof typeof ENDPOINTS) => Promise<any>;
-/**
- * Debank Calls
- */
-export declare const getTokenList: (address: string) => Promise<any>;
-export declare const getKnownTokenList: (address: string) => Promise<any>;
+export declare const getTokenList: (address: string, chainNames: string[]) => Promise<any[]>;
+export declare const getKnownTokenList: (address: string, chainNames: string[]) => Promise<any[]>;
 export declare const getProtocolList: (address: string) => Promise<any>;
+export declare const getHistory: (address: string, chainName: string, getSinglePage?: boolean) => Promise<{
+    history: DebankHistory[];
+    tokens: any;
+}>;
 /**
  * Beefy Calls
  */
