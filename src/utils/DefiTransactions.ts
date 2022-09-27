@@ -1,11 +1,7 @@
 import DefiBalances from './DefiBalances'
 import { selectContracts, insertContract } from './localData'
 import { ENV_GET_TRANS_FROM_CHAINS } from './envValues'
-import {
-	NATIVE_TOKENS,
-	defaultHistoryRecord,
-	FIAT_CURRENCY,
-} from './values'
+import { NATIVE_TOKENS, defaultHistoryRecord, FIAT_CURRENCY } from './values'
 import {
 	getHistory,
 	symbolWithDashes,
@@ -36,13 +32,21 @@ export default class DefiTransactions extends DefiBalances {
 	 */
 
 	async getTransactions(showAll = false) {
-		const historyInfo: { history: DebankHistory[], tokens: any }[] = []
+		const historyInfo: { history: DebankHistory[]; tokens: any }[] = []
 
 		// Get Info from Debank
 		for (const index in this.chainNames) {
 			const chainName = this.chainNames[index]
-			const isIncluded = !ENV_GET_TRANS_FROM_CHAINS.length || ENV_GET_TRANS_FROM_CHAINS.includes(chainName) ? true : false
-			historyInfo.push(isIncluded ? await getHistory(this.address, chainName, !showAll) : { history: [], tokens: {} })
+			const isIncluded =
+				!ENV_GET_TRANS_FROM_CHAINS.length ||
+				ENV_GET_TRANS_FROM_CHAINS.includes(chainName)
+					? true
+					: false
+			historyInfo.push(
+				isIncluded
+					? await getHistory(this.address, chainName, !showAll)
+					: { history: [], tokens: {} }
+			)
 		}
 
 		// Get Existing Token Addresses
@@ -234,26 +238,17 @@ export default class DefiTransactions extends DefiBalances {
 
 		// Get Universal Info
 		const hash = this.getTransactionID(record)
-		const date = new Date(
-			debankRec.time_at * 1000
-		).toISOString()
+		const date = new Date(debankRec.time_at * 1000).toISOString()
 		const feeSymbol = NATIVE_TOKENS[chainName]
 		const hasError = debankRec.tx?.status == 0
-		let type =
-			debankRec.cate_id ||
-			debankRec.tx?.name ||
-			''
-		let toAddress = (
-			debankRec.tx?.to_addr ||
-			this.address
-		).toLowerCase()
+		let type = debankRec.cate_id || debankRec.tx?.name || ''
+		let toAddress = (debankRec.tx?.to_addr || this.address).toLowerCase()
 		let fromAddress = (
 			debankRec.tx?.from_addr ||
 			debankRec.other_addr ||
 			this.address
 		).toLowerCase()
-		let feeQuantity =
-			debankRec.tx?.eth_gas_fee || 0
+		let feeQuantity = debankRec.tx?.eth_gas_fee || 0
 		let feeValueUSD = debankRec.tx?.usd_gas_fee || 0
 		let feePriceUSD = 0
 
@@ -598,9 +593,6 @@ export default class DefiTransactions extends DefiBalances {
 	 */
 
 	private getTransactionID(record: DebankHistory) {
-		return (
-			(record as DebankHistory).id ||
-			''
-		).toLowerCase()
+		return ((record as DebankHistory).id || '').toLowerCase()
 	}
 }

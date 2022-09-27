@@ -69,7 +69,13 @@ exports.getBeefyEndpoint = getBeefyEndpoint;
  * Debank Calls
  */
 // Get Known Token List from Chain
-const getKnownTokenListFromChain = (address, chainName) => __awaiter(void 0, void 0, void 0, function* () { var _d; return ((_d = (yield exports.getDebankEndpoint('tokenList', address, { chain: chainName, is_all: false }))) === null || _d === void 0 ? void 0 : _d.data) || []; });
+const getKnownTokenListFromChain = (address, chainName) => __awaiter(void 0, void 0, void 0, function* () {
+    var _d;
+    return ((_d = (yield exports.getDebankEndpoint('tokenList', address, {
+        chain: chainName,
+        is_all: false,
+    }))) === null || _d === void 0 ? void 0 : _d.data) || [];
+});
 // Get Token List from all Chains
 const getTokenListFromAllChains = (address, chainNames) => __awaiter(void 0, void 0, void 0, function* () {
     let tokens = [];
@@ -88,14 +94,18 @@ const getTokenListFromAllChains = (address, chainNames) => __awaiter(void 0, voi
 // Get Single Page History
 const getSinglePageHistory = (address, chainName, startTime = 0) => __awaiter(void 0, void 0, void 0, function* () {
     var _e;
-    const response = ((_e = (yield exports.getDebankEndpoint('history', address, { chain: chainName, page_count: 20, start_time: startTime }))) === null || _e === void 0 ? void 0 : _e.data) || {};
+    const response = ((_e = (yield exports.getDebankEndpoint('history', address, {
+        chain: chainName,
+        page_count: 20,
+        start_time: startTime,
+    }))) === null || _e === void 0 ? void 0 : _e.data) || {};
     const history = response.history_list || [];
     const tokens = response.token_dict || {};
-    const lastTime = history.length ? (history[history.length - 1].time_at || 0) : 0;
+    const lastTime = history.length ? history[history.length - 1].time_at || 0 : 0;
     return {
         tokens,
         history,
-        lastTime
+        lastTime,
     };
 });
 // Get Token List
@@ -114,7 +124,13 @@ const getHistory = (address, chainName, getSinglePage = true) => __awaiter(void 
         const { tokens, history, lastTime } = yield getSinglePageHistory(address, chainName, startTime);
         allTokens = Object.assign(Object.assign({}, tokens), allTokens);
         allHistory = [...allHistory, ...history];
-        shouldEnd = getSinglePage || !history.length || !lastTime || startTime && lastTime >= startTime ? true : false;
+        shouldEnd =
+            getSinglePage ||
+                !history.length ||
+                !lastTime ||
+                (startTime && lastTime >= startTime)
+                ? true
+                : false;
         startTime = shouldEnd ? startTime : lastTime;
     }
     return { history: allHistory, tokens: allTokens };

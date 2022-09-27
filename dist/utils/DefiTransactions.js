@@ -30,8 +30,13 @@ class DefiTransactions extends DefiBalances_1.default {
             // Get Info from Debank
             for (const index in this.chainNames) {
                 const chainName = this.chainNames[index];
-                const isIncluded = !envValues_1.ENV_GET_TRANS_FROM_CHAINS.length || envValues_1.ENV_GET_TRANS_FROM_CHAINS.includes(chainName) ? true : false;
-                historyInfo.push(isIncluded ? yield utils_1.getHistory(this.address, chainName, !showAll) : { history: [], tokens: {} });
+                const isIncluded = !envValues_1.ENV_GET_TRANS_FROM_CHAINS.length ||
+                    envValues_1.ENV_GET_TRANS_FROM_CHAINS.includes(chainName)
+                    ? true
+                    : false;
+                historyInfo.push(isIncluded
+                    ? yield utils_1.getHistory(this.address, chainName, !showAll)
+                    : { history: [], tokens: {} });
             }
             // Get Existing Token Addresses
             const existingAddresses = yield this.getExistingTokenAddresses();
@@ -183,11 +188,8 @@ class DefiTransactions extends DefiBalances_1.default {
         const date = new Date(debankRec.time_at * 1000).toISOString();
         const feeSymbol = values_1.NATIVE_TOKENS[chainName];
         const hasError = ((_a = debankRec.tx) === null || _a === void 0 ? void 0 : _a.status) == 0;
-        let type = debankRec.cate_id ||
-            ((_b = debankRec.tx) === null || _b === void 0 ? void 0 : _b.name) ||
-            '';
-        let toAddress = (((_c = debankRec.tx) === null || _c === void 0 ? void 0 : _c.to_addr) ||
-            this.address).toLowerCase();
+        let type = debankRec.cate_id || ((_b = debankRec.tx) === null || _b === void 0 ? void 0 : _b.name) || '';
+        let toAddress = (((_c = debankRec.tx) === null || _c === void 0 ? void 0 : _c.to_addr) || this.address).toLowerCase();
         let fromAddress = (((_d = debankRec.tx) === null || _d === void 0 ? void 0 : _d.from_addr) ||
             debankRec.other_addr ||
             this.address).toLowerCase();
@@ -454,8 +456,7 @@ class DefiTransactions extends DefiBalances_1.default {
      * Get Transaction ID
      */
     getTransactionID(record) {
-        return (record.id ||
-            '').toLowerCase();
+        return (record.id || '').toLowerCase();
     }
 }
 exports.default = DefiTransactions;

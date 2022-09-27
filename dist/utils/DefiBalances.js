@@ -166,8 +166,10 @@ class DefiBalances {
         // Iterate All Tokens
         for (const record of data) {
             // Token Info
-            const { chain, symbol, price: recPrice, amount: decAmount, balance, decimals } = record;
-            const recAmount = decAmount ? decAmount : utils_1.nativeToDecimal(balance || 0, decimals);
+            const { chain, symbol, price: recPrice, amount: decAmount, balance, decimals, } = record;
+            const recAmount = decAmount
+                ? decAmount
+                : utils_1.nativeToDecimal(balance || 0, decimals);
             const price = recPrice || 0;
             const amount = recAmount || 0;
             const value = price * amount;
@@ -235,8 +237,10 @@ class DefiBalances {
                         const vaultName = ((_e = vaultsByAddress[receiptAddress]) === null || _e === void 0 ? void 0 : _e.id) || '';
                         // Token Info
                         for (const token of tokens) {
-                            const { symbol, price: recPrice, amount: decAmount, balance, decimals } = token;
-                            const recAmount = decAmount ? decAmount : utils_1.nativeToDecimal(balance || 0, decimals);
+                            const { symbol, price: recPrice, amount: decAmount, balance, decimals, } = token;
+                            const recAmount = decAmount
+                                ? decAmount
+                                : utils_1.nativeToDecimal(balance || 0, decimals);
                             if (symbol) {
                                 const price = recPrice || 0;
                                 const amount = recAmount || 0;
@@ -262,7 +266,7 @@ class DefiBalances {
                             tokens: tokenData,
                             receiptAddress,
                             receiptName,
-                            vaultName
+                            vaultName,
                         });
                         chainInfo.totalVaultValue += value;
                     }

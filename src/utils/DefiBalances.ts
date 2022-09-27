@@ -1,9 +1,5 @@
 import { ENV_ADDRESS, ENV_MIN_VALUE } from './envValues'
-import {
-	NATIVE_TOKENS,
-	DEFAULT_URLS,
-	initChains,
-} from './values'
+import { NATIVE_TOKENS, DEFAULT_URLS, initChains } from './values'
 import {
 	getTokenList,
 	getProtocolList,
@@ -11,7 +7,7 @@ import {
 	getBeefyVaults,
 	sterilizeTokenNameNoStub,
 	isUnknownToken,
-	nativeToDecimal
+	nativeToDecimal,
 } from './utils'
 import {
 	Token,
@@ -22,7 +18,7 @@ import {
 	NumDict,
 	MainRequest,
 	Assets,
-	BeefyVaultInfo
+	BeefyVaultInfo,
 } from './types'
 
 /**
@@ -194,8 +190,17 @@ export default class DefiBalances {
 		// Iterate All Tokens
 		for (const record of data) {
 			// Token Info
-			const { chain, symbol, price: recPrice, amount: decAmount, balance, decimals } = record
-			const recAmount = decAmount ? decAmount : nativeToDecimal(balance || 0, decimals)
+			const {
+				chain,
+				symbol,
+				price: recPrice,
+				amount: decAmount,
+				balance,
+				decimals,
+			} = record
+			const recAmount = decAmount
+				? decAmount
+				: nativeToDecimal(balance || 0, decimals)
 			const price = recPrice || 0
 			const amount = recAmount || 0
 			const value = price * amount
@@ -274,13 +279,22 @@ export default class DefiBalances {
 						const tokens = vault?.detail?.supply_token_list || []
 						const tokenData: TokenData[] = []
 						const receiptAddress = vault?.pool?.id || ''
-						const receiptName = vaultsByAddress[receiptAddress]?.earnedToken || ''
+						const receiptName =
+							vaultsByAddress[receiptAddress]?.earnedToken || ''
 						const vaultName = vaultsByAddress[receiptAddress]?.id || ''
 
 						// Token Info
 						for (const token of tokens) {
-							const { symbol, price: recPrice, amount: decAmount, balance, decimals } = token
-							const recAmount = decAmount ? decAmount : nativeToDecimal(balance || 0, decimals)
+							const {
+								symbol,
+								price: recPrice,
+								amount: decAmount,
+								balance,
+								decimals,
+							} = token
+							const recAmount = decAmount
+								? decAmount
+								: nativeToDecimal(balance || 0, decimals)
 							if (symbol) {
 								const price = recPrice || 0
 								const amount = recAmount || 0
@@ -305,7 +319,7 @@ export default class DefiBalances {
 							tokens: tokenData,
 							receiptAddress,
 							receiptName,
-							vaultName
+							vaultName,
 						})
 						chainInfo.totalVaultValue += value
 					}
