@@ -6,7 +6,7 @@ export default class DefiTransactions extends DefiBalances {
     /**
      * Get Transactions
      */
-    getTransactions(): Promise<void>;
+    getTransactions(showAll?: boolean): Promise<void>;
     /**
      * Get Unknown Tokens
      */

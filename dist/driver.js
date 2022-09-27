@@ -59,9 +59,10 @@ const logTrans = () => {
 // Run
 main({
     filterUnknownTokens: true,
+    showAllTransactions: false,
     getBalances: true,
-    getTransactions: false,
-    getPrices: false,
+    getTransactions: true,
+    getPrices: true,
     logTransactions: true,
     logAssets: true,
 });

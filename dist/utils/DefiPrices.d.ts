@@ -7,6 +7,7 @@ export default class DefiPrices extends DefiTransactions {
     private nextApiCallMs;
     private recentApiCalls;
     private filterUnknownTokens;
+    private showAllTransactions;
     /**
      * Driver
      */

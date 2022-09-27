@@ -59,24 +59,21 @@ class DefiBalances {
     /**
      * Get All Balances
      */
-    getBalances(filterUnkownTokens = true) {
+    getBalances() {
         return __awaiter(this, void 0, void 0, function* () {
-            const requests = [
-                this.isEVM ? utils_1.getTokenList(this.address, this.chainNames) : [],
-                this.isEVM && filterUnkownTokens ? utils_1.getKnownTokenList(this.address, this.chainNames) : [],
-                this.isEVM ? utils_1.getProtocolList(this.address) : [],
-                this.isEVM ? utils_1.getBeefyApy() : {},
-                this.isEVM ? utils_1.getBeefyVaults() : {},
+            const res = [
+                this.isEVM ? yield utils_1.getTokenList(this.address, this.chainNames) : [],
+                this.isEVM ? yield utils_1.getProtocolList(this.address) : [],
+                this.isEVM ? yield utils_1.getBeefyApy() : {},
+                this.isEVM ? yield utils_1.getBeefyVaults() : {},
             ];
-            const res = yield Promise.all(requests);
             const tokenData = res[0];
-            const knownTokenData = res[1];
-            const protocolData = res[2];
-            const apyData = res[3];
-            const vaultData = res[4];
-            this.parseTokenData(tokenData, knownTokenData);
-            this.parseProtocolData(protocolData);
-            this.parseApyData(apyData, vaultData);
+            const protocolData = res[1];
+            const apyData = res[2];
+            const vaultData = res[3];
+            this.parseTokenData(tokenData);
+            this.parseProtocolData(protocolData, vaultData);
+            this.parseApyData(apyData);
             this.getAssetsAndTotalValues();
         });
     }
@@ -165,29 +162,19 @@ class DefiBalances {
     /**
      * Parse Token Data
      */
-    parseTokenData(data, knownData) {
-        // Get Known Symbols
-        const knownSymbols = [];
-        for (const record of knownData) {
-            knownSymbols.push(record.symbol);
-        }
+    parseTokenData(data) {
         // Iterate All Tokens
         for (const record of data) {
             // Token Info
-            const { chain, symbol, price: recPrice, balance, decimals } = record;
-            const recAmount = utils_1.nativeToDecimal(balance || 0, decimals);
+            const { chain, symbol, price: recPrice, amount: decAmount, balance, decimals } = record;
+            const recAmount = decAmount ? decAmount : utils_1.nativeToDecimal(balance || 0, decimals);
             const price = recPrice || 0;
             const amount = recAmount || 0;
             const value = price * amount;
             // Check if Chain exists
             if (this.chainNames.includes(chain)) {
-                // Check for Beefy Receipt
-                if (symbol.toLowerCase().startsWith('moo')) {
-                    const formattedSymbol = symbol.replace(/ /g, '');
-                    this.chains[chain].receipts[formattedSymbol] = amount;
-                }
                 // Check for minimum value
-                else if (value >= envValues_1.ENV_MIN_VALUE) {
+                if (value >= envValues_1.ENV_MIN_VALUE) {
                     const chainInfo = this.chains[chain];
                     const tokenData = {
                         symbol,
@@ -195,9 +182,7 @@ class DefiBalances {
                         value,
                     };
                     const isNativeToken = symbol == values_1.NATIVE_TOKENS[chain];
-                    const shouldDisplay = knownSymbols.length
-                        ? knownSymbols.includes(symbol) || isNativeToken
-                        : true;
+                    const shouldDisplay = !symbol.startsWith('0x');
                     // Update token data
                     if (shouldDisplay) {
                         chainInfo.tokens.push(tokenData);
@@ -224,8 +209,13 @@ class DefiBalances {
     /**
      * Parse Protocol Data
      */
-    parseProtocolData(data) {
-        var _a, _b;
+    parseProtocolData(data, vaultData) {
+        var _a, _b, _c, _d, _e;
+        // Get Vaults by Address
+        const vaultsByAddress = {};
+        for (const vault of vaultData) {
+            vaultsByAddress[vault.earnedTokenAddress.toLowerCase()] = vault;
+        }
         for (const record of data) {
             // Platform Info
             const { chain, name: platform, site_url: platformUrl, portfolio_list: vaults, } = record;
@@ -240,10 +230,13 @@ class DefiBalances {
                         let vaultSymbol = '';
                         const tokens = ((_b = vault === null || vault === void 0 ? void 0 : vault.detail) === null || _b === void 0 ? void 0 : _b.supply_token_list) || [];
                         const tokenData = [];
+                        const receiptAddress = ((_c = vault === null || vault === void 0 ? void 0 : vault.pool) === null || _c === void 0 ? void 0 : _c.id) || '';
+                        const receiptName = ((_d = vaultsByAddress[receiptAddress]) === null || _d === void 0 ? void 0 : _d.earnedToken) || '';
+                        const vaultName = ((_e = vaultsByAddress[receiptAddress]) === null || _e === void 0 ? void 0 : _e.id) || '';
                         // Token Info
                         for (const token of tokens) {
-                            const { symbol, price: recPrice, balance, decimals } = token;
-                            const recAmount = utils_1.nativeToDecimal(balance || 0, decimals);
+                            const { symbol, price: recPrice, amount: decAmount, balance, decimals } = token;
+                            const recAmount = decAmount ? decAmount : utils_1.nativeToDecimal(balance || 0, decimals);
                             if (symbol) {
                                 const price = recPrice || 0;
                                 const amount = recAmount || 0;
@@ -267,6 +260,9 @@ class DefiBalances {
                             platform,
                             platformUrl,
                             tokens: tokenData,
+                            receiptAddress,
+                            receiptName,
+                            vaultName
                         });
                         chainInfo.totalVaultValue += value;
                     }
@@ -277,118 +273,17 @@ class DefiBalances {
     /**
      * Parse APY Data
      */
-    parseApyData(apyData, vaultData) {
+    parseApyData(apyData) {
         // Iterate Chains
         for (const chainName in this.chains) {
             const chain = this.chains[chainName];
             // Iterate Vault Info
             for (const vault of chain.vaults) {
-                const matches = {};
-                const tokens = [];
-                // Get Token Names in Vault
-                for (const token of vault.tokens) {
-                    tokens.push(token.symbol);
-                }
-                // Format Symbols for Parsing
-                let symbolsStr = utils_1.titleCase(tokens.join(' ').toLowerCase().replace(/\.e/g, 'e')).toLowerCase();
-                const numericSymbol = utils_1.hasNumber(symbolsStr);
-                // Numeric Symbol Format
-                if (numericSymbol) {
-                    let numIndex = 0;
-                    for (let i = 0; i < symbolsStr.length; i++) {
-                        const curLetter = symbolsStr[i];
-                        if (utils_1.hasNumber(curLetter)) {
-                            numIndex = i;
-                            break;
-                        }
-                    }
-                    symbolsStr = symbolsStr.substring(numIndex);
-                }
-                let symbols = symbolsStr.split(' ');
-                // Remove Numeric Symbols
-                symbols = symbols.filter((sym) => isNaN(Number(sym)));
-                // Iterate Beefy Receipts
-                for (const receiptName in chain.receipts) {
-                    const receiptAmount = chain.receipts[receiptName];
-                    const isPair = receiptName.includes('-');
-                    let receiptStr = receiptName;
-                    // Format LP Pairs for Parsing
-                    if (isPair) {
-                        const dashIndex = receiptStr.indexOf('-');
-                        receiptStr =
-                            receiptStr.substring(0, dashIndex + 1) +
-                                receiptStr.substring(dashIndex + 1).toUpperCase();
-                    }
-                    // Format Beefy Receipts for Parsing
-                    receiptStr = receiptStr.replace(/\.E/g, 'E').replace(/\.e/g, 'E');
-                    receiptStr = utils_1.titleCase(receiptStr).toLowerCase();
-                    const receiptStrNoSpaces = receiptStr.replace(/ /g, '');
-                    const receiptWords = receiptStr.split(' ');
-                    const receiptWordsEnd = receiptWords.slice(receiptWords.length - symbols.length);
-                    // Add Alias Token Names
-                    for (const word of symbols) {
-                        if (values_1.TOKEN_ALIASES[word] && !symbols.includes(values_1.TOKEN_ALIASES[word])) {
-                            symbols.push(values_1.TOKEN_ALIASES[word]);
-                        }
-                    }
-                    const tokensMatchReceiptTokens = receiptWordsEnd.every((receiptSym) => symbols.some((sym) => sym.includes(receiptSym) || receiptSym.includes(sym)));
-                    // Check if receipt has alias
-                    let isReceiptAlias = false;
-                    for (const part in values_1.RECEIPT_ALIASES) {
-                        if (receiptStrNoSpaces.includes(part)) {
-                            const aliasTokens = values_1.RECEIPT_ALIASES[part];
-                            isReceiptAlias = aliasTokens.every((aliasSym) => symbols.some((receiptSym) => receiptSym.includes(aliasSym) ||
-                                aliasSym.includes(receiptSym)));
-                            if (isReceiptAlias)
-                                break;
-                        }
-                    }
-                    // Check for Match comparing Symbols vs. Receipts
-                    const isMatch = receiptStr.includes(symbolsStr) ||
-                        receiptStrNoSpaces.includes(symbolsStr) ||
-                        tokensMatchReceiptTokens ||
-                        isReceiptAlias;
-                    // Add Match to Compare Vault/Receipt Amounts
-                    if (isMatch) {
-                        const vaultAmount = vault.amount || 0;
-                        matches[receiptName] =
-                            isReceiptAlias || Math.abs(vaultAmount - receiptAmount);
-                    }
-                }
-                // Get Closest Match using Vault/Receipt Amounts
-                let receiptMatch = '';
-                let currentDiff = 0;
-                for (const receiptName in matches) {
-                    const matchValue = matches[receiptName];
-                    // Get Match by Alias
-                    const isAlias = matchValue === true;
-                    if (isAlias) {
-                        receiptMatch = receiptName;
+                const vaultName = vault.vaultName;
+                for (const apyName in apyData) {
+                    if (vaultName == apyName) {
+                        vault.apy = apyData[apyName] * 100;
                         break;
-                    }
-                    // Get Match using receipt difference
-                    const diff = isAlias ? 0 : matchValue;
-                    if (!receiptMatch || diff < currentDiff) {
-                        receiptMatch = receiptName;
-                        currentDiff = diff;
-                    }
-                }
-                // Get Matching APY Info
-                if (receiptMatch) {
-                    for (const unwrappedVaultReceipt in vaultData) {
-                        const id = vaultData[unwrappedVaultReceipt];
-                        const unwrappedReceipt = receiptMatch
-                            .toLowerCase()
-                            .replace(/w/g, '');
-                        if (unwrappedReceipt == unwrappedVaultReceipt &&
-                            apyData[id] != null) {
-                            // Set Vault Info
-                            vault.apy = apyData[id] * 100;
-                            vault.vaultName = id;
-                            vault.receiptName = receiptMatch;
-                            vault.receiptAmount = chain.receipts[receiptMatch];
-                            break;
-                        }
                     }
                 }
             }

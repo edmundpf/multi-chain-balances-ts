@@ -1,5 +1,6 @@
 import DefiBalances from './DefiBalances'
 import { selectContracts, insertContract } from './localData'
+import { ENV_GET_TRANS_FROM_CHAINS } from './envValues'
 import {
 	NATIVE_TOKENS,
 	defaultHistoryRecord,
@@ -34,50 +35,31 @@ export default class DefiTransactions extends DefiBalances {
 	 * Get Transactions
 	 */
 
-	async getTransactions() {
-		const debankRequests: (ReturnType<typeof getHistory> | undefined)[] = []
-		const rawChains: (DebankHistory[] | undefined)[] = []
-		const debankTokens: DebankTokens[] = []
-		// Get Info from Debank
-		const getInfoFromDebank = async () => {
-			for (const index in this.chainNames) {
-				const chainName = this.chainNames[index]
-				if (!rawChains[index]) {
-					debankRequests.push(getHistory(this.address, chainName))
-				} else {
-					debankRequests.push(undefined)
-				}
-			}
-			const res = await Promise.all(debankRequests)
-			const isFilled = rawChains.length == this.chainNames.length
-			for (const index in res) {
-				const result = res[index]
-				if (result?.history) {
-					rawChains[index] = result.history
-				} else if (!rawChains[index]) {
-					rawChains[index] = isFilled ? [] : undefined
-				}
-				debankTokens.push(result?.tokens || {})
-			}
-		}
+	async getTransactions(showAll = false) {
+		const historyInfo: { history: DebankHistory[], tokens: any }[] = []
 
-		// Get Info
-		await getInfoFromDebank()
+		// Get Info from Debank
+		for (const index in this.chainNames) {
+			const chainName = this.chainNames[index]
+			const isIncluded = !ENV_GET_TRANS_FROM_CHAINS.length || ENV_GET_TRANS_FROM_CHAINS.includes(chainName) ? true : false
+			historyInfo.push(isIncluded ? await getHistory(this.address, chainName, !showAll) : { history: [], tokens: {} })
+		}
 
 		// Get Existing Token Addresses
 		const existingAddresses = await this.getExistingTokenAddresses()
 
 		// Iterate Chain Results
-		for (const index in rawChains) {
+		for (const index in historyInfo) {
 			const chainName = this.chainNames[index]
-			const records = rawChains[index] as DebankHistory[]
+			const records = historyInfo[index].history
+			const tokens = historyInfo[index].tokens
 			const transactionHashes: string[] = []
 			let historyRecords: HistoryRecord[] = this.chains[chainName].transactions
 
 			// Get Token Addresses
 			const tokenAddresses = this.getTokenAddresses(
 				records,
-				debankTokens[index],
+				tokens,
 				existingAddresses[chainName]
 			)
 
@@ -103,7 +85,7 @@ export default class DefiTransactions extends DefiBalances {
 				const { nestedRecord, dustTokens } = this.sterilizeHistoryRecord(
 					record,
 					chainName,
-					debankTokens[index],
+					tokens,
 					tokenAddresses
 				)
 				const splitRecords = this.splitHistoryRecord(nestedRecord)
@@ -113,7 +95,7 @@ export default class DefiTransactions extends DefiBalances {
 						this.sterilizeHistoryRecord(
 							record,
 							chainName,
-							debankTokens[index],
+							tokens,
 							tokenAddresses,
 							dustTokens
 						)

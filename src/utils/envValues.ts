@@ -7,6 +7,17 @@ dotenv.config()
 // Environment Address
 export const ENV_ADDRESS = process.env.MULTI_CHAIN_ADDRESS || ''
 
+// Environment Get Transactions from Chains
+export const ENV_GET_TRANS_FROM_CHAINS = (() => {
+	let chains: string[] = []
+	try {
+		chains = JSON.parse(process.env.MULTI_CHAIN_GET_TRANS_FROM_CHAINS || '')
+	} catch (err) {
+		// Do Nothing
+	}
+	return chains
+})()
+
 // Environment Minimum Token Value
 export const ENV_MIN_VALUE =
 	process.env.MULTI_CHAIN_MIN_VALUE != null

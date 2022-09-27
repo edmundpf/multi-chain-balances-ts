@@ -34,10 +34,11 @@ export declare type TokenRecords = {
 export declare type VaultData = TokenData & {
     platform: string;
     platformUrl: string;
-    apy?: number;
-    vaultName?: string;
-    receiptName?: string;
+    vaultName: string;
+    receiptAddress: string;
+    receiptName: string;
     receiptAmount?: number;
+    apy?: number;
     tokens: TokenData[];
 };
 export declare type Assets = {
@@ -56,7 +57,6 @@ export declare type Chain = {
     nativeToken: TokenData;
     tokens: TokenData[];
     vaults: VaultData[];
-    receipts: NumDict;
     transactions: HistoryRecord[];
     tokenAddresses: StringDict;
 };
@@ -98,6 +98,7 @@ export declare type DriverArgs = {
     getPrices?: boolean;
     getBalances?: boolean;
     filterUnknownTokens?: boolean;
+    showAllTransactions?: boolean;
     priorTransactions?: HistoryRecord[];
 };
 export declare type InferMultiSwapArgs = {
@@ -124,6 +125,9 @@ declare type PortfolioItemList = {
     stats: {
         net_usd_value: number;
     };
+    pool: {
+        id: string;
+    };
 };
 declare type DebankTransactionInfo = {
     eth_gas_fee: number;
@@ -148,7 +152,8 @@ export declare type Token = {
     chain: keyof Chains;
     symbol: string;
     price: number;
-    balance: number;
+    amount?: number;
+    balance?: number;
     decimals: number;
 };
 export declare type Protocol = {
@@ -179,7 +184,13 @@ export declare type DebankHistory = {
  */
 export declare type BeefyVaultInfo = {
     id: string;
+    chain: string;
     earnedToken: string;
+    earnedTokenAddress: string;
+    pricePerFullShare: string;
+    retireReason?: string;
+    lastHarvest: number;
+    assets: string[];
 };
 /**
  * Coin Gecko Types

@@ -3,7 +3,6 @@
  */
 
 // Asset Data Type
-
 type AssetData = {
 	value: number
 	apy: number
@@ -12,7 +11,6 @@ type AssetData = {
 }
 
 // Token Record Type
-
 type TokenRecord = {
 	amount: number
 	quantity: number
@@ -20,23 +18,19 @@ type TokenRecord = {
 }
 
 // String Dict Type
-
 export type StringDict = {
 	[index: string]: string
 }
 
 // Numeric Dict Type
-
 export type NumDict = {
 	[index: string]: number
 }
 
 // Base Or Quote Type
-
 export type BaseOrQuote = 'base' | 'quote'
 
 // Token Data Type
-
 export type TokenData = {
 	symbol: string
 	value: number
@@ -44,50 +38,44 @@ export type TokenData = {
 }
 
 // Price Data Type
-
 export type PriceData = {
 	time: number
 	price: number
 }
 
 // Token Records Type
-
 export type TokenRecords = {
 	[index: string]: TokenRecord
 }
 
 // Vault Data Type
-
 export type VaultData = TokenData & {
 	platform: string
 	platformUrl: string
-	apy?: number
-	vaultName?: string
-	receiptName?: string
+	vaultName: string
+	receiptAddress: string
+	receiptName: string
 	receiptAmount?: number
+	apy?: number
 	tokens: TokenData[]
 }
 
 // Assets Type
-
 export type Assets = {
 	[index: string]: AssetData
 }
 
 // Token Times Type
-
 export type TokenTimes = {
 	[index: string]: number[]
 }
 
 // Token Prices Type
-
 export type TokenPrices = {
 	[index: string]: PriceData[]
 }
 
 // Chain Type
-
 export type Chain = {
 	totalValue: number
 	totalTokenValue: number
@@ -95,13 +83,11 @@ export type Chain = {
 	nativeToken: TokenData
 	tokens: TokenData[]
 	vaults: VaultData[]
-	receipts: NumDict
 	transactions: HistoryRecord[]
 	tokenAddresses: StringDict
 }
 
 // Chains Type
-
 export type Chains = {
 	avax: Chain
 	bsc: Chain
@@ -114,7 +100,6 @@ export type Chains = {
 }
 
 // History Record Type
-
 export type HistoryRecord = {
 	id: string
 	time: string
@@ -140,17 +125,16 @@ export type HistoryRecord = {
 }
 
 // Driver Args Type
-
 export type DriverArgs = {
 	getTransactions?: boolean
 	getPrices?: boolean
 	getBalances?: boolean
 	filterUnknownTokens?: boolean
+	showAllTransactions?: boolean
 	priorTransactions?: HistoryRecord[]
 }
 
 // Infer Multi Swap Args
-
 export type InferMultiSwapArgs = {
 	absSingleValueUSD: number
 	absMultiValueUSD: number
@@ -163,11 +147,9 @@ export type InferMultiSwapArgs = {
 }
 
 // Token Addresses Type
-
 export type TokenAddresses = { [index: string]: string[] }
 
 // Main Request Type
-
 export type MainRequest =
 	| Token[]
 	| Protocol[]
@@ -180,7 +162,6 @@ export type MainRequest =
  */
 
 // Portfolio Item List Type
-
 type PortfolioItemList = {
 	detail: {
 		supply_token_list: Token[]
@@ -188,10 +169,12 @@ type PortfolioItemList = {
 	stats: {
 		net_usd_value: number
 	}
+	pool: {
+		id: string
+	}
 }
 
 // Debank Transaction Info Type
-
 type DebankTransactionInfo = {
 	eth_gas_fee: number
 	usd_gas_fee: number
@@ -202,7 +185,6 @@ type DebankTransactionInfo = {
 }
 
 // Debank Tokens Type
-
 export type DebankTokens = {
 	[index: string]: {
 		symbol: string
@@ -210,7 +192,6 @@ export type DebankTokens = {
 }
 
 // Debank Transfer Type
-
 export type DebankTransfer = {
 	amount: number
 	to_addr?: string
@@ -219,17 +200,16 @@ export type DebankTransfer = {
 }
 
 // Token Type
-
 export type Token = {
 	chain: keyof Chains
 	symbol: string
 	price: number
-	balance: number
+	amount?: number
+	balance?: number
 	decimals: number
 }
 
 // Protocol Type
-
 export type Protocol = {
 	chain: keyof Chains
 	name: string
@@ -238,7 +218,6 @@ export type Protocol = {
 }
 
 // Debank Trans Response Type
-
 export type DebankTransResponse = {
 	data: {
 		history_list: DebankHistory[]
@@ -249,7 +228,6 @@ export type DebankTransResponse = {
 }
 
 // Debank History Type
-
 export type DebankHistory = {
 	id: string
 	cate_id?: string
@@ -265,10 +243,15 @@ export type DebankHistory = {
  */
 
 // Beefy Vault Info Type
-
 export type BeefyVaultInfo = {
 	id: string
+	chain: string
 	earnedToken: string
+	earnedTokenAddress: string
+	pricePerFullShare: string
+	retireReason?: string
+	lastHarvest: number
+	assets: string[]
 }
 
 /**
@@ -276,7 +259,6 @@ export type BeefyVaultInfo = {
  */
 
 // Coin Gecko Token
-
 export type CoinGeckoToken = {
 	id: string
 	symbol: string
@@ -285,7 +267,6 @@ export type CoinGeckoToken = {
 }
 
 // Coin Gecko Prices Response
-
 export type CoinGeckoPricesResponse = {
 	prices: number[][]
 }
@@ -295,11 +276,9 @@ export type CoinGeckoPricesResponse = {
  */
 
 // Local Price Data
-
 export type LocalPriceData = PriceData & { symbol: string }
 
 // Local Contract Data
-
 export type LocalContractData = {
 	blockchain: string
 	symbol: string

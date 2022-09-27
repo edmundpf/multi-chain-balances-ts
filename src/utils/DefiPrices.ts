@@ -46,6 +46,7 @@ export default class DefiPrices extends DefiTransactions {
 	private nextApiCallMs = 0
 	private recentApiCalls: number[] = []
 	private filterUnknownTokens = false
+	private showAllTransactions = false
 
 	/**
 	 * Driver
@@ -57,12 +58,14 @@ export default class DefiPrices extends DefiTransactions {
 			getPrices,
 			getBalances,
 			filterUnknownTokens,
+			showAllTransactions,
 			priorTransactions,
 		} = {
 			...defaultDriverArgs,
 			...args,
 		}
 		this.filterUnknownTokens = filterUnknownTokens ? true : false
+		this.showAllTransactions = showAllTransactions ? true : false
 
 		if (priorTransactions?.length) {
 			this.importPriorTransactions(priorTransactions)
@@ -71,12 +74,12 @@ export default class DefiPrices extends DefiTransactions {
 		// Get Transactions
 		if (getTransactions || getPrices) {
 			await prepareDB()
-			await this.getTransactions()
+			await this.getTransactions(this.showAllTransactions)
 			if (this.filterUnknownTokens && !getPrices) this.getUnknownTokens()
 		}
 
 		// Get Prices and Balances
-		if (getBalances) await this.getBalances(this.filterUnknownTokens)
+		if (getBalances) await this.getBalances()
 		if (getPrices) await this.getPriceData()
 	}
 

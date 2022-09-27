@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const DefiBalances_1 = __importDefault(require("./DefiBalances"));
 const localData_1 = require("./localData");
+const envValues_1 = require("./envValues");
 const values_1 = require("./values");
 const utils_1 = require("./utils");
 /**
@@ -23,47 +24,26 @@ class DefiTransactions extends DefiBalances_1.default {
     /**
      * Get Transactions
      */
-    getTransactions() {
+    getTransactions(showAll = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const debankRequests = [];
-            const rawChains = [];
-            const debankTokens = [];
+            const historyInfo = [];
             // Get Info from Debank
-            const getInfoFromDebank = () => __awaiter(this, void 0, void 0, function* () {
-                for (const index in this.chainNames) {
-                    const chainName = this.chainNames[index];
-                    if (!rawChains[index]) {
-                        debankRequests.push(utils_1.getHistory(this.address, chainName));
-                    }
-                    else {
-                        debankRequests.push(undefined);
-                    }
-                }
-                const res = yield Promise.all(debankRequests);
-                const isFilled = rawChains.length == this.chainNames.length;
-                for (const index in res) {
-                    const result = res[index];
-                    if (result === null || result === void 0 ? void 0 : result.history) {
-                        rawChains[index] = result.history;
-                    }
-                    else if (!rawChains[index]) {
-                        rawChains[index] = isFilled ? [] : undefined;
-                    }
-                    debankTokens.push((result === null || result === void 0 ? void 0 : result.tokens) || {});
-                }
-            });
-            // Get Info
-            yield getInfoFromDebank();
+            for (const index in this.chainNames) {
+                const chainName = this.chainNames[index];
+                const isIncluded = !envValues_1.ENV_GET_TRANS_FROM_CHAINS.length || envValues_1.ENV_GET_TRANS_FROM_CHAINS.includes(chainName) ? true : false;
+                historyInfo.push(isIncluded ? yield utils_1.getHistory(this.address, chainName, !showAll) : { history: [], tokens: {} });
+            }
             // Get Existing Token Addresses
             const existingAddresses = yield this.getExistingTokenAddresses();
             // Iterate Chain Results
-            for (const index in rawChains) {
+            for (const index in historyInfo) {
                 const chainName = this.chainNames[index];
-                const records = rawChains[index];
+                const records = historyInfo[index].history;
+                const tokens = historyInfo[index].tokens;
                 const transactionHashes = [];
                 let historyRecords = this.chains[chainName].transactions;
                 // Get Token Addresses
-                const tokenAddresses = this.getTokenAddresses(records, debankTokens[index], existingAddresses[chainName]);
+                const tokenAddresses = this.getTokenAddresses(records, tokens, existingAddresses[chainName]);
                 // Get existing hashes from imported history records
                 if (historyRecords.length) {
                     for (const record of historyRecords) {
@@ -80,11 +60,11 @@ class DefiTransactions extends DefiBalances_1.default {
                         continue;
                     }
                     // Sterilize Records
-                    const { nestedRecord, dustTokens } = this.sterilizeHistoryRecord(record, chainName, debankTokens[index], tokenAddresses);
+                    const { nestedRecord, dustTokens } = this.sterilizeHistoryRecord(record, chainName, tokens, tokenAddresses);
                     const splitRecords = this.splitHistoryRecord(nestedRecord);
                     let dustRecords = [];
                     if (Object.keys(dustTokens).length) {
-                        const { nestedRecord: nestedDustRecord } = this.sterilizeHistoryRecord(record, chainName, debankTokens[index], tokenAddresses, dustTokens);
+                        const { nestedRecord: nestedDustRecord } = this.sterilizeHistoryRecord(record, chainName, tokens, tokenAddresses, dustTokens);
                         dustRecords = this.splitHistoryRecord(nestedDustRecord);
                     }
                     historyRecords = [...historyRecords, ...splitRecords, ...dustRecords];

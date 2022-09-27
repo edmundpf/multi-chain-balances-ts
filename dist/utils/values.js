@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.RECEIPT_ALIASES = exports.TOKEN_ALIASES = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
+exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Fiat Currency
  */
@@ -18,20 +18,6 @@ exports.NATIVE_TOKENS = {
     matic: 'MATIC',
     movr: 'MOVR',
     hmy: 'ONE',
-};
-// Token Aliases
-exports.TOKEN_ALIASES = {
-    mai: 'mimatic',
-    mimatic: 'mai',
-};
-// Receipt Aliases
-exports.RECEIPT_ALIASES = {
-    curveren: ['amwbtc', 'renbtc'],
-    fugue: ['usdc', 'ust', 'mim'],
-    beetgod: ['dei', 'usdc'],
-    av3crv: ['mai', 'dai', 'usdc', 'usdt'],
-    abrcdbr: ['mim', 'usdt', 'usdc'],
-    hector: ['tor', 'dai', 'usdc'],
 };
 // Default URL's
 exports.DEFAULT_URLS = {
@@ -90,6 +76,7 @@ exports.defaultDriverArgs = {
     getPrices: true,
     getBalances: true,
     filterUnknownTokens: true,
+    showAllTransactions: false,
 };
 // Default History Record
 exports.defaultHistoryRecord = {
@@ -144,7 +131,6 @@ const initChain = (chainName) => {
         },
         tokens: [],
         vaults: [],
-        receipts: {},
         transactions: [],
         tokenAddresses: {},
     };

@@ -66,7 +66,7 @@ export const getDebankEndpoint = async (
 		...args,
 		[hasShortAddressArg ? 'addr' : 'user_addr']: address,
 	})
-	console.log(result)
+	if (result?.hasError) console.log('ERROR:', endpoint, args)
 	return result
 }
 
@@ -78,25 +78,19 @@ export const getBeefyEndpoint = async (endpoint: keyof typeof ENDPOINTS) =>
  * Debank Calls
  */
 
-// Get Token List from Chain
-const getTokenListFromChain = async (address: string, chainName: string) =>
-	(await getDebankEndpoint('tokenList', address, { chain: chainName }))?.data || []
-
 // Get Known Token List from Chain
 const getKnownTokenListFromChain = async (address: string, chainName: string) =>
 	(await getDebankEndpoint('tokenList', address, { chain: chainName, is_all: false }))?.data || []
 
 // Get Token List from all Chains
-const getTokenListFromAllChains = async (address: string, chainNames: string[], listAll = true) => {
+const getTokenListFromAllChains = async (address: string, chainNames: string[]) => {
 	let tokens: any[] = []
-	const requests: Promise<any[]>[] = []
-	const method = listAll ? getTokenListFromChain : getKnownTokenListFromChain
+	const responses: any[][] = []
 
 	// Iterate Chains
 	for (const chainName of chainNames) {
-		requests.push(method(address, chainName))
+		responses.push(await getKnownTokenListFromChain(address, chainName))
 	}
-	const responses = await Promise.all(requests)
 
 	// Iterate Responses
 	for (const response of responses) {
@@ -104,18 +98,6 @@ const getTokenListFromAllChains = async (address: string, chainNames: string[], 
 	}
 	return tokens
 }
-
-// Get Token List
-export const getTokenList = async (address: string, chainNames: string[]) =>
-	await getTokenListFromAllChains(address, chainNames)
-
-// Get Known Token List
-export const getKnownTokenList = async (address: string, chainNames: string[]) =>
-	await getTokenListFromAllChains(address, chainNames, false)
-
-// Get Protocol List
-export const getProtocolList = async (address: string) =>
-	(await getDebankEndpoint('protocolList', address))?.data || []
 
 // Get Single Page History
 const getSinglePageHistory = async (address: string, chainName: string, startTime = 0) => {
@@ -130,6 +112,14 @@ const getSinglePageHistory = async (address: string, chainName: string, startTim
 	}
 }
 
+// Get Token List
+export const getTokenList = async (address: string, chainNames: string[]) =>
+	await getTokenListFromAllChains(address, chainNames)
+
+// Get Protocol List
+export const getProtocolList = async (address: string) =>
+	(await getDebankEndpoint('protocolList', address))?.data || []
+
 // Get History
 export const getHistory = async (address: string, chainName: string, getSinglePage = true) => {
 	let startTime = 0
@@ -140,7 +130,7 @@ export const getHistory = async (address: string, chainName: string, getSinglePa
 		const { tokens, history, lastTime } = await getSinglePageHistory(address, chainName, startTime)
 		allTokens = { ...tokens, ...allTokens }
 		allHistory = [...allHistory, ...history]
-		shouldEnd = getSinglePage || !history.length || lastTime <= startTime
+		shouldEnd = getSinglePage || !history.length || !lastTime || startTime && lastTime >= startTime ? true : false
 		startTime = shouldEnd ? startTime : lastTime
 	}
 	return { history: allHistory, tokens: allTokens }
@@ -154,7 +144,10 @@ export const getHistory = async (address: string, chainName: string, getSinglePa
 export const getBeefyApy = async () => await getBeefyEndpoint('beefyApy')
 
 // Get Beefy Vaults
-export const getBeefyVaults = async () => {
+export const getBeefyVaults = async () => await getBeefyEndpoint('beefyVaults')
+
+// Get Beefy Vaults from Github
+export const getBeefyVaultsFromGithub = async () => {
 	let savedVaults: any = {}
 	const vaultFile = resolve(SAVED_VAULTS_FILE)
 

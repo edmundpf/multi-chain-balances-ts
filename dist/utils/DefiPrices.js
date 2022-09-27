@@ -26,27 +26,29 @@ class DefiPrices extends DefiTransactions_1.default {
         this.nextApiCallMs = 0;
         this.recentApiCalls = [];
         this.filterUnknownTokens = false;
+        this.showAllTransactions = false;
     }
     /**
      * Driver
      */
     driver(args) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { getTransactions, getPrices, getBalances, filterUnknownTokens, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
+            const { getTransactions, getPrices, getBalances, filterUnknownTokens, showAllTransactions, priorTransactions, } = Object.assign(Object.assign({}, values_1.defaultDriverArgs), args);
             this.filterUnknownTokens = filterUnknownTokens ? true : false;
+            this.showAllTransactions = showAllTransactions ? true : false;
             if (priorTransactions === null || priorTransactions === void 0 ? void 0 : priorTransactions.length) {
                 this.importPriorTransactions(priorTransactions);
             }
             // Get Transactions
             if (getTransactions || getPrices) {
                 yield localData_1.prepareDB();
-                yield this.getTransactions();
+                yield this.getTransactions(this.showAllTransactions);
                 if (this.filterUnknownTokens && !getPrices)
                     this.getUnknownTokens();
             }
             // Get Prices and Balances
             if (getBalances)
-                yield this.getBalances(this.filterUnknownTokens);
+                yield this.getBalances();
             if (getPrices)
                 yield this.getPriceData();
         });

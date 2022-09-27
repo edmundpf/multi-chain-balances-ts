@@ -5,7 +5,6 @@ export {
 	getDebankEndpoint,
 	getBeefyEndpoint,
 	getTokenList,
-	getKnownTokenList,
 	getProtocolList,
 	getHistory,
 	getBeefyApy,

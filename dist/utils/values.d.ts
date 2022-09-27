@@ -16,8 +16,6 @@ export declare const NATIVE_TOKENS: {
     movr: string;
     hmy: string;
 };
-export declare const TOKEN_ALIASES: any;
-export declare const RECEIPT_ALIASES: any;
 export declare const DEFAULT_URLS: {
     avax: string;
     bsc: string;
