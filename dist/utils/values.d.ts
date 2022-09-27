@@ -79,6 +79,7 @@ export declare const getDebankHeaders: (address: string) => {
     Accept: string;
     'Accept-Language': string;
     Referer: string;
+    Origin: string;
     'User-Agent': string;
     'sec-ch-ua': string;
     'sec-ch-ua-mobile': string;

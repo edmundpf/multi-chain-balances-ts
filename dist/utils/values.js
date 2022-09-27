@@ -170,6 +170,7 @@ const defaultDebankHeaders = {
     Accept: '*/*',
     'Accept-Language': 'en-US,en;q=0.9',
     Referer: 'https://debank.com/',
+    Origin: 'https://debank.com',
     account: defaultDebankAccountHeader,
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
     'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
@@ -179,8 +180,8 @@ const defaultDebankHeaders = {
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-site',
     source: 'web',
-    'x-api-nonce': 'n_IV9lCCpkKZ8IIPVTQfzxqDWpKeZV1lVnAxuCwOR6',
-    'x-api-sign': 'd15a7a2aa32c6c814f7423bff5fb6fc26285fdf967cb7b69bcc0cd6e9779c656',
+    'x-api-nonce': 'n_KIGCpFpDhQ7F6QywGRAW0UNWwl6zJf3Ru8fnofPy',
+    'x-api-sign': '6acae58467ea58ac38773a6a999e735e42b3c3e205a905501653e2143e062aa5',
     'x-api-ts': 0,
     'x-api-ver': 'v2',
 };
