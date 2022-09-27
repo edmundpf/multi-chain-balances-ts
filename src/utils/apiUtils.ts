@@ -45,7 +45,6 @@ export const getEndpoint = async (
 			(await axios.get(fullUrl, headers ? { headers } : undefined))?.data || {}
 		)
 	} catch (err) {
-		console.error(err)
 		return {
 			...((err as any)?.response?.data || {}),
 			hasError: true,
@@ -74,7 +73,7 @@ export const getDebankEndpoint = async (
 		},
 		headers
 	)
-	if (result?.hasError) console.log('ERROR:', endpoint, args)
+	console.log(endpoint, args)
 	return result
 }
 

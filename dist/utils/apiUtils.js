@@ -47,7 +47,6 @@ const getEndpoint = (api, endpoint, params, headers) => __awaiter(void 0, void 0
         return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) || {});
     }
     catch (err) {
-        console.error(err);
         return Object.assign(Object.assign({}, (((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {})), { hasError: true });
     }
 });
@@ -59,8 +58,7 @@ exports.getEndpoint = getEndpoint;
 const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) => __awaiter(void 0, void 0, void 0, function* () {
     const headers = values_1.getDebankHeaders(address);
     const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers);
-    if (result === null || result === void 0 ? void 0 : result.hasError)
-        console.log('ERROR:', endpoint, args);
+    console.log(endpoint, args);
     return result;
 });
 exports.getDebankEndpoint = getDebankEndpoint;
