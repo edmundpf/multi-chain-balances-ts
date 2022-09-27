@@ -58,7 +58,7 @@ exports.getEndpoint = getEndpoint;
 const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) => __awaiter(void 0, void 0, void 0, function* () {
     const headers = values_1.getDebankHeaders(address);
     const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers);
-    console.log(endpoint, args);
+    console.log(result.hasError ? 'Error' : 'Success', endpoint, args);
     return result;
 });
 exports.getDebankEndpoint = getDebankEndpoint;

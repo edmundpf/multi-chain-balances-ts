@@ -73,7 +73,7 @@ export const getDebankEndpoint = async (
 		},
 		headers
 	)
-	console.log(endpoint, args)
+	console.log(result.hasError ? 'Error' : 'Success', endpoint, args)
 	return result
 }
 
