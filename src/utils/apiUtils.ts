@@ -2,7 +2,13 @@ import axios from 'axios'
 import { promises } from 'fs'
 import { resolve } from 'path'
 import { DebankHistory } from './types'
-import { APIS, ENDPOINTS, SAVED_VAULTS_FILE, BEEFY_VAULT_URLS } from './values'
+import {
+	APIS,
+	ENDPOINTS,
+	SAVED_VAULTS_FILE,
+	BEEFY_VAULT_URLS,
+	getDebankHeaders,
+} from './values'
 const { readFile, writeFile } = promises
 
 /**
@@ -35,22 +41,11 @@ export const getEndpoint = async (
 		let paramStr = params ? new URLSearchParams(params).toString() : ''
 		if (paramStr) paramStr = '?' + paramStr
 		const fullUrl = `${apiUrl}/${stub}${paramStr}`
-		const defaultHeaders = {
-			'User-Agent':
-				'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
-			'sec-ch-ua':
-				'"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-			'sec-ch-ua-platform': '"macOS"',
-		}
 		return (
-			(
-				await axios.get(
-					fullUrl,
-					headers ? { ...defaultHeaders, ...headers } : defaultHeaders
-				)
-			)?.data || {}
+			(await axios.get(fullUrl, headers ? { headers } : undefined))?.data || {}
 		)
 	} catch (err) {
+		console.error(err)
 		return {
 			...((err as any)?.response?.data || {}),
 			hasError: true,
@@ -69,10 +64,16 @@ export const getDebankEndpoint = async (
 	args?: any,
 	hasShortAddressArg = false
 ) => {
-	const result = await getEndpoint('debank', endpoint, {
-		...args,
-		[hasShortAddressArg ? 'addr' : 'user_addr']: address,
-	})
+	const headers = getDebankHeaders(address)
+	const result = await getEndpoint(
+		'debank',
+		endpoint,
+		{
+			...args,
+			[hasShortAddressArg ? 'addr' : 'user_addr']: address,
+		},
+		headers
+	)
 	if (result?.hasError) console.log('ERROR:', endpoint, args)
 	return result
 }

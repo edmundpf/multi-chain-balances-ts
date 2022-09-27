@@ -1,11 +1,8 @@
 import { Chains, HistoryRecord, DriverArgs } from './types';
 /**
- * Fiat Currency
- */
-export declare const FIAT_CURRENCY = "USD";
-/**
  * Crypto Info
  */
+export declare const FIAT_CURRENCY = "USD";
 export declare const NATIVE_TOKENS: {
     avax: string;
     bsc: string;
@@ -76,3 +73,21 @@ export declare const slippageConfig: {
 export declare const initChains: () => Chains;
 export declare const ONE_DAY: number;
 export declare const SAVED_VAULTS_FILE = "saved_vaults.json";
+export declare const getDebankHeaders: (address: string) => {
+    account: string;
+    'x-api-ts': number;
+    Accept: string;
+    'Accept-Language': string;
+    Referer: string;
+    'User-Agent': string;
+    'sec-ch-ua': string;
+    'sec-ch-ua-mobile': string;
+    'sec-ch-ua-platform': string;
+    'sec-fetch-dest': string;
+    'sec-fetch-mode': string;
+    'sec-fetch-site': string;
+    source: string;
+    'x-api-nonce': string;
+    'x-api-sign': string;
+    'x-api-ver': string;
+};

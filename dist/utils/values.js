@@ -1,13 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
-/**
- * Fiat Currency
- */
-exports.FIAT_CURRENCY = 'USD';
+exports.getDebankHeaders = exports.SAVED_VAULTS_FILE = exports.ONE_DAY = exports.initChains = exports.slippageConfig = exports.stableCoinConfig = exports.DEFAULT_DB_FILE = exports.DEFAULT_MIN_VALUE = exports.defaultHistoryRecord = exports.defaultDriverArgs = exports.coinGeckoDayCutoffs = exports.coinGeckoLimits = exports.ENDPOINTS = exports.APIS = exports.BEEFY_VAULT_URLS = exports.DEFAULT_URLS = exports.NATIVE_TOKENS = exports.FIAT_CURRENCY = void 0;
 /**
  * Crypto Info
  */
+// Fiat Currency
+exports.FIAT_CURRENCY = 'USD';
 // Native Tokens
 exports.NATIVE_TOKENS = {
     avax: 'AVAX',
@@ -158,7 +156,38 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 // One Hour
 const ONE_HOUR = 60 * ONE_MINUTE;
+// Default Debank Account Header
+const defaultDebankAccountHeader = JSON.stringify({
+    random_at: 1627578821,
+    random_id: 'be0e50eb9b94458eb42b5bef871a0c16',
+    session_id: '705c8a29fd9141d4a360dc7a8a8ac52e',
+    user_addr: '__ADDR__',
+    wallet_type: 'metamask',
+    is_verified: true,
+});
+// Default Debank Headers
+const defaultDebankHeaders = {
+    Accept: '*/*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    Referer: 'https://debank.com/',
+    account: defaultDebankAccountHeader,
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+    'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-site',
+    source: 'web',
+    'x-api-nonce': 'n_IV9lCCpkKZ8IIPVTQfzxqDWpKeZV1lVnAxuCwOR6',
+    'x-api-sign': 'd15a7a2aa32c6c814f7423bff5fb6fc26285fdf967cb7b69bcc0cd6e9779c656',
+    'x-api-ts': 0,
+    'x-api-ver': 'v2',
+};
 // One Day
 exports.ONE_DAY = 24 * ONE_HOUR;
 // Saved Vaults File
 exports.SAVED_VAULTS_FILE = 'saved_vaults.json';
+// Get Debank Headers
+const getDebankHeaders = (address) => (Object.assign(Object.assign({}, defaultDebankHeaders), { account: defaultDebankHeaders.account.replace('__ADDR__', address), 'x-api-ts': new Date().getTime() }));
+exports.getDebankHeaders = getDebankHeaders;

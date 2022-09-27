@@ -1,14 +1,11 @@
 import { Chain, Chains, HistoryRecord, DriverArgs } from './types'
 
 /**
- * Fiat Currency
- */
-
-export const FIAT_CURRENCY = 'USD'
-
-/**
  * Crypto Info
  */
+
+// Fiat Currency
+export const FIAT_CURRENCY = 'USD'
 
 // Native Tokens
 export const NATIVE_TOKENS = {
@@ -182,8 +179,48 @@ const ONE_MINUTE = 60 * ONE_SECOND
 // One Hour
 const ONE_HOUR = 60 * ONE_MINUTE
 
+// Default Debank Account Header
+const defaultDebankAccountHeader = JSON.stringify({
+	random_at: 1627578821,
+	random_id: 'be0e50eb9b94458eb42b5bef871a0c16',
+	session_id: '705c8a29fd9141d4a360dc7a8a8ac52e',
+	user_addr: '__ADDR__',
+	wallet_type: 'metamask',
+	is_verified: true,
+})
+
+// Default Debank Headers
+const defaultDebankHeaders = {
+	Accept: '*/*',
+	'Accept-Language': 'en-US,en;q=0.9',
+	Referer: 'https://debank.com/',
+	account: defaultDebankAccountHeader,
+	'User-Agent':
+		'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+	'sec-ch-ua':
+		'"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+	'sec-ch-ua-mobile': '?0',
+	'sec-ch-ua-platform': '"macOS"',
+	'sec-fetch-dest': 'empty',
+	'sec-fetch-mode': 'cors',
+	'sec-fetch-site': 'same-site',
+	source: 'web',
+	'x-api-nonce': 'n_IV9lCCpkKZ8IIPVTQfzxqDWpKeZV1lVnAxuCwOR6',
+	'x-api-sign':
+		'd15a7a2aa32c6c814f7423bff5fb6fc26285fdf967cb7b69bcc0cd6e9779c656',
+	'x-api-ts': 0,
+	'x-api-ver': 'v2',
+}
+
 // One Day
 export const ONE_DAY = 24 * ONE_HOUR
 
 // Saved Vaults File
 export const SAVED_VAULTS_FILE = 'saved_vaults.json'
+
+// Get Debank Headers
+export const getDebankHeaders = (address: string) => ({
+	...defaultDebankHeaders,
+	account: defaultDebankHeaders.account.replace('__ADDR__', address),
+	'x-api-ts': new Date().getTime(),
+})
