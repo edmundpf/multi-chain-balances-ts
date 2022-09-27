@@ -2,7 +2,7 @@ multi-chain-balances-ts / [Exports](modules.md)
 
 # multi-chain-balances-ts
 
-> Get all token/vault data, readable transactions w/ prices, and Beefy.Finance Vault info on Ethereum, BSC, Polygon, Avalanche, Fantom, Cronos, and Moonriver Blockchains.
+> Get all token/vault balances, readable transactions w/ prices, and Beefy.Finance vault info on EVM blockchains using Debank/Beefy data.
 
 ## Install
 
