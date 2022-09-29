@@ -21,7 +21,7 @@ const envValues_1 = require("./envValues");
 const values_1 = require("./values");
 // Proxy Agent
 const proxyAgent = envValues_1.ENV_PROXY_ADDRESS
-    ? https_proxy_agent_1.default(`https://${envValues_1.ENV_PROXY_ADDRESS}:${envValues_1.ENV_PROXY_PORT}`)
+    ? https_proxy_agent_1.default(`http://${envValues_1.ENV_PROXY_ADDRESS}:${envValues_1.ENV_PROXY_PORT}`)
     : null;
 /**
  * Misc
@@ -78,8 +78,9 @@ exports.getEndpoint = getEndpoint;
 // Get Debank Endpoint
 const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) => __awaiter(void 0, void 0, void 0, function* () {
     const headers = values_1.getDebankHeaders(address);
-    const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers, true);
-    yield miscUtils_1.waitMs(envValues_1.ENV_DEBANK_WAIT_MS);
+    const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers, true, true);
+    if (envValues_1.ENV_DEBANK_WAIT_MS)
+        yield miscUtils_1.waitMs(envValues_1.ENV_DEBANK_WAIT_MS);
     console.log(result.hasError ? 'Error' : 'Success', endpoint, args);
     return result;
 });

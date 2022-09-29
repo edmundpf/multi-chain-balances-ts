@@ -12,7 +12,7 @@ import { APIS, ENDPOINTS, getDebankHeaders } from './values'
 
 // Proxy Agent
 const proxyAgent: HttpsProxyAgent | null = ENV_PROXY_ADDRESS
-	? createHttpsProxyAgent(`https://${ENV_PROXY_ADDRESS}:${ENV_PROXY_PORT}`)
+	? createHttpsProxyAgent(`http://${ENV_PROXY_ADDRESS}:${ENV_PROXY_PORT}`)
 	: null
 
 /**
@@ -89,9 +89,10 @@ export const getDebankEndpoint = async (
 			[hasShortAddressArg ? 'addr' : 'user_addr']: address,
 		},
 		headers,
+		true,
 		true
 	)
-	await waitMs(ENV_DEBANK_WAIT_MS)
+	if (ENV_DEBANK_WAIT_MS) await waitMs(ENV_DEBANK_WAIT_MS)
 	console.log(result.hasError ? 'Error' : 'Success', endpoint, args)
 	return result
 }

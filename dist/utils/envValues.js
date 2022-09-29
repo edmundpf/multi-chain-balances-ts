@@ -17,7 +17,7 @@ exports.ENV_MIN_VALUE = process.env.MULTI_CHAIN_MIN_VALUE != null
 // Environment Debank Wait ms
 exports.ENV_DEBANK_WAIT_MS = process.env.MULTI_CHAIN_DEBANK_WAIT_MS
     ? Number(process.env.MULTI_CHAIN_DEBANK_WAIT_MS)
-    : 1000;
+    : 0;
 // Environment Database Location
 exports.ENV_DB_LOCATION = process.env.MULTI_CHAIN_DB_LOCATION || '';
 // Environment Proxy Address
