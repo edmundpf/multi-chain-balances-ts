@@ -67,7 +67,6 @@ const getEndpoint = (api, endpoint, params, headers, useFetch = false, useProxy 
         return response;
     }
     catch (err) {
-        console.error(err);
         return Object.assign(Object.assign({}, (((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {})), { hasError: true });
     }
 });
@@ -81,7 +80,9 @@ const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) 
     const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers, true, true);
     if (envValues_1.ENV_DEBANK_WAIT_MS)
         yield miscUtils_1.waitMs(envValues_1.ENV_DEBANK_WAIT_MS);
-    console.log(result.hasError ? 'Error' : 'Success', endpoint, args);
+    if (result.hasError) {
+        console.info(`Failed to fetch Debank "${endpoint}" data for ${address} w/ args: ${args ? JSON.stringify(args) : '{}'}`);
+    }
     return result;
 });
 exports.getDebankEndpoint = getDebankEndpoint;

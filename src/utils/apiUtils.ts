@@ -61,7 +61,6 @@ export const getEndpoint = async (
 		}
 		return response
 	} catch (err) {
-		console.error(err)
 		return {
 			...((err as any)?.response?.data || {}),
 			hasError: true,
@@ -93,7 +92,13 @@ export const getDebankEndpoint = async (
 		true
 	)
 	if (ENV_DEBANK_WAIT_MS) await waitMs(ENV_DEBANK_WAIT_MS)
-	console.log(result.hasError ? 'Error' : 'Success', endpoint, args)
+	if (result.hasError) {
+		console.info(
+			`Failed to fetch Debank "${endpoint}" data for ${address} w/ args: ${
+				args ? JSON.stringify(args) : '{}'
+			}`
+		)
+	}
 	return result
 }
 
