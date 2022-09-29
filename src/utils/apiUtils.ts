@@ -1,9 +1,19 @@
 import axios from 'axios'
 import fetch from 'node-fetch'
+import createHttpsProxyAgent, { HttpsProxyAgent } from 'https-proxy-agent'
 import { waitMs } from './miscUtils'
 import { DebankHistory } from './types'
-import { ENV_DEBANK_WAIT_MS } from './envValues'
+import {
+	ENV_DEBANK_WAIT_MS,
+	ENV_PROXY_ADDRESS,
+	ENV_PROXY_PORT,
+} from './envValues'
 import { APIS, ENDPOINTS, getDebankHeaders } from './values'
+
+// Proxy Agent
+const proxyAgent: HttpsProxyAgent | null = ENV_PROXY_ADDRESS
+	? createHttpsProxyAgent(`https://${ENV_PROXY_ADDRESS}:${ENV_PROXY_PORT}`)
+	: null
 
 /**
  * Misc
@@ -28,7 +38,8 @@ export const getEndpoint = async (
 	endpoint: keyof typeof ENDPOINTS,
 	params?: any,
 	headers?: any,
-	useFetch = false
+	useFetch = false,
+	useProxy = false
 ) => {
 	try {
 		let response: any = {}
@@ -39,10 +50,9 @@ export const getEndpoint = async (
 		const fullUrl = `${apiUrl}/${stub}${paramStr}`
 		if (useFetch) {
 			const config: any = { method: 'GET' }
-			const fetchRes = await fetch(
-				fullUrl,
-				headers ? { ...config, headers } : config
-			)
+			if (headers) config.headers = headers
+			if (useProxy && proxyAgent) config.agent = proxyAgent
+			const fetchRes = await fetch(fullUrl, config)
 			response = (await fetchRes.json()) || {}
 		} else {
 			response =

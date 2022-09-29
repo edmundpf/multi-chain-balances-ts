@@ -4,7 +4,7 @@ import { APIS, ENDPOINTS } from './values';
  * Misc
  */
 export declare const getFormattedURL: (endpoint: string, replaceArgs: any) => string;
-export declare const getEndpoint: (api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any, useFetch?: boolean) => Promise<any>;
+export declare const getEndpoint: (api: keyof typeof APIS, endpoint: keyof typeof ENDPOINTS, params?: any, headers?: any, useFetch?: boolean, useProxy?: boolean) => Promise<any>;
 /**
  * API Methods
  */

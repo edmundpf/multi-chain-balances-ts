@@ -81,6 +81,7 @@
   "dependencies": {
     "axios": "^0.21.1",
     "dotenv": "^10.0.0",
+    "https-proxy-agent": "^5.0.1",
     "lodash.camelcase": "^4.3.0",
     "lodash.startcase": "^4.4.0",
     "node-fetch": "^2.6.7",

@@ -15,9 +15,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBeefyVaults = exports.getBeefyApy = exports.getHistory = exports.getProtocolList = exports.getTokenList = exports.getBeefyEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
+const https_proxy_agent_1 = __importDefault(require("https-proxy-agent"));
 const miscUtils_1 = require("./miscUtils");
 const envValues_1 = require("./envValues");
 const values_1 = require("./values");
+// Proxy Agent
+const proxyAgent = envValues_1.ENV_PROXY_ADDRESS
+    ? https_proxy_agent_1.default(`https://${envValues_1.ENV_PROXY_ADDRESS}:${envValues_1.ENV_PROXY_PORT}`)
+    : null;
 /**
  * Misc
  */
@@ -35,7 +40,7 @@ const getFormattedURL = (endpoint, replaceArgs) => {
 };
 exports.getFormattedURL = getFormattedURL;
 // Get Endpoint
-const getEndpoint = (api, endpoint, params, headers, useFetch = false) => __awaiter(void 0, void 0, void 0, function* () {
+const getEndpoint = (api, endpoint, params, headers, useFetch = false, useProxy = false) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     try {
         let response = {};
@@ -47,7 +52,11 @@ const getEndpoint = (api, endpoint, params, headers, useFetch = false) => __awai
         const fullUrl = `${apiUrl}/${stub}${paramStr}`;
         if (useFetch) {
             const config = { method: 'GET' };
-            const fetchRes = yield node_fetch_1.default(fullUrl, headers ? Object.assign(Object.assign({}, config), { headers }) : config);
+            if (headers)
+                config.headers = headers;
+            if (useProxy && proxyAgent)
+                config.agent = proxyAgent;
+            const fetchRes = yield node_fetch_1.default(fullUrl, config);
             response = (yield fetchRes.json()) || {};
         }
         else {
