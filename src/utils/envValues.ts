@@ -24,5 +24,10 @@ export const ENV_MIN_VALUE =
 		? Number(process.env.MULTI_CHAIN_MIN_VALUE)
 		: DEFAULT_MIN_VALUE
 
+// Environment Debank Wait ms
+export const ENV_DEBANK_WAIT_MS = process.env.MULTI_CHAIN_DEBANK_WAIT_MS
+	? Number(process.env.MULTI_CHAIN_DEBANK_WAIT_MS)
+	: 1000
+
 // Environment Database Location
 export const ENV_DB_LOCATION = process.env.MULTI_CHAIN_DB_LOCATION || ''

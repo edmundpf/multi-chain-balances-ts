@@ -1,6 +1,8 @@
 import axios from 'axios'
 import fetch from 'node-fetch'
+import { waitMs } from './miscUtils'
 import { DebankHistory } from './types'
+import { ENV_DEBANK_WAIT_MS } from './envValues'
 import { APIS, ENDPOINTS, getDebankHeaders } from './values'
 
 /**
@@ -79,6 +81,7 @@ export const getDebankEndpoint = async (
 		headers,
 		true
 	)
+	await waitMs(ENV_DEBANK_WAIT_MS)
 	console.log(result.hasError ? 'Error' : 'Success', endpoint, args)
 	return result
 }

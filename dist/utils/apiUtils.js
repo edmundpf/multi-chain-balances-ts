@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBeefyVaults = exports.getBeefyApy = exports.getHistory = exports.getProtocolList = exports.getTokenList = exports.getBeefyEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
+const miscUtils_1 = require("./miscUtils");
+const envValues_1 = require("./envValues");
 const values_1 = require("./values");
 /**
  * Misc
@@ -68,6 +70,7 @@ exports.getEndpoint = getEndpoint;
 const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) => __awaiter(void 0, void 0, void 0, function* () {
     const headers = values_1.getDebankHeaders(address);
     const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers, true);
+    yield miscUtils_1.waitMs(envValues_1.ENV_DEBANK_WAIT_MS);
     console.log(result.hasError ? 'Error' : 'Success', endpoint, args);
     return result;
 });
