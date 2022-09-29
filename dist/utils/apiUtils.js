@@ -149,7 +149,7 @@ const getHistory = (address, chainName, getSinglePage = true) => __awaiter(void 
         allHistory = [...allHistory, ...history];
         shouldEnd =
             getSinglePage ||
-                !history.length ||
+                history.length < 20 ||
                 !lastTime ||
                 (startTime && lastTime >= startTime)
                 ? true

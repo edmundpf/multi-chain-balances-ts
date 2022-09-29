@@ -186,7 +186,7 @@ export const getHistory = async (
 		allHistory = [...allHistory, ...history]
 		shouldEnd =
 			getSinglePage ||
-			!history.length ||
+			history.length < 20 ||
 			!lastTime ||
 			(startTime && lastTime >= startTime)
 				? true
