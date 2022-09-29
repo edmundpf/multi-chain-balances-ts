@@ -31,17 +31,6 @@ export const DEFAULT_URLS = {
 	hmy: 'https://explorer.harmony.one',
 }
 
-// Beefy Vault URL's
-export const BEEFY_VAULT_URLS = {
-	avax: 'avalanche',
-	bsc: 'bsc',
-	cro: 'cronos',
-	frm: 'fantom',
-	matic: 'polygon',
-	movr: 'moonriver',
-	hmy: 'harmony',
-}
-
 /**
  * API Info
  */
@@ -179,25 +168,12 @@ const ONE_MINUTE = 60 * ONE_SECOND
 // One Hour
 const ONE_HOUR = 60 * ONE_MINUTE
 
-// Default Debank Account Header
-const defaultDebankAccountHeader = JSON.stringify({
-	random_at: 1627578821,
-	random_id: 'be0e50eb9b94458eb42b5bef871a0c16',
-	session_id: '705c8a29fd9141d4a360dc7a8a8ac52e',
-	user_addr: '__ADDR__',
-	wallet_type: 'metamask',
-	is_verified: true,
-})
-
 // Default Debank Headers
 const defaultDebankHeaders = {
-	Accept: '*/*',
-	'Accept-Language': 'en-US,en;q=0.9',
-	Referer: 'https://debank.com/',
-	Origin: 'https://debank.com',
-	account: defaultDebankAccountHeader,
-	'User-Agent':
-		'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+	accept: '*/*',
+	'accept-language': 'en-US,en;q=0.9',
+	account:
+		'{"random_at":1627578821,"random_id":"be0e50eb9b94458eb42b5bef871a0c16","session_id":"705c8a29fd9141d4a360dc7a8a8ac52e","user_addr":"__ADDR__","wallet_type":"metamask","is_verified":true}',
 	'sec-ch-ua':
 		'"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
 	'sec-ch-ua-mobile': '?0',
@@ -206,22 +182,22 @@ const defaultDebankHeaders = {
 	'sec-fetch-mode': 'cors',
 	'sec-fetch-site': 'same-site',
 	source: 'web',
-	'x-api-nonce': 'n_KIGCpFpDhQ7F6QywGRAW0UNWwl6zJf3Ru8fnofPy',
+	'x-api-nonce': 'n_IwdUUGPS0Dr9SX9TRwRcly7gTRLXLQc8T3CRxXxg',
 	'x-api-sign':
-		'6acae58467ea58ac38773a6a999e735e42b3c3e205a905501653e2143e062aa5',
-	'x-api-ts': 0,
+		'fa673a8daa21d7bd5cc3ce30718a636f4ea7d2e0dd9170f61b22466b62eede44',
+	'x-api-ts': '0',
 	'x-api-ver': 'v2',
+	referer: 'https://debank.com/',
+	origin: 'https://debank.com',
+	authority: 'api.debank.com',
 }
 
 // One Day
 export const ONE_DAY = 24 * ONE_HOUR
 
-// Saved Vaults File
-export const SAVED_VAULTS_FILE = 'saved_vaults.json'
-
 // Get Debank Headers
 export const getDebankHeaders = (address: string) => ({
 	...defaultDebankHeaders,
 	account: defaultDebankHeaders.account.replace('__ADDR__', address),
-	'x-api-ts': new Date().getTime(),
+	'x-api-ts': String(new Date().getTime()),
 })

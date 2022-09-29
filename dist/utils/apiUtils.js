@@ -12,12 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBeefyVaultsFromGithub = exports.getBeefyVaults = exports.getBeefyApy = exports.getHistory = exports.getProtocolList = exports.getTokenList = exports.getBeefyEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
+exports.getBeefyVaults = exports.getBeefyApy = exports.getHistory = exports.getProtocolList = exports.getTokenList = exports.getBeefyEndpoint = exports.getDebankEndpoint = exports.getEndpoint = exports.getFormattedURL = void 0;
 const axios_1 = __importDefault(require("axios"));
-const fs_1 = require("fs");
-const path_1 = require("path");
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const values_1 = require("./values");
-const { readFile, writeFile } = fs_1.promises;
 /**
  * Misc
  */
@@ -35,18 +33,30 @@ const getFormattedURL = (endpoint, replaceArgs) => {
 };
 exports.getFormattedURL = getFormattedURL;
 // Get Endpoint
-const getEndpoint = (api, endpoint, params, headers) => __awaiter(void 0, void 0, void 0, function* () {
+const getEndpoint = (api, endpoint, params, headers, useFetch = false) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     try {
+        let response = {};
         const apiUrl = values_1.APIS[api];
         const stub = values_1.ENDPOINTS[endpoint] || endpoint;
         let paramStr = params ? new URLSearchParams(params).toString() : '';
         if (paramStr)
             paramStr = '?' + paramStr;
         const fullUrl = `${apiUrl}/${stub}${paramStr}`;
-        return (((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) || {});
+        if (useFetch) {
+            const config = { method: 'GET' };
+            const fetchRes = yield node_fetch_1.default(fullUrl, headers ? Object.assign(Object.assign({}, config), { headers }) : config);
+            response = (yield fetchRes.json()) || {};
+        }
+        else {
+            response =
+                ((_a = (yield axios_1.default.get(fullUrl, headers ? { headers } : undefined))) === null || _a === void 0 ? void 0 : _a.data) ||
+                    {};
+        }
+        return response;
     }
     catch (err) {
+        console.error(err);
         return Object.assign(Object.assign({}, (((_c = (_b = err) === null || _b === void 0 ? void 0 : _b.response) === null || _c === void 0 ? void 0 : _c.data) || {})), { hasError: true });
     }
 });
@@ -57,7 +67,7 @@ exports.getEndpoint = getEndpoint;
 // Get Debank Endpoint
 const getDebankEndpoint = (endpoint, address, args, hasShortAddressArg = false) => __awaiter(void 0, void 0, void 0, function* () {
     const headers = values_1.getDebankHeaders(address);
-    const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers);
+    const result = yield exports.getEndpoint('debank', endpoint, Object.assign(Object.assign({}, args), { [hasShortAddressArg ? 'addr' : 'user_addr']: address }), headers, true);
     console.log(result.hasError ? 'Error' : 'Success', endpoint, args);
     return result;
 });
@@ -145,45 +155,3 @@ exports.getBeefyApy = getBeefyApy;
 // Get Beefy Vaults
 const getBeefyVaults = () => __awaiter(void 0, void 0, void 0, function* () { return yield exports.getBeefyEndpoint('beefyVaults'); });
 exports.getBeefyVaults = getBeefyVaults;
-// Get Beefy Vaults from Github
-const getBeefyVaultsFromGithub = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _g, _h;
-    let savedVaults = {};
-    const vaultFile = path_1.resolve(values_1.SAVED_VAULTS_FILE);
-    // Get Saved Vaults
-    try {
-        savedVaults = JSON.parse(yield readFile(vaultFile, 'utf-8'));
-    }
-    catch (err) {
-        // Do Nothing
-    }
-    // Init Vaults
-    const vaults = Object.assign({}, savedVaults);
-    // Iterage URL's
-    for (const key in values_1.BEEFY_VAULT_URLS) {
-        // Get Plain Text
-        const pool = values_1.BEEFY_VAULT_URLS[key];
-        const jsText = ((_h = (_g = (yield axios_1.default.get(`${values_1.APIS.githubVaults}/${pool}_pools.js`, {
-            responseType: 'text',
-        }))) === null || _g === void 0 ? void 0 : _g.data) === null || _h === void 0 ? void 0 : _h.trim()) || '';
-        // Parse Text
-        if (jsText.includes('[')) {
-            try {
-                const data = eval(jsText.substring(jsText.indexOf('['), jsText.length - 1));
-                // Add Vault
-                for (const record of data) {
-                    const { id, earnedToken } = record;
-                    const formattedToken = earnedToken.toLowerCase().replace(/w/g, '');
-                    vaults[formattedToken] = id;
-                }
-            }
-            catch (err) {
-                // Do Nothing
-            }
-        }
-    }
-    // Write File
-    writeFile(vaultFile, JSON.stringify(vaults, null, 2));
-    return vaults;
-});
-exports.getBeefyVaultsFromGithub = getBeefyVaultsFromGithub;

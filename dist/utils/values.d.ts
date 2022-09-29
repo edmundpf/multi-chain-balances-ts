@@ -23,15 +23,6 @@ export declare const DEFAULT_URLS: {
     movr: string;
     hmy: string;
 };
-export declare const BEEFY_VAULT_URLS: {
-    avax: string;
-    bsc: string;
-    cro: string;
-    frm: string;
-    matic: string;
-    movr: string;
-    hmy: string;
-};
 /**
  * API Info
  */
@@ -72,15 +63,11 @@ export declare const slippageConfig: {
 };
 export declare const initChains: () => Chains;
 export declare const ONE_DAY: number;
-export declare const SAVED_VAULTS_FILE = "saved_vaults.json";
 export declare const getDebankHeaders: (address: string) => {
     account: string;
-    'x-api-ts': number;
-    Accept: string;
-    'Accept-Language': string;
-    Referer: string;
-    Origin: string;
-    'User-Agent': string;
+    'x-api-ts': string;
+    accept: string;
+    'accept-language': string;
     'sec-ch-ua': string;
     'sec-ch-ua-mobile': string;
     'sec-ch-ua-platform': string;
@@ -91,4 +78,7 @@ export declare const getDebankHeaders: (address: string) => {
     'x-api-nonce': string;
     'x-api-sign': string;
     'x-api-ver': string;
+    referer: string;
+    origin: string;
+    authority: string;
 };

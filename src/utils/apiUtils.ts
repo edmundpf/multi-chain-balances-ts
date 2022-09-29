@@ -1,15 +1,7 @@
 import axios from 'axios'
-import { promises } from 'fs'
-import { resolve } from 'path'
+import fetch from 'node-fetch'
 import { DebankHistory } from './types'
-import {
-	APIS,
-	ENDPOINTS,
-	SAVED_VAULTS_FILE,
-	BEEFY_VAULT_URLS,
-	getDebankHeaders,
-} from './values'
-const { readFile, writeFile } = promises
+import { APIS, ENDPOINTS, getDebankHeaders } from './values'
 
 /**
  * Misc
@@ -33,18 +25,31 @@ export const getEndpoint = async (
 	api: keyof typeof APIS,
 	endpoint: keyof typeof ENDPOINTS,
 	params?: any,
-	headers?: any
+	headers?: any,
+	useFetch = false
 ) => {
 	try {
+		let response: any = {}
 		const apiUrl = APIS[api]
 		const stub = ENDPOINTS[endpoint] || endpoint
 		let paramStr = params ? new URLSearchParams(params).toString() : ''
 		if (paramStr) paramStr = '?' + paramStr
 		const fullUrl = `${apiUrl}/${stub}${paramStr}`
-		return (
-			(await axios.get(fullUrl, headers ? { headers } : undefined))?.data || {}
-		)
+		if (useFetch) {
+			const config: any = { method: 'GET' }
+			const fetchRes = await fetch(
+				fullUrl,
+				headers ? { ...config, headers } : config
+			)
+			response = (await fetchRes.json()) || {}
+		} else {
+			response =
+				(await axios.get(fullUrl, headers ? { headers } : undefined))?.data ||
+				{}
+		}
+		return response
 	} catch (err) {
+		console.error(err)
 		return {
 			...((err as any)?.response?.data || {}),
 			hasError: true,
@@ -71,7 +76,8 @@ export const getDebankEndpoint = async (
 			...args,
 			[hasShortAddressArg ? 'addr' : 'user_addr']: address,
 		},
-		headers
+		headers,
+		true
 	)
 	console.log(result.hasError ? 'Error' : 'Success', endpoint, args)
 	return result
@@ -185,53 +191,3 @@ export const getBeefyApy = async () => await getBeefyEndpoint('beefyApy')
 
 // Get Beefy Vaults
 export const getBeefyVaults = async () => await getBeefyEndpoint('beefyVaults')
-
-// Get Beefy Vaults from Github
-export const getBeefyVaultsFromGithub = async () => {
-	let savedVaults: any = {}
-	const vaultFile = resolve(SAVED_VAULTS_FILE)
-
-	// Get Saved Vaults
-	try {
-		savedVaults = JSON.parse(await readFile(vaultFile, 'utf-8'))
-	} catch (err) {
-		// Do Nothing
-	}
-
-	// Init Vaults
-	const vaults: any = { ...savedVaults }
-
-	// Iterage URL's
-	for (const key in BEEFY_VAULT_URLS) {
-		// Get Plain Text
-		const pool = BEEFY_VAULT_URLS[key as keyof typeof BEEFY_VAULT_URLS]
-		const jsText =
-			(
-				await axios.get(`${APIS.githubVaults}/${pool}_pools.js`, {
-					responseType: 'text',
-				})
-			)?.data?.trim() || ''
-
-		// Parse Text
-		if (jsText.includes('[')) {
-			try {
-				const data = eval(
-					jsText.substring(jsText.indexOf('['), jsText.length - 1)
-				)
-
-				// Add Vault
-				for (const record of data) {
-					const { id, earnedToken } = record
-					const formattedToken = earnedToken.toLowerCase().replace(/w/g, '')
-					vaults[formattedToken] = id
-				}
-			} catch (err) {
-				// Do Nothing
-			}
-		}
-	}
-
-	// Write File
-	writeFile(vaultFile, JSON.stringify(vaults, null, 2))
-	return vaults
-}
