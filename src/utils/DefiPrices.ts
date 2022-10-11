@@ -755,7 +755,7 @@ export default class DefiPrices extends DefiTransactions {
 								(transactionCount - ineligibleCount)
 
 							// Iterate Missing/Eligible Records
-							for (const index of [...missingIndexes, eligibleIndexes]) {
+							for (const index of [...missingIndexes, ...eligibleIndexes]) {
 								const transaction = transactions[Number(index)]
 
 								// Modify Quote Tokens

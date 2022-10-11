@@ -13,9 +13,11 @@ exports.NATIVE_TOKENS = {
     cro: 'CRO',
     eth: 'ETH',
     ftm: 'FTM',
-    matic: 'MATIC',
-    movr: 'MOVR',
     hmy: 'ONE',
+    matic: 'MATIC',
+    metis: 'METIS',
+    movr: 'MOVR',
+    op: 'ETH',
 };
 // Default URL's
 exports.DEFAULT_URLS = {
@@ -24,9 +26,11 @@ exports.DEFAULT_URLS = {
     cro: 'https://cronos.crypto.org',
     eth: 'https://etherscan.io',
     ftm: 'https://ftmscan.com',
-    matic: 'https://polygonscan.com',
-    movr: 'https://moonriver.moonscan.io',
     hmy: 'https://explorer.harmony.one',
+    matic: 'https://polygonscan.com',
+    metis: 'https://andromeda-explorer.metis.io',
+    movr: 'https://moonriver.moonscan.io',
+    op: 'https://optimistic.etherscan.io',
 };
 /**
  * API Info
@@ -131,9 +135,11 @@ const initChains = () => {
         cro: initChain('cro'),
         eth: initChain('eth'),
         ftm: initChain('ftm'),
-        matic: initChain('matic'),
-        movr: initChain('movr'),
         hmy: initChain('hmy'),
+        matic: initChain('matic'),
+        metis: initChain('metis'),
+        movr: initChain('movr'),
+        op: initChain('op'),
     };
 };
 exports.initChains = initChains;

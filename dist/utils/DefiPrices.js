@@ -581,7 +581,7 @@ class DefiPrices extends DefiTransactions_1.default {
                             const avgValueUSD = (absMultiValueUSD - ineligibleTotal) /
                                 (transactionCount - ineligibleCount);
                             // Iterate Missing/Eligible Records
-                            for (const index of [...missingIndexes, eligibleIndexes]) {
+                            for (const index of [...missingIndexes, ...eligibleIndexes]) {
                                 const transaction = transactions[Number(index)];
                                 // Modify Quote Tokens
                                 if (singleIsBase) {

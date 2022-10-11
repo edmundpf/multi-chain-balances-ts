@@ -9,9 +9,11 @@ export declare const NATIVE_TOKENS: {
     cro: string;
     eth: string;
     ftm: string;
-    matic: string;
-    movr: string;
     hmy: string;
+    matic: string;
+    metis: string;
+    movr: string;
+    op: string;
 };
 export declare const DEFAULT_URLS: {
     avax: string;
@@ -19,9 +21,11 @@ export declare const DEFAULT_URLS: {
     cro: string;
     eth: string;
     ftm: string;
-    matic: string;
-    movr: string;
     hmy: string;
+    matic: string;
+    metis: string;
+    movr: string;
+    op: string;
 };
 /**
  * API Info

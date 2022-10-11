@@ -94,9 +94,11 @@ export type Chains = {
 	cro: Chain
 	eth: Chain
 	ftm: Chain
-	matic: Chain
-	movr: Chain
 	hmy: Chain
+	matic: Chain
+	metis: Chain
+	movr: Chain
+	op: Chain
 }
 
 // History Record Type
