@@ -85,7 +85,7 @@ DefiTransactions.constructor
 
 #### Defined in
 
-[utils/DefiBalances.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L46)
+[utils/DefiBalances.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L46)
 
 ## Properties
 
@@ -99,7 +99,7 @@ DefiTransactions.address
 
 #### Defined in
 
-[utils/DefiBalances.ts:31](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L31)
+[utils/DefiBalances.ts:31](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L31)
 
 ___
 
@@ -113,7 +113,7 @@ DefiTransactions.assets
 
 #### Defined in
 
-[utils/DefiBalances.ts:37](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L37)
+[utils/DefiBalances.ts:37](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L37)
 
 ___
 
@@ -127,7 +127,7 @@ DefiTransactions.chainNames
 
 #### Defined in
 
-[utils/DefiBalances.ts:38](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L38)
+[utils/DefiBalances.ts:38](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L38)
 
 ___
 
@@ -141,7 +141,7 @@ DefiTransactions.chains
 
 #### Defined in
 
-[utils/DefiBalances.ts:36](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L36)
+[utils/DefiBalances.ts:36](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L36)
 
 ___
 
@@ -151,7 +151,7 @@ ___
 
 #### Defined in
 
-[utils/DefiPrices.ts:48](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L48)
+[utils/DefiPrices.ts:48](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L48)
 
 ___
 
@@ -165,7 +165,7 @@ DefiTransactions.isEVM
 
 #### Defined in
 
-[utils/DefiBalances.ts:32](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L32)
+[utils/DefiBalances.ts:32](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L32)
 
 ___
 
@@ -175,7 +175,7 @@ ___
 
 #### Defined in
 
-[utils/DefiPrices.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L46)
+[utils/DefiPrices.ts:46](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L46)
 
 ___
 
@@ -185,7 +185,7 @@ ___
 
 #### Defined in
 
-[utils/DefiPrices.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L47)
+[utils/DefiPrices.ts:47](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L47)
 
 ___
 
@@ -195,7 +195,7 @@ ___
 
 #### Defined in
 
-[utils/DefiPrices.ts:49](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L49)
+[utils/DefiPrices.ts:49](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L49)
 
 ___
 
@@ -209,7 +209,7 @@ DefiTransactions.tokenNames
 
 #### Defined in
 
-[utils/DefiBalances.ts:39](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L39)
+[utils/DefiBalances.ts:39](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L39)
 
 ___
 
@@ -223,7 +223,7 @@ DefiTransactions.totalTokenValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:34](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L34)
+[utils/DefiBalances.ts:34](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L34)
 
 ___
 
@@ -237,7 +237,7 @@ DefiTransactions.totalValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:33](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L33)
+[utils/DefiBalances.ts:33](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L33)
 
 ___
 
@@ -251,7 +251,7 @@ DefiTransactions.totalVaultValue
 
 #### Defined in
 
-[utils/DefiBalances.ts:35](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L35)
+[utils/DefiBalances.ts:35](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L35)
 
 ___
 
@@ -265,7 +265,7 @@ DefiTransactions.unknownTokens
 
 #### Defined in
 
-[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L40)
+[utils/DefiBalances.ts:40](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L40)
 
 ## Methods
 
@@ -289,7 +289,7 @@ Add Token Time
 
 #### Defined in
 
-[utils/DefiPrices.ts:1242](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L1242)
+[utils/DefiPrices.ts:1242](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L1242)
 
 ___
 
@@ -320,7 +320,7 @@ Calculate Totals w/ Slippage
 
 #### Defined in
 
-[utils/DefiPrices.ts:996](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L996)
+[utils/DefiPrices.ts:996](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L996)
 
 ___
 
@@ -342,7 +342,7 @@ Driver
 
 #### Defined in
 
-[utils/DefiPrices.ts:55](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L55)
+[utils/DefiPrices.ts:55](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L55)
 
 ___
 
@@ -364,7 +364,7 @@ Get All Days Out Lists
 
 #### Defined in
 
-[utils/DefiPrices.ts:322](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L322)
+[utils/DefiPrices.ts:322](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L322)
 
 ___
 
@@ -387,7 +387,7 @@ Get All Token Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:335](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L335)
+[utils/DefiPrices.ts:335](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L335)
 
 ___
 
@@ -407,7 +407,7 @@ DefiTransactions.getBalances
 
 #### Defined in
 
-[utils/DefiBalances.ts:75](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiBalances.ts#L75)
+[utils/DefiBalances.ts:75](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiBalances.ts#L75)
 
 ___
 
@@ -431,7 +431,7 @@ Get Coin Gecko Endpoint
 
 #### Defined in
 
-[utils/DefiPrices.ts:1176](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L1176)
+[utils/DefiPrices.ts:1176](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L1176)
 
 ___
 
@@ -453,7 +453,7 @@ Get Days Out List
 
 #### Defined in
 
-[utils/DefiPrices.ts:1126](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L1126)
+[utils/DefiPrices.ts:1126](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L1126)
 
 ___
 
@@ -476,7 +476,7 @@ Get Insert Records
 
 #### Defined in
 
-[utils/DefiPrices.ts:415](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L415)
+[utils/DefiPrices.ts:415](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L415)
 
 ___
 
@@ -498,7 +498,7 @@ Get Local Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:269](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L269)
+[utils/DefiPrices.ts:269](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L269)
 
 ___
 
@@ -514,7 +514,7 @@ Get Price Data
 
 #### Defined in
 
-[utils/DefiPrices.ts:90](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L90)
+[utils/DefiPrices.ts:90](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L90)
 
 ___
 
@@ -530,7 +530,7 @@ Get Supported Tokens
 
 #### Defined in
 
-[utils/DefiPrices.ts:139](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L139)
+[utils/DefiPrices.ts:139](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L139)
 
 ___
 
@@ -553,7 +553,7 @@ Get Token Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:1091](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L1091)
+[utils/DefiPrices.ts:1091](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L1091)
 
 ___
 
@@ -575,7 +575,7 @@ Get Token Transaction Times
 
 #### Defined in
 
-[utils/DefiPrices.ts:217](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L217)
+[utils/DefiPrices.ts:217](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L217)
 
 ___
 
@@ -601,7 +601,7 @@ DefiTransactions.getTransactions
 
 #### Defined in
 
-[utils/DefiTransactions.ts:34](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiTransactions.ts#L34)
+[utils/DefiTransactions.ts:34](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiTransactions.ts#L34)
 
 ___
 
@@ -621,7 +621,7 @@ DefiTransactions.getUnknownTokens
 
 #### Defined in
 
-[utils/DefiTransactions.ts:123](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiTransactions.ts#L123)
+[utils/DefiTransactions.ts:123](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiTransactions.ts#L123)
 
 ___
 
@@ -644,7 +644,7 @@ Get Valid Price Record
 
 #### Defined in
 
-[utils/DefiPrices.ts:1052](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L1052)
+[utils/DefiPrices.ts:1052](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L1052)
 
 ___
 
@@ -666,7 +666,7 @@ Import Prior Transactions
 
 #### Defined in
 
-[utils/DefiPrices.ts:128](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L128)
+[utils/DefiPrices.ts:128](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L128)
 
 ___
 
@@ -688,7 +688,7 @@ Infer Multi Swap
 
 #### Defined in
 
-[utils/DefiPrices.ts:881](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L881)
+[utils/DefiPrices.ts:881](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L881)
 
 ___
 
@@ -710,7 +710,7 @@ Infer Single Swap
 
 #### Defined in
 
-[utils/DefiPrices.ts:818](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L818)
+[utils/DefiPrices.ts:818](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L818)
 
 ___
 
@@ -726,7 +726,7 @@ Infer Transaction Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:616](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L616)
+[utils/DefiPrices.ts:616](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L616)
 
 ___
 
@@ -754,7 +754,7 @@ Link Local Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:287](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L287)
+[utils/DefiPrices.ts:287](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L287)
 
 ___
 
@@ -777,7 +777,7 @@ Link Merged Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:383](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L383)
+[utils/DefiPrices.ts:383](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L383)
 
 ___
 
@@ -793,7 +793,7 @@ Manage API Limits
 
 #### Defined in
 
-[utils/DefiPrices.ts:1209](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L1209)
+[utils/DefiPrices.ts:1209](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L1209)
 
 ___
 
@@ -816,7 +816,7 @@ Merge API and Local Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:365](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L365)
+[utils/DefiPrices.ts:365](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L365)
 
 ___
 
@@ -832,7 +832,7 @@ Remove Garbage Price Info
 
 #### Defined in
 
-[utils/DefiPrices.ts:572](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L572)
+[utils/DefiPrices.ts:572](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L572)
 
 ___
 
@@ -856,7 +856,7 @@ Set Value And Price
 
 #### Defined in
 
-[utils/DefiPrices.ts:964](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L964)
+[utils/DefiPrices.ts:964](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L964)
 
 ___
 
@@ -878,7 +878,7 @@ Sync Missing Prices
 
 #### Defined in
 
-[utils/DefiPrices.ts:448](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L448)
+[utils/DefiPrices.ts:448](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L448)
 
 ___
 
@@ -900,4 +900,4 @@ Update Transaction Data
 
 #### Defined in
 
-[utils/DefiPrices.ts:460](https://github.com/edmundpf/multi-chain-balances-ts/blob/abe6a8a/src/utils/DefiPrices.ts#L460)
+[utils/DefiPrices.ts:460](https://github.com/edmundpf/multi-chain-balances-ts/blob/a43d19b/src/utils/DefiPrices.ts#L460)
