@@ -220,7 +220,7 @@ class DefiBalances {
         }
         for (const record of data) {
             // Platform Info
-            const { chain, name: platform, site_url: platformUrl, portfolio_list: vaults, } = record;
+            const { chain, name: platform, site_url: platformUrl, portfolio_item_list: vaults, } = record;
             // Check if Chain exists
             if (this.chainNames.includes(chain)) {
                 const chainInfo = this.chains[chain];

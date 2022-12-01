@@ -162,7 +162,7 @@ export declare type Protocol = {
     chain: keyof Chains;
     name: string;
     site_url: string;
-    portfolio_list: PortfolioItemList[];
+    portfolio_item_list: PortfolioItemList[];
 };
 export declare type DebankTransResponse = {
     data: {

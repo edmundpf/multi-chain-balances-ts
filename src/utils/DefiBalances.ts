@@ -262,7 +262,7 @@ export default class DefiBalances {
 				chain,
 				name: platform,
 				site_url: platformUrl,
-				portfolio_list: vaults,
+				portfolio_item_list: vaults,
 			} = record
 
 			// Check if Chain exists
